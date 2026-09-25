@@ -1,0 +1,65 @@
+--- a/public/index.html
++++ b/public/index.html
+@@ -75,6 +75,9 @@
+   .fail-reason { white-space: pre-wrap; word-break: break-word; color: #ef9a9a; font-size: 0.8rem; margin: -6px 0 12px 17px; font-family: ui-monospace, Menlo, monospace; }
+   .run-stats { font-size: 0.8rem; color: var(--muted); margin: -6px 0 12px 17px; display: flex; gap: 14px; flex-wrap: wrap; }
+   .run-stats b { color: var(--text); font-weight: 600; }
++  .run-stats b.code-added { color: var(--ok); }
++  .run-stats b.code-modified { color: #e3b341; }
++  .run-stats b.code-deleted { color: var(--danger); }
+   .badge { margin-left: 8px; font-size: 0.65rem; font-weight: 600; text-transform: none; letter-spacing: 0; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--border); color: var(--muted); }
+   .badge.pending { color: #e3b341; border-color: #6b5a1e; }
+   .badge.ok { color: var(--ok); border-color: #1e5a34; }
+@@ -109,6 +112,10 @@
+   #graph .branch text { fill: #7fb0ff; }
+   #graph .tool .pill { fill: #3a1f1f; }
+   #graph .tool text { fill: #e8a19a; }
++  #graph .result .pill { fill: #163326; }
++  #graph .result text { fill: var(--ok); }
++  #graph .result.err .pill { fill: #3a1f1f; }
++  #graph .result.err text { fill: #e8a19a; }
+   #graph .pill { stroke: transparent; }
+   #graph .pending .pill { stroke: #e3b341; }
+   #graph .err .pill { stroke: var(--danger); }
+@@ -287,6 +294,29 @@
+     span.append(label + ' ', b);
+     runStats.appendChild(span);
+   }
++
++  const code = stats.codeStats;
++  const codeSpan = document.createElement('span');
++  codeSpan.append('Code ');
++  if (!code || (!code.added && !code.modified && !code.deleted)) {
++    const b = document.createElement('b');
++    b.textContent = 'no changes';
++    codeSpan.appendChild(b);
++  } else {
++    const parts = [
++      [code.added, '+', 'code-added'],
++      [code.modified, '~', 'code-modified'],
++      [code.deleted, '-', 'code-deleted'],
++    ];
++    parts.forEach(([n, sign, cls], i) => {
++      if (i > 0) codeSpan.append(' ');
++      const b = document.createElement('b');
++      b.className = cls;
++      b.textContent = sign + n;
++      codeSpan.appendChild(b);
++    });
++  }
++  runStats.appendChild(codeSpan);
+ }
+ const RUN_LABELS = { idle: 'Idle', running: 'In progress', finished: 'Finished', failed: 'Failed' };
+ const toolCards = new Map(); // tool_use id -> { badge, el }
+@@ -638,6 +668,11 @@
+       label.className = 'traj-label';
+       label.textContent = 'Final result';
+       el.appendChild(label);
++      // Mirror it on the right as the trunk's last pill, already resolved
++      // (no pending phase — the final result arrives complete).
++      const node = addGraphNode({ key: 'result:' + Date.now(), parentKey: (currentTask && currentTask.key) || null, kind: 'result', label: 'Result', el });
++      node.status = item.isError ? 'err' : 'ok';
++      renderGraph();
+     }
+     el.appendChild(renderFoldedResult(item.text, item.isError));
+   } else if (item.kind === 'stderr' || item.kind === 'raw') {

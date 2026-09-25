@@ -1,0 +1,152 @@
+--- a/server.js
++++ b/server.js
+@@ -32,6 +32,9 @@
+   stderrTail: '',
+   resultStats: null, // { costUsd, numTurns } from the stream's final `result` event
+   durationMs: null, // wall-clock time of the last run, measured here
++  codeStats: { added: 0, modified: 0, deleted: 0 }, // line counts for this run, from Edit/Write calls
++  fileLines: new Map(), // file_path -> last known line array, seeded by Read, updated by Write; persists across follow-ups
++  pendingWrites: new Map(), // tool_use id -> { name, input }, for Edit/Write/Read calls awaiting their result
+   trajectory: [], // structured trajectory items, replayed to clients that connect mid-run
+   stdoutBuffer: '', // partial line carried over between stdout chunks
+ };
+@@ -52,6 +55,7 @@
+           costUsd: state.resultStats ? state.resultStats.costUsd : null,
+           numTurns: state.resultStats ? state.resultStats.numTurns : null,
+           durationMs: state.durationMs,
++          codeStats: state.codeStats,
+         }
+       : null,
+     failureReason: state.failureReason,
+@@ -68,6 +72,91 @@
+ 
+ // Tool names under which claude delegates work to a subagent.
+ const SUBAGENT_TOOLS = new Set(['Task', 'Agent']);
++
++// Tools whose result we inspect to update code-change stats, keyed by the
++// tool_use id so the matching tool_result can look the call back up.
++const TRACKED_FILE_TOOLS = new Set(['Read', 'Write', 'Edit']);
++
++// A minimal line-level diff (LCS-based) between two line arrays. A run of
++// consecutive deletions immediately followed by insertions (or vice versa)
++// counts the overlap as "modified" lines and only the remainder as pure
++// added/removed, matching how an in-place edit reads to a person.
++function diffLines(a, b) {
++  const n = a.length, m = b.length;
++  if (n * m > 400000) {
++    // Too big to diff exactly without stalling the server; fall back to a
++    // coarse estimate so large files still contribute *something* sane.
++    const common = Math.min(n, m);
++    return { added: Math.max(0, m - n), removed: Math.max(0, n - m), modified: common };
++  }
++  const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
++  for (let i = 1; i <= n; i++) {
++    for (let j = 1; j <= m; j++) {
++      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
++    }
++  }
++  const ops = [];
++  let i = n, j = m;
++  while (i > 0 && j > 0) {
++    if (a[i - 1] === b[j - 1]) { ops.push('eq'); i--; j--; }
++    else if (dp[i - 1][j] >= dp[i][j - 1]) { ops.push('del'); i--; }
++    else { ops.push('ins'); j--; }
++  }
++  while (i > 0) { ops.push('del'); i--; }
++  while (j > 0) { ops.push('ins'); j--; }
++  ops.reverse();
++
++  let added = 0, removed = 0, modified = 0, k = 0;
++  while (k < ops.length) {
++    if (ops[k] === 'eq') { k++; continue; }
++    let del = 0, ins = 0;
++    while (k < ops.length && ops[k] !== 'eq') { ops[k] === 'del' ? del++ : ins++; k++; }
++    const mod = Math.min(del, ins);
++    modified += mod;
++    removed += del - mod;
++    added += ins - mod;
++  }
++  return { added, removed, modified };
++}
++
++// Strip a Read tool result's "  12\tsource line" line-number gutter, if present.
++function stripLineNumbers(text) {
++  return text.split('\n').map((l) => l.replace(/^\s*\d+[\t→]/, ''));
++}
++
++function addCodeStats(diff) {
++  state.codeStats.added += diff.added;
++  state.codeStats.modified += diff.modified;
++  state.codeStats.deleted += diff.removed;
++}
++
++// Resolve a tracked Read/Write/Edit call once its result is known, updating
++// the running code-change counters and the cached file content used to diff
++// a later Write against. Only successful calls count; `text` is the Read
++// tool's own result (needed to seed the cache), ignored for Write/Edit.
++function resolveFileTool(toolUseId, isError, text) {
++  const pending = state.pendingWrites.get(toolUseId);
++  if (!pending) return;
++  state.pendingWrites.delete(toolUseId);
++  if (isError) return;
++  const { name, input } = pending;
++  const filePath = input && input.file_path;
++  if (!filePath) return;
++
++  if (name === 'Read') {
++    state.fileLines.set(filePath, stripLineNumbers(text));
++  } else if (name === 'Edit') {
++    const oldLines = String((input && input.old_string) || '').split('\n');
++    const newLines = String((input && input.new_string) || '').split('\n');
++    addCodeStats(diffLines(oldLines, newLines));
++    state.fileLines.delete(filePath); // stale now; Edit doesn't tell us the whole file
++  } else if (name === 'Write') {
++    const newLines = String((input && input.content) || '').split('\n');
++    const prevLines = state.fileLines.get(filePath);
++    addCodeStats(prevLines ? diffLines(prevLines, newLines) : { added: newLines.length, removed: 0, modified: 0 });
++    state.fileLines.set(filePath, newLines);
++  }
++}
+ 
+ function emitTrajectory(item) {
+   item.ts = new Date().toISOString();
+@@ -96,6 +185,9 @@
+             prompt: typeof input.prompt === 'string' ? input.prompt : '',
+           };
+         }
++        if (TRACKED_FILE_TOOLS.has(block.name)) {
++          state.pendingWrites.set(block.id, { name: block.name, input: block.input });
++        }
+         emitTrajectory(item);
+       }
+     }
+@@ -106,6 +198,7 @@
+         ? block.content.map((c) => (c && c.type === 'text' ? c.text : '')).join('\n')
+         : String(block.content == null ? '' : block.content);
+       emitTrajectory({ kind: 'tool_result', parentId, toolUseId: block.tool_use_id, text, isError: !!block.is_error });
++      resolveFileTool(block.tool_use_id, !!block.is_error, text);
+     }
+   } else if (evt.type === 'result') {
+     state.resultStats = {
+@@ -219,9 +312,12 @@
+   state.resultStats = null;
+   state.durationMs = null;
+   state.stderrTail = '';
++  state.codeStats = { added: 0, modified: 0, deleted: 0 };
++  state.pendingWrites.clear();
+   if (!resume) {
+     state.trajectory = [];
+     state.sessionId = null;
++    state.fileLines.clear();
+   }
+   state.stdoutBuffer = '';
+   emitTrajectory({ kind: 'user_prompt', text: prompt });
+@@ -314,6 +410,8 @@
+     state.status = 'idle';
+     state.failureReason = null;
+     state.exitCode = null;
++    state.fileLines.clear();
++    state.pendingWrites.clear();
+     broadcast('reset', {});
+     broadcast('status', publicState());
+     return sendJSON(res, 200, { ok: true });

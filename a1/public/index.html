@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Claude Code Runner</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #2a2f3a;
+    --text: #e6e8eb;
+    --muted: #9aa2af;
+    --accent: #d97757;
+    --accent-hover: #c86648;
+    --danger: #e05a4e;
+    --ok: #4caf7d;
+    --blue: #7fb0ff;
+    --blue-dim: #1c2a42;
+    --accent-dim: #3a2a1a;
+    --ok-dim: #163326;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px 16px;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 1.25rem; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 20px; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 6px; }
+  input[type=text], textarea {
+    width: 100%;
+    background: #0d0f14;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: vertical;
+  }
+  textarea { min-height: 90px; }
+  .field { margin-bottom: 14px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .checkbox-row { display: flex; align-items: flex-start; gap: 8px; font-size: 0.82rem; color: var(--muted); }
+  .checkbox-row input { margin-top: 3px; }
+  .checkbox-row strong { color: #e8a37c; }
+  button {
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    cursor: pointer;
+  }
+  #runBtn { background: var(--accent); color: white; }
+  #runBtn:hover:not(:disabled) { background: var(--accent-hover); }
+  #runBtn:disabled { background: #3a3f4a; color: var(--muted); cursor: not-allowed; }
+  #stopBtn { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+  #stopBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .status-line { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-bottom: 12px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+  .dot.running { background: var(--ok); animation: pulse 1.2s infinite; }
+  .dot.error { background: var(--danger); }
+  .dot.finished { background: var(--ok); }
+  .fail-reason { white-space: pre-wrap; word-break: break-word; color: #ef9a9a; font-size: 0.8rem; margin: -6px 0 12px 17px; font-family: ui-monospace, Menlo, monospace; }
+  .run-stats { font-size: 0.8rem; color: var(--muted); margin: -6px 0 12px 17px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .run-stats b { color: var(--text); font-weight: 600; }
+  .run-stats b.code-added { color: var(--ok); }
+  .run-stats b.code-modified { color: #e3b341; }
+  .run-stats b.code-deleted { color: var(--danger); }
+  .file-changes {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 16px; font-size: 0.85rem;
+  }
+  .file-changes h3 {
+    margin: 0 0 6px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); font-weight: 700;
+  }
+  .file-row {
+    display: flex; align-items: center; gap: 10px; padding: 4px 0;
+    border-top: 1px solid var(--border);
+  }
+  .file-row:first-of-type { border-top: none; }
+  .file-row .path {
+    flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; font-size: 0.8rem;
+  }
+  .file-row .file-counts { flex: none; display: flex; gap: 8px; font-size: 0.78rem; }
+  .file-row .file-counts b { font-weight: 600; }
+  .file-row a.diff-link {
+    flex: none; color: var(--accent); text-decoration: none; font-size: 0.78rem;
+    border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px;
+  }
+  .file-row a.diff-link:hover { border-color: var(--accent); }
+  .dev-diffs {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 14px; font-size: 0.85rem;
+  }
+  .dev-diffs h3 {
+    margin: 0 0 6px; font-size: 0.75rem; font-weight: 700; color: var(--text);
+  }
+  .dev-diffs h3 .muted { font-weight: 400; color: var(--muted); text-transform: none; letter-spacing: normal; }
+  .dev-diffs .file-row .path { font-family: inherit; font-size: 0.85rem; }
+  .dev-diffs .file-row .meta { flex: none; color: var(--muted); font-size: 0.75rem; }
+  .badge { margin-left: 8px; font-size: 0.65rem; font-weight: 600; text-transform: none; letter-spacing: 0; padding: 1px 7px; border-radius: 9px; border: 1px solid var(--border); color: var(--muted); }
+  .badge.pending { color: #e3b341; border-color: #6b5a1e; }
+  .badge.ok { color: var(--ok); border-color: #1e5a34; }
+  .badge.err { color: #ef9a9a; border-color: #6b1e1e; }
+  .traj-tool_call .tool-result { margin-top: 6px; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .workspace { display: flex; gap: 12px; align-items: flex-start; }
+  .workspace #output { flex: 1; min-width: 0; }
+  #graphPanel {
+    width: 300px; flex: none; height: 420px; overflow: auto;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; font-size: 0.8rem;
+  }
+  #graphPanel h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-style: italic; margin: 0 0 8px; font-weight: 600; }
+  #graphScroll {
+    height: 396px; overflow-y: auto; overflow-x: auto;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+  }
+  #graphEmpty { color: var(--muted); }
+  #graph { display: block; margin: 0 auto; }
+  #graph .edge { fill: none; stroke: #3a4150; stroke-width: 1.5; }
+  #graph .node { cursor: pointer; }
+  #graph .node text {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; text-anchor: middle; dominant-baseline: middle;
+  }
+  #graph .pill { rx: 12; ry: 12; stroke-width: 2; }
+  #graph .you .pill { fill: #2a2f3a; }
+  #graph .you text { fill: var(--muted); }
+  #graph .branch .pill { fill: var(--blue-dim); }
+  #graph .branch text { fill: var(--blue); }
+  #graph .tool .pill { fill: var(--accent-dim); }
+  #graph .tool text { fill: var(--accent); }
+  #graph .result .pill { fill: var(--ok-dim); }
+  #graph .result text { fill: var(--ok); }
+  #graph .result.err .pill { fill: var(--accent-dim); }
+  #graph .result.err text { fill: var(--danger); }
+  #graph .pill { stroke: transparent; }
+  #graph .pending .pill { stroke: #e3b341; }
+  #graph .err .pill { stroke: var(--danger); }
+  #graph .pending .pill { animation: pulse 1.2s infinite; }
+  #graph .node:hover .pill { stroke: var(--accent); }
+  @media (max-width: 720px) { .workspace { flex-direction: column; } #graphPanel { width: 100%; height: auto; } #graphScroll { height: 260px; } }
+  .traj-task, .traj-subagent { border-left: 2px solid var(--border); padding-left: 10px; }
+  .traj-subagent { border-left-color: var(--blue); }
+  .branch-row { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+  .branch-row > .traj-item { flex: 1 1 0; min-width: 0; margin-bottom: 0; }
+  .branch-row > .traj-item:not(:first-child) { border-left-style: dashed; }
+  .children { margin-top: 10px; margin-left: 4px; padding-left: 10px; border-left: 1px dashed var(--border); }
+  .traj-desc { font-weight: 600; margin-bottom: 4px; }
+  .traj-snippet { color: var(--muted); font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; }
+  #output {
+    background: #0a0c10;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    height: 420px;
+    overflow-y: auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .traj-item { margin-bottom: 16px; }
+  .traj-item:last-child { margin-bottom: 0; }
+  .traj-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .traj-tool_call .traj-label { color: var(--accent); }
+  .traj-subagent > .traj-label { color: var(--blue); }
+  /* Input/Output/Full prompt are expand toggles, not the tool call's own
+     header — keep them neutral gray regardless of the header's color. */
+  .traj-tool_call .collapsible-toggle { color: var(--muted); }
+  .traj-text .collapsible-toggle { color: var(--blue); }
+  .collapsible-toggle {
+    display: block; width: 100%; text-align: left;
+    background: none; border: none; padding: 0; margin: 0; font: inherit;
+    cursor: pointer;
+  }
+  .collapsible-toggle:hover { color: var(--accent); }
+  .collapsible-arrow { display: inline-block; width: 0.9em; }
+  .collapsible-summary { text-transform: none; letter-spacing: normal; font-weight: 400; color: var(--text); }
+  .traj-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+  }
+  .traj-input {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: #12151b;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: #c9d1d9;
+  }
+  .traj-result { margin-top: -8px; }
+  .traj-result pre, .tool-result pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: #c9d1d9;
+  }
+  .important { color: #ef9a9a; }
+  .result-note { margin-top: 4px; color: var(--muted); font-size: 0.75rem; }
+  .result-note + pre { margin-top: 2px; }
+  .traj-final_result .traj-label { color: var(--ok); }
+  .traj-final_result.is-error .traj-label { color: var(--danger); }
+  .traj-error {
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: #ef9a9a;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+  }
+  .error-banner {
+    background: #3a1f1f;
+    border: 1px solid var(--danger);
+    color: #f5b3ad;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Claude Code Runner</h1>
+  <div class="sub">Send a prompt to the <code>claude</code> CLI, running against a working directory you choose. Only one prompt runs at a time.</div>
+
+  <div class="dev-diffs" id="devDiffs" hidden>
+    <h3>App changelog <span class="muted">— diffs of this tool's own source</span></h3>
+    <div id="devDiffsList"></div>
+  </div>
+
+  <div class="error-banner" id="errorBanner"></div>
+
+  <div class="panel">
+    <div class="field">
+      <label for="cwd">Working directory (absolute or relative path)</label>
+      <input type="text" id="cwd" placeholder="/Users/you/projects/my-repo" />
+    </div>
+    <div class="field">
+      <label for="prompt">Prompt</label>
+      <textarea id="prompt" placeholder="e.g. Add a health check endpoint to the server"></textarea>
+    </div>
+    <div class="field checkbox-row">
+      <input type="checkbox" id="bypass" />
+      <label for="bypass" style="margin:0;">
+        <strong>Bypass permission prompts</strong> — lets Claude edit files and run commands in this
+        directory without asking. Only enable this for directories you trust.
+      </label>
+    </div>
+    <div class="row">
+      <button id="runBtn">Run</button>
+      <button id="stopBtn" disabled>Stop</button>
+      <button id="newBtn" hidden>New conversation</button>
+    </div>
+  </div>
+
+  <div class="status-line">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Idle</span>
+  </div>
+  <div class="fail-reason" id="failReason" hidden></div>
+  <div class="run-stats" id="runStats" hidden></div>
+  <div class="file-changes" id="fileChanges" hidden></div>
+
+  <div class="workspace">
+    <div id="output"></div>
+    <aside id="graphPanel">
+      <h2>outline</h2>
+      <div id="graphScroll">
+        <div id="graphEmpty">Nothing has run yet</div>
+        <svg id="graph" width="276" height="0" role="img" aria-label="Tree of tasks, subagents and tool calls"></svg>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const cwdInput = document.getElementById('cwd');
+const promptInput = document.getElementById('prompt');
+const bypassInput = document.getElementById('bypass');
+const runBtn = document.getElementById('runBtn');
+const stopBtn = document.getElementById('stopBtn');
+const newBtn = document.getElementById('newBtn');
+let localRun = false; // this tab started the current run, so don't mirror its prompt back in
+let hasSession = false; // true once a run has produced a session that a follow-up can resume
+const output = document.getElementById('output');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const errorBanner = document.getElementById('errorBanner');
+
+function showError(msg) {
+  errorBanner.textContent = msg;
+  errorBanner.style.display = msg ? 'block' : 'none';
+}
+
+const statusReason = document.getElementById('failReason');
+const runStats = document.getElementById('runStats');
+const fileChangesEl = document.getElementById('fileChanges');
+
+function formatDuration(ms) {
+  if (ms == null) return '—';
+  const sec = ms / 1000;
+  if (sec < 60) return sec.toFixed(1) + 's';
+  return Math.floor(sec / 60) + 'm ' + Math.round(sec % 60) + 's';
+}
+
+function renderStats(stats) {
+  runStats.replaceChildren();
+  runStats.hidden = !stats;
+  if (!stats) return;
+  const cost = stats.costUsd == null ? '—' : '$' + stats.costUsd.toFixed(4);
+  const turns = stats.numTurns == null ? '—' : String(stats.numTurns);
+  for (const [label, value] of [['Cost', cost], ['Duration', formatDuration(stats.durationMs)], ['Turns', turns]]) {
+    const span = document.createElement('span');
+    const b = document.createElement('b');
+    b.textContent = value;
+    span.append(label + ' ', b);
+    runStats.appendChild(span);
+  }
+
+  const code = stats.codeStats;
+  const codeSpan = document.createElement('span');
+  codeSpan.append('Code ');
+  if (!code || (!code.added && !code.modified && !code.deleted)) {
+    const b = document.createElement('b');
+    b.textContent = 'no changes';
+    codeSpan.appendChild(b);
+  } else {
+    const parts = [
+      [code.added, '+', 'code-added'],
+      [code.modified, '~', 'code-modified'],
+      [code.deleted, '-', 'code-deleted'],
+    ];
+    parts.forEach(([n, sign, cls], i) => {
+      if (i > 0) codeSpan.append(' ');
+      const b = document.createElement('b');
+      b.className = cls;
+      b.textContent = sign + n;
+      codeSpan.appendChild(b);
+    });
+  }
+  runStats.appendChild(codeSpan);
+}
+
+// The "files changed" panel: one row per file this run touched, its line
+// counts, and a link that opens a full diff in a new tab.
+function renderFileChanges(stats) {
+  fileChangesEl.replaceChildren();
+  const files = stats && stats.files;
+  fileChangesEl.hidden = !files || !files.length;
+  if (!files || !files.length) return;
+
+  const h3 = document.createElement('h3');
+  h3.textContent = `Files changed (${files.length})`;
+  fileChangesEl.appendChild(h3);
+
+  for (const f of files) {
+    const row = document.createElement('div');
+    row.className = 'file-row';
+
+    const p = document.createElement('span');
+    p.className = 'path';
+    p.textContent = f.path;
+    p.title = f.path;
+
+    const counts = document.createElement('span');
+    counts.className = 'file-counts';
+    for (const [n, sign, cls] of [[f.added, '+', 'code-added'], [f.modified, '~', 'code-modified'], [f.deleted, '-', 'code-deleted']]) {
+      if (!n) continue;
+      const b = document.createElement('b');
+      b.className = cls;
+      b.textContent = sign + n;
+      counts.appendChild(b);
+    }
+
+    const link = document.createElement('a');
+    link.className = 'diff-link';
+    link.textContent = 'View diff ↗';
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.href = '/api/diff?file=' + encodeURIComponent(f.absPath);
+
+    row.append(p, counts, link);
+    fileChangesEl.appendChild(row);
+  }
+}
+const RUN_LABELS = { idle: 'Idle', running: 'In progress', finished: 'Finished', failed: 'Failed' };
+const toolCards = new Map(); // tool_use id -> { badge, el }
+const childBoxes = new Map(); // subagent tool_use id -> element holding its nested events
+const graphSvg = document.getElementById('graph');
+const graphEmpty = document.getElementById('graphEmpty');
+const graphNodes = new Map(); // key -> { key, parentKey, kind, label, status, el, children: [] }
+const graphRoots = [];
+let currentTask = null; // { box, key } for the most recent user prompt
+let taskCount = 0;
+
+function resetTree() {
+  output.innerHTML = '';
+  toolCards.clear();
+  childBoxes.clear();
+  branchState.clear();
+  graphNodes.clear();
+  graphRoots.length = 0;
+  currentTask = null;
+  taskCount = 0;
+  renderGraph();
+}
+
+function shorten(text, max) {
+  const one = String(text || '').replace(/\s+/g, ' ').trim();
+  return one.length > max ? one.slice(0, max - 1) + '…' : one;
+}
+
+const ROW = 42, PAD = 16, COL_GAP = 78, PILL_H = 26;
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+function svgEl(name, attrs) {
+  const el = document.createElementNS(SVGNS, name);
+  for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
+  return el;
+}
+
+// A node's own trunk is its children, in the order they happened. Only a run
+// of 2+ consecutive subagent delegations ("branch" nodes) fans out into side-
+// by-side columns; everything else stays in a single vertical line.
+function addGraphNode({ key, parentKey, kind, label, el }) {
+  const node = { key, parentKey, kind, label, el, status: kind === 'you' ? 'plain' : 'pending', children: [] };
+  graphNodes.set(key, node);
+  const parent = parentKey && graphNodes.get(parentKey);
+  (parent ? parent.children : graphRoots).push(node);
+  renderGraph();
+  return node;
+}
+
+function setGraphStatus(key, status) {
+  const node = graphNodes.get(key);
+  if (!node) return;
+  node.status = status;
+  renderGraph();
+}
+
+function pillWidth(label) {
+  return Math.max(52, label.length * 7.2 + 26);
+}
+
+// Walk a trunk (list of siblings), placing nodes into `placed` and edges into
+// `edges`. Consecutive 'branch' siblings fan out into columns that reconverge
+// once the run of branches ends. Returns the row after this trunk and the
+// point(s) the *next* trunk item should connect from.
+function computeLayout(nodes, centerX, row, entryPoints, placed, edges) {
+  let entry = entryPoints;
+  let i = 0;
+  while (i < nodes.length) {
+    let j = i;
+    while (j < nodes.length && nodes[j].kind === 'branch') j++;
+    const batch = nodes.slice(i, j);
+    if (batch.length >= 2) {
+      const startX = centerX - ((batch.length - 1) * COL_GAP) / 2;
+      const branchRow = row;
+      let maxRow = row;
+      const exits = [];
+      batch.forEach((node, k) => {
+        const bx = startX + k * COL_GAP;
+        placed.push({ node, x: bx, y: branchRow });
+        for (const e of entry) edges.push({ from: e, to: { x: bx, y: branchRow } });
+        const res = computeLayout(node.children, bx, branchRow + 1, [{ x: bx, y: branchRow }], placed, edges);
+        exits.push(...(res.exits.length ? res.exits : [{ x: bx, y: branchRow }]));
+        maxRow = Math.max(maxRow, res.row);
+      });
+      row = maxRow;
+      entry = exits;
+      i = j;
+    } else {
+      const node = nodes[i];
+      placed.push({ node, x: centerX, y: row });
+      for (const e of entry) edges.push({ from: e, to: { x: centerX, y: row } });
+      entry = [{ x: centerX, y: row }];
+      const myRow = row;
+      row += 1;
+      if (node.children.length) {
+        const res = computeLayout(node.children, centerX, row, [{ x: centerX, y: myRow }], placed, edges);
+        row = res.row;
+        entry = res.exits;
+      }
+      i += 1;
+    }
+  }
+  return { row, exits: entry };
+}
+
+function edgePath(from, to) {
+  if (from.x === to.x) return `M${from.x} ${from.y} L${to.x} ${to.y}`;
+  const midY = (from.y + to.y) / 2;
+  return `M${from.x} ${from.y} V${midY} H${to.x} V${to.y}`;
+}
+
+// Redraw the run tree as rounded pills connected by simple elbow lines,
+// branching only where the run actually delegated to parallel subagents.
+function renderGraph() {
+  graphSvg.replaceChildren();
+  graphEmpty.hidden = graphRoots.length > 0;
+  if (!graphRoots.length) return graphSvg.setAttribute('height', 0);
+
+  const placed = [];
+  const edges = [];
+  const yToPx = (row) => PAD + PILL_H / 2 + row * ROW;
+  const { row: totalRows } = computeLayout(graphRoots, 0, 0, [], placed, edges);
+  for (const p of placed) { p.y = yToPx(p.y); }
+  for (const e of edges) { e.from = { x: e.from.x, y: yToPx(e.from.y) }; e.to = { x: e.to.x, y: yToPx(e.to.y) }; }
+
+  let minX = 0, maxX = 0;
+  for (const p of placed) {
+    const hw = pillWidth(p.node.label) / 2;
+    minX = Math.min(minX, p.x - hw);
+    maxX = Math.max(maxX, p.x + hw);
+  }
+  const shift = PAD - minX;
+
+  const edgeGroup = svgEl('g');
+  for (const e of edges) {
+    edgeGroup.appendChild(svgEl('path', {
+      class: 'edge',
+      d: edgePath({ x: e.from.x + shift, y: e.from.y }, { x: e.to.x + shift, y: e.to.y }),
+    }));
+  }
+  const nodeGroup = svgEl('g');
+  for (const p of placed) {
+    const node = p.node;
+    const x = p.x + shift, y = p.y;
+    const w = pillWidth(node.label);
+    const g = svgEl('g', { class: `node ${node.kind} ${node.status}`, tabindex: 0 });
+    g.append(
+      svgEl('rect', { class: 'pill', x: x - w / 2, y: y - PILL_H / 2, width: w, height: PILL_H }),
+      Object.assign(svgEl('text', { x, y: y + 1 }), { textContent: node.label }),
+    );
+    g.addEventListener('click', () => node.el && node.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+    nodeGroup.appendChild(g);
+  }
+  graphSvg.append(edgeGroup, nodeGroup);
+  const width = maxX - minX + PAD * 2;
+  graphSvg.setAttribute('width', width);
+  graphSvg.setAttribute('viewBox', `0 0 ${width} ${PAD * 2 + totalRows * ROW}`);
+  graphSvg.setAttribute('height', PAD * 2 + totalRows * ROW);
+}
+
+// Per parent container: tracks whether the trailing run of *tool-call* siblings
+// (ignoring assistant text in between) is a run of subagent delegations, so a
+// second consecutive one can be grouped side-by-side with the first instead of
+// stacking — mirroring how the right-hand graph branches the same run.
+const branchState = new Map(); // container -> { lastSub, row, solo }
+
+function placeItem(el, item) {
+  const parent = (item.parentId && childBoxes.get(item.parentId)) || (currentTask && currentTask.box) || output;
+
+  if (item.kind !== 'tool_call') {
+    parent.appendChild(el);
+    return;
+  }
+
+  const isSub = !!item.subagent;
+  const st = branchState.get(parent) || { lastSub: false, row: null, solo: null };
+
+  if (isSub && st.lastSub && (st.row || st.solo)) {
+    if (!st.row) {
+      const row = document.createElement('div');
+      row.className = 'branch-row';
+      st.solo.replaceWith(row);
+      row.appendChild(st.solo);
+      st.row = row;
+      st.solo = null;
+    }
+    st.row.appendChild(el);
+  } else {
+    parent.appendChild(el);
+    st.row = null;
+    st.solo = isSub ? el : null;
+  }
+  st.lastSub = isSub;
+  branchState.set(parent, st);
+}
+
+// Single place that paints the per-run status from the server's state.
+function applyStatus(s) {
+  const status = s.running ? 'running' : (s.status || 'idle');
+  const running = status === 'running';
+  hasSession = !!s.hasSession;
+  runBtn.disabled = running;
+  runBtn.textContent = hasSession ? 'Send follow-up' : 'Run';
+  newBtn.hidden = !hasSession;
+  newBtn.disabled = running;
+  stopBtn.disabled = !running;
+  cwdInput.disabled = running || hasSession; // a follow-up must stay in the same directory
+  promptInput.disabled = running;
+  bypassInput.disabled = running;
+  statusDot.className = 'dot' + (running ? ' running' : '') + (status === 'finished' ? ' finished' : '') + (status === 'failed' ? ' error' : '');
+  statusText.textContent = RUN_LABELS[status] || 'Idle';
+  const reason = status === 'failed' ? s.failureReason : null;
+  renderStats(running ? null : s.stats);
+  renderFileChanges(running ? null : s.stats);
+  statusReason.hidden = !reason;
+  statusReason.textContent = reason ? 'Why: ' + reason : '';
+}
+
+function setRunning(running) {
+  applyStatus({ running, status: running ? 'running' : 'idle', hasSession });
+}
+
+function formatToolInput(input) {
+  if (input == null) return '';
+  if (typeof input !== 'object') return String(input);
+  return Object.entries(input)
+    .map(([key, value]) => {
+      const text = typeof value === 'string' ? value : JSON.stringify(value, null, 2);
+      return key + ': ' + text;
+    })
+    .join('\n');
+}
+
+// The file(s) a tool call reads or touches, for surfacing in its title
+// without having to expand the (now-collapsed) input.
+function filesForInput(input) {
+  if (!input || typeof input !== 'object') return [];
+  const raw = input.file_path || input.notebook_path || input.path;
+  if (typeof raw !== 'string' || !raw) return [];
+  return [raw.split('/').pop()];
+}
+
+const STOPWORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'to', 'of', 'in', 'on',
+  'for', 'with', 'as', 'and', 'or', 'but', 'it', 'that', 'this', 'i', 've', 'll', 'have', 'has',
+  'had', 'will', 'can', 'could', 'should', 'would', 'my', 'your', 'our', 'we', 'you', 'so', 'just',
+  'now', 'then', 'also', 'at', 'by', 'from', 'into', 'about', 'let', 'me',
+]);
+
+// A cheap, local stand-in for "summarize this in ~5 words": strip markdown,
+// take the first sentence, and prefer its content words over filler ones.
+function summarize5(text, max = 5) {
+  const clean = String(text || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/[*_#>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return '';
+  const sentence = (clean.match(/^.*?[.!?](?=\s|$)/) || [clean])[0];
+  const words = sentence.split(' ').filter(Boolean);
+  const content = words.filter((w) => !STOPWORDS.has(w.toLowerCase().replace(/[^a-z0-9']/gi, '')));
+  const pick = (content.length >= 3 ? content : words).slice(0, max);
+  return pick.join(' ').replace(/[,;:.!?]+$/, '');
+}
+
+const IMPORTANT = /\b(error|errors|fail(ed|ure|ures)?|exception|traceback|fatal|denied|refused|not found|no such file|cannot|can't|panic|warning)\b|^\s*E\s{2,}|exit(ed)? (code|status) [1-9]/i;
+
+// Tools whose output is raw file/shell content rather than prose — running
+// it through the summarizer just yields a truncated, confusing fragment.
+const NO_SUMMARY_TOOLS = new Set(['Bash', 'Read']);
+
+// Highlight the lines that need attention; the rest sits right below, not
+// behind a second collapse — the caller already wraps this in one toggle
+// (Output / Final result), so a nested fold here would mean two clicks to
+// see everything.
+function renderFoldedResult(text, isError) {
+  const lines = text.replace(/\s+$/, '').split('\n');
+  const box = document.createElement('div');
+  const flagged = lines.map((l) => IMPORTANT.test(l));
+  const shown = lines.filter((_, i) => flagged[i]);
+  if (!shown.length && isError) shown.push(...lines.slice(0, 5));
+  if (shown.length) {
+    const pre = document.createElement('pre');
+    pre.className = 'important';
+    pre.textContent = shown.join('\n');
+    box.appendChild(pre);
+  }
+  const hidden = lines.length - shown.length;
+  if (hidden > 0 && text.trim()) {
+    const note = document.createElement('div');
+    note.className = 'result-note';
+    note.textContent = shown.length
+      ? `+ ${hidden} more line${hidden === 1 ? '' : 's'}`
+      : `${lines.length} line${lines.length === 1 ? '' : 's'}`;
+    const pre = document.createElement('pre');
+    pre.textContent = lines.join('\n');
+    box.append(note, pre);
+  }
+  return box;
+}
+
+// Wrap `bodyEl` behind a clickable label so commentary/results stay collapsed
+// by default and the user can expand any one of them to read it.
+function makeCollapsible(labelText, bodyEl, { startOpen = false, summary = '' } = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = 'collapsible';
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'traj-label collapsible-toggle';
+  const arrow = document.createElement('span');
+  arrow.className = 'collapsible-arrow';
+  toggle.append(arrow, document.createTextNode(' ' + labelText));
+  if (summary) {
+    const sum = document.createElement('span');
+    sum.className = 'collapsible-summary';
+    sum.textContent = ' — ' + summary;
+    toggle.appendChild(sum);
+  }
+  bodyEl.hidden = !startOpen;
+  arrow.textContent = startOpen ? '▾' : '▸';
+  toggle.addEventListener('click', () => {
+    bodyEl.hidden = !bodyEl.hidden;
+    arrow.textContent = bodyEl.hidden ? '▸' : '▾';
+  });
+  wrap.append(toggle, bodyEl);
+  return wrap;
+}
+
+function renderTrajectoryItem(item) {
+  const el = document.createElement('div');
+  el.className = 'traj-item traj-' + item.kind;
+
+  if (item.kind === 'user_prompt') {
+    taskCount += 1;
+    el.classList.add('traj-task');
+    const label = document.createElement('div');
+    label.className = 'traj-label';
+    label.textContent = 'Task ' + taskCount;
+    const desc = document.createElement('div');
+    desc.className = 'traj-desc';
+    desc.textContent = summarize5(item.text) || shorten(item.text, 60);
+    const body = document.createElement('div');
+    body.className = 'traj-snippet';
+    body.textContent = item.text;
+    const box = document.createElement('div');
+    box.className = 'children';
+    el.append(label, desc, makeCollapsible('Full prompt', body), box);
+    const key = 'task:' + taskCount;
+    addGraphNode({ key, parentKey: null, kind: 'you', label: 'You', el });
+    currentTask = { box, key };
+    output.appendChild(el);
+    output.scrollTop = output.scrollHeight;
+    return;
+  } else if (item.kind === 'text') {
+    const body = document.createElement('div');
+    body.className = 'traj-text';
+    body.textContent = item.text;
+    const summary = summarize5(item.text);
+    el.append(makeCollapsible('Assistant', body, { summary }));
+  } else if (item.kind === 'tool_call') {
+    const label = document.createElement('div');
+    label.className = 'traj-label';
+    const files = filesForInput(item.input);
+    label.textContent = 'Tool call: ' + item.name + (files.length ? ' — ' + files.join(', ') : '');
+    const badge = document.createElement('span');
+    badge.className = 'badge pending';
+    badge.textContent = 'running';
+    label.appendChild(badge);
+    const outputSummary = document.createElement('span');
+    outputSummary.className = 'collapsible-summary';
+    label.appendChild(outputSummary);
+    if (item.id) toolCards.set(item.id, { badge, el, outputSummary, name: item.name });
+    if (item.subagent) {
+      el.classList.add('traj-subagent');
+      label.firstChild.textContent = 'Subtask · delegated to subagent' + (item.subagent.type ? ' (' + item.subagent.type + ')' : '');
+      const desc = document.createElement('div');
+      desc.className = 'traj-desc';
+      desc.textContent = item.subagent.description;
+      const snippet = document.createElement('div');
+      snippet.className = 'traj-snippet';
+      snippet.textContent = item.subagent.prompt;
+      const box = document.createElement('div');
+      box.className = 'children';
+      el.append(label, desc, makeCollapsible('Full prompt', snippet), box);
+      if (item.id) {
+        childBoxes.set(item.id, box);
+      }
+    } else {
+      const body = document.createElement('pre');
+      body.className = 'traj-input';
+      body.textContent = formatToolInput(item.input);
+      el.append(label, makeCollapsible('Input', body));
+    }
+    if (item.id) {
+      addGraphNode({
+        key: item.id,
+        parentKey: (item.parentId && graphNodes.has(item.parentId) ? item.parentId : currentTask && currentTask.key) || null,
+        kind: item.subagent ? 'branch' : 'tool',
+        label: item.name,
+        el,
+      });
+    }
+  } else if (item.kind === 'tool_result' && toolCards.has(item.toolUseId)) {
+    const card = toolCards.get(item.toolUseId);
+    setGraphStatus(item.toolUseId, item.isError ? 'err' : 'ok');
+    card.badge.className = 'badge ' + (item.isError ? 'err' : 'ok');
+    card.badge.textContent = item.isError ? 'failed' : 'finished';
+    // Shell and file-read output doesn't read as prose, so summarizing it
+    // just truncates the raw text in a confusing way — skip it for these.
+    const outSummary = NO_SUMMARY_TOOLS.has(card.name) ? '' : summarize5(item.text, 6);
+    if (outSummary) card.outputSummary.textContent = ' — ' + outSummary;
+    const box = renderFoldedResult(item.text, item.isError);
+    box.className = 'tool-result';
+    card.el.appendChild(makeCollapsible('Output', box, { startOpen: item.isError }));
+    output.scrollTop = output.scrollHeight;
+    return;
+  } else if (item.kind === 'tool_result' || item.kind === 'final_result') {
+    if (item.kind === 'tool_result') el.classList.add('traj-result');
+    if (item.kind === 'final_result') {
+      if (item.isError) el.classList.add('is-error');
+      // Mirror it on the right as the trunk's last pill, already resolved
+      // (no pending phase — the final result arrives complete).
+      const node = addGraphNode({ key: 'result:' + Date.now(), parentKey: (currentTask && currentTask.key) || null, kind: 'result', label: 'Result', el });
+      node.status = item.isError ? 'err' : 'ok';
+      renderGraph();
+    }
+    const resultBox = renderFoldedResult(item.text, item.isError);
+    const summary = item.kind === 'final_result' ? summarize5(item.text) : '';
+    const resultLabel = item.kind === 'final_result' ? 'Final result' : 'Result';
+    el.appendChild(makeCollapsible(resultLabel, resultBox, { startOpen: item.isError, summary }));
+  } else if (item.kind === 'stderr' || item.kind === 'raw') {
+    el.classList.add('traj-error');
+    el.textContent = item.text;
+  } else {
+    return; // unrecognized event kind, nothing to show
+  }
+
+  placeItem(el, item);
+  output.scrollTop = output.scrollHeight;
+}
+
+async function refreshStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const s = await res.json();
+    applyStatus(s);
+  } catch {}
+}
+
+const devDiffs = document.getElementById('devDiffs');
+const devDiffsList = document.getElementById('devDiffsList');
+
+function formatBytes(n) {
+  return n < 1024 ? n + ' B' : (n / 1024).toFixed(1) + ' KB';
+}
+
+// Loaded once on page load: the .patch files under diffs/, documenting
+// changes made to this app's own source (separate from a run's own
+// "Files changed" list, which covers whatever the run itself edited).
+async function loadDevDiffs() {
+  try {
+    const res = await fetch('/api/dev-diffs');
+    const { files } = await res.json();
+    devDiffsList.replaceChildren();
+    devDiffs.hidden = !files || !files.length;
+    if (!files) return;
+    for (const f of files) {
+      const row = document.createElement('div');
+      row.className = 'file-row';
+
+      const p = document.createElement('span');
+      p.className = 'path';
+      p.textContent = f.name;
+
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = formatBytes(f.size) + ' · ' + new Date(f.mtime).toLocaleString();
+
+      const link = document.createElement('a');
+      link.className = 'diff-link';
+      link.textContent = 'View diff ↗';
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.href = '/api/dev-diff?name=' + encodeURIComponent(f.name);
+
+      row.append(p, meta, link);
+      devDiffsList.appendChild(row);
+    }
+  } catch {}
+}
+loadDevDiffs();
+
+runBtn.addEventListener('click', async () => {
+  showError('');
+  const resume = hasSession;
+  const cwd = cwdInput.value.trim();
+  const prompt = promptInput.value.trim();
+  if (!cwd && !resume) return showError('Please enter a working directory.');
+  if (!prompt) return showError('Please enter a prompt.');
+
+  localRun = true;
+  if (!resume) {
+    resetTree();
+  }
+  setRunning(true);
+
+  const res = await fetch('/api/run', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cwd, prompt, resume, bypassPermissions: bypassInput.checked }),
+  });
+
+  if (res.ok) {
+    promptInput.value = '';
+  } else {
+    const err = await res.json().catch(() => ({}));
+    showError(err.error || `Request failed (${res.status})`);
+    setRunning(false);
+  }
+});
+
+newBtn.addEventListener('click', async () => {
+  showError('');
+  const res = await fetch('/api/reset', { method: 'POST' });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    showError(err.error || `Request failed (${res.status})`);
+  }
+});
+
+stopBtn.addEventListener('click', async () => {
+  await fetch('/api/stop', { method: 'POST' });
+});
+
+const es = new EventSource('/api/stream');
+
+es.addEventListener('status', (e) => {
+  const s = JSON.parse(e.data);
+  applyStatus(s);
+  if (!s.running) localRun = false;
+  if (s.running && !localRun && s.prompt && promptInput.value.trim() === '') {
+    // another client started a run; reflect it here
+    cwdInput.value = s.cwd || '';
+    promptInput.value = s.prompt || '';
+  }
+});
+
+es.addEventListener('reset', resetTree);
+
+es.addEventListener('trajectory', (e) => {
+  renderTrajectoryItem(JSON.parse(e.data));
+});
+
+refreshStatus();
+</script>
+</body>
+</html>
