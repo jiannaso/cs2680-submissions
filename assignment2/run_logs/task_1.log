@@ -1,0 +1,30 @@
+== task 1: instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+== image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c
+qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c: Pulling from jefzda/sweap-images
+Digest: sha256:5909cff71973743b14dd7127624a5e527b3c69e33ec18115287ce5c2b6881efd
+Status: Image is up to date for jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c
+docker.io/jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c
+== workdir in container: /app
+== harness interpreter: /usr/bin/python3.11 (Python 3.11.2)
+madsLoop finished: done
+== patch written to model_patch_instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171.diff
+diff --git a/core b/core
+new file mode 100644
+index 000000000..eaf334c0d
+Binary files /dev/null and b/core differ
+diff --git a/qutebrowser/components/hostblock.py b/qutebrowser/components/hostblock.py
+index 8a0174584..496593b5b 100644
+--- a/qutebrowser/components/hostblock.py
++++ b/qutebrowser/components/hostblock.py
+@@ -19,6 +19,7 @@
+ 
+ """Functions related to host blocking."""
+ 
++import itertools
+ import os.path
+ import posixpath
+ import zipfile
+@@ -37,7 +38,7 @@ from qutebrowser.api import (
+     qtutils,
+ )
+ from qutebrowser.components.utils import blockutils

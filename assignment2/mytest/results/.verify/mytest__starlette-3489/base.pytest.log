@@ -1,0 +1,417 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 158 items
+
+tests/middleware/test_cors.py .....F...............F..........           [ 20%]
+tests/test_endpoints.py ..FF..........FF........                         [ 35%]
+tests/test_routing.py .................................................. [ 67%]
+................................................                         [ 97%]
+tests/test_schemas.py FFFF                                               [100%]
+
+=================================== FAILURES ===================================
+________________ test_cors_preflight_allow_all_methods[asyncio] ________________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+
+    def test_cors_preflight_allow_all_methods(
+        test_client_factory: TestClientFactory,
+    ) -> None:
+        def homepage(request: Request) -> None:
+            pass  # pragma: no cover
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])],
+        )
+    
+        client = test_client_factory(app)
+    
+        for method in ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "QUERY"):
+            headers = {
+                "Origin": "https://example.org",
+                "Access-Control-Request-Method": method,
+            }
+            response = client.options("/", headers=headers)
+>           assert response.status_code == 200
+E           assert 400 == 200
+E            +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_cors.py:266: AssertionError
+_________________ test_cors_preflight_allow_all_methods[trio] __________________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+
+    def test_cors_preflight_allow_all_methods(
+        test_client_factory: TestClientFactory,
+    ) -> None:
+        def homepage(request: Request) -> None:
+            pass  # pragma: no cover
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"])],
+        )
+    
+        client = test_client_factory(app)
+    
+        for method in ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "QUERY"):
+            headers = {
+                "Origin": "https://example.org",
+                "Access-Control-Request-Method": method,
+            }
+            response = client.options("/", headers=headers)
+>           assert response.status_code == 200
+E           assert 400 == 200
+E            +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_cors.py:266: AssertionError
+___________________ test_http_endpoint_route_method[asyncio] ___________________
+
+client = <starlette.testclient.TestClient object at 0x7ffffc7a4a10>
+
+    def test_http_endpoint_route_method(client: TestClient) -> None:
+        response = client.post("/")
+        assert response.status_code == 405
+        assert response.text == "Method Not Allowed"
+>       assert response.headers["allow"] == "GET, QUERY"
+E       AssertionError: assert 'GET' == 'GET, QUERY'
+E         
+E         - GET, QUERY
+E         + GET
+
+tests/test_endpoints.py:50: AssertionError
+________________ test_http_endpoint_route_query_method[asyncio] ________________
+
+client = <starlette.testclient.TestClient object at 0x7ffffc830200>
+
+    def test_http_endpoint_route_query_method(client: TestClient) -> None:
+        response = client.request("QUERY", "/")
+>       assert response.status_code == 200
+E       assert 405 == 200
+E        +  where 405 = <Response [405 Method Not Allowed]>.status_code
+
+tests/test_endpoints.py:55: AssertionError
+____________________ test_http_endpoint_route_method[trio] _____________________
+
+client = <starlette.testclient.TestClient object at 0x7ffffc833f20>
+
+    def test_http_endpoint_route_method(client: TestClient) -> None:
+        response = client.post("/")
+        assert response.status_code == 405
+        assert response.text == "Method Not Allowed"
+>       assert response.headers["allow"] == "GET, QUERY"
+E       AssertionError: assert 'GET' == 'GET, QUERY'
+E         
+E         - GET, QUERY
+E         + GET
+
+tests/test_endpoints.py:50: AssertionError
+_________________ test_http_endpoint_route_query_method[trio] __________________
+
+client = <starlette.testclient.TestClient object at 0x7ffffc7a5310>
+
+    def test_http_endpoint_route_query_method(client: TestClient) -> None:
+        response = client.request("QUERY", "/")
+>       assert response.status_code == 200
+E       assert 405 == 200
+E        +  where 405 = <Response [405 Method Not Allowed]>.status_code
+
+tests/test_endpoints.py:55: AssertionError
+____________________________ test_schema_generation ____________________________
+
+    def test_schema_generation() -> None:
+        schema = schemas.get_schema(routes=app.routes)
+>       assert schema == {
+            "openapi": "3.2.0",
+            "info": {"title": "Example API", "version": "1.0"},
+            "paths": {
+                "/orgs": {
+                    "get": {
+                        "responses": {
+                            200: {
+                                "description": "A list of organisations.",
+                                "examples": [{"name": "Foo Corp."}, {"name": "Acme Ltd."}],
+                            }
+                        }
+                    },
+                    "post": {
+                        "responses": {
+                            200: {
+                                "description": "An organisation.",
+                                "examples": {"name": "Foo Corp."},
+                            }
+                        }
+                    },
+                    "query": {
+                        "responses": {
+                            200: {
+                                "description": "Organisations matching a query.",
+                                "examples": [{"name": "Foo Corp."}],
+                            }
+                        }
+                    },
+                },
+                "/regular-docstring-and-schema": {
+                    "get": {"responses": {200: {"description": "This is included in the schema."}}}
+                },
+                "/subapp/subapp-endpoint": {
+                    "get": {"responses": {200: {"description": "This endpoint is part of a subapp."}}}
+                },
+                "/subapp2/subapp-endpoint": {
+                    "get": {"responses": {200: {"description": "This endpoint is part of a subapp."}}}
+                },
+                "/users": {
+                    "get": {
+                        "responses": {
+                            200: {
+                                "description": "A list of users.",
+                                "examples": [{"username": "tom"}, {"username": "lucy"}],
+                            }
+                        }
+                    },
+                    "post": {"responses": {200: {"description": "A user.", "examples": {"username": "tom"}}}},
+                    "query": {
+                        "responses": {
+                            200: {
+                                "description": "Users matching a query.",
+                                "examples": [{"username": "tom"}],
+                            }
+                        }
+                    },
+                },
+                "/users/{id}": {
+                    "get": {
+                        "responses": {
+                            200: {
+                                "description": "A user.",
+                                "examples": {"username": "tom"},
+                            }
+                        }
+                    },
+                },
+            },
+        }
+E       AssertionError: assert {'openapi': '...a.'}}}}, ...}} == {'openapi': '...p.'}}}}, ...}}
+E         
+E         Omitting 2 identical items, use -vv to show
+E         Differing items:
+E         {'paths': {'/users/{id}': {'get': {'responses': {200: {'description': 'A user.', 'examples': {...}}}}}, '/users': {'ge...regular-docstring-and-schema': {'get': {'responses': {200: {'description': 'This is included in the schema.'}}}}, ...}} != {'paths': {'/orgs': {'get': {'responses': {200: {'description': 'A list of organisations.', 'examples': [...]}}}, 'pos...'/subapp2/subapp-endpoint': {'get': {'responses': {200: {'description': 'This endpoint is part of a subapp.'}}}}, ...}}
+E         Use -v to get more diff
+
+tests/test_schemas.py:157: AssertionError
+____________________ test_query_schema_requires_openapi_3_2 ____________________
+
+    def test_query_schema_requires_openapi_3_2() -> None:
+        schemas = SchemaGenerator({"openapi": "3.1.2", "info": {"title": "Example API", "version": "1.0"}})
+        schema = schemas.get_schema(routes=app.routes)
+    
+>       assert "query" not in schema["paths"]["/users"]
+E       AssertionError: assert 'query' not in {'get': {'responses': {200: {'description': 'A list of users.', 'examples': [{'username': 'tom'}, {'username': 'lucy'}...tom'}}}}, 'query': {'responses': {200: {'description': 'Users matching a query.', 'examples': [{'username': 'tom'}]}}}}
+
+tests/test_schemas.py:233: AssertionError
+________________________ test_schema_endpoint[asyncio] _________________________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+
+    def test_schema_endpoint(test_client_factory: TestClientFactory) -> None:
+        client = test_client_factory(app)
+        response = client.get("/schema")
+        assert response.headers["Content-Type"] == "application/vnd.oai.openapi"
+>       assert response.text.strip() == EXPECTED_SCHEMA.strip()
+E       AssertionError: assert 'info:\n  tit...username: tom' == 'info:\n  tit...username: tom'
+E         
+E         Skipping 358 identical leading characters in diff, use -v to show
+E           o Corp.
+E         -     query:
+E         -       responses:
+E         -         200:
+E         -           description: Organisations matching a query....
+E         
+E         ...Full output truncated (44 lines hidden), use '-vv' to show
+
+tests/test_schemas.py:312: AssertionError
+__________________________ test_schema_endpoint[trio] __________________________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+
+    def test_schema_endpoint(test_client_factory: TestClientFactory) -> None:
+        client = test_client_factory(app)
+        response = client.get("/schema")
+        assert response.headers["Content-Type"] == "application/vnd.oai.openapi"
+>       assert response.text.strip() == EXPECTED_SCHEMA.strip()
+E       AssertionError: assert 'info:\n  tit...username: tom' == 'info:\n  tit...username: tom'
+E         
+E         Skipping 358 identical leading characters in diff, use -v to show
+E           o Corp.
+E         -     query:
+E         -       responses:
+E         -         200:
+E         -           description: Organisations matching a query....
+E         
+E         ...Full output truncated (44 lines hidden), use '-vv' to show
+
+tests/test_schemas.py:312: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/middleware/test_cors.py::test_cors_allow_all[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_all_except_credentials[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_specific_origin[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_disallowed_preflight[asyncio]
+PASSED tests/middleware/test_cors.py::test_preflight_allows_request_origin_if_origins_wildcard_and_credentials_allowed[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_all_methods[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_origin_regex[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_origin_regex_fullmatch[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_defaults_to_origin[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_is_not_set_for_non_credentialed_request[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_is_properly_set_for_credentialed_request[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_allowed_origin_does_not_leak_between_requests[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_private_network_access_allowed[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_private_network_access_disallowed[asyncio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_all[trio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_all_except_credentials[trio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_specific_origin[trio]
+PASSED tests/middleware/test_cors.py::test_cors_disallowed_preflight[trio]
+PASSED tests/middleware/test_cors.py::test_preflight_allows_request_origin_if_origins_wildcard_and_credentials_allowed[trio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_all_methods[trio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_origin_regex[trio]
+PASSED tests/middleware/test_cors.py::test_cors_allow_origin_regex_fullmatch[trio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_defaults_to_origin[trio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_is_not_set_for_non_credentialed_request[trio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_is_properly_set_for_credentialed_request[trio]
+PASSED tests/middleware/test_cors.py::test_cors_vary_header_is_properly_set_when_allow_origins_is_not_wildcard[trio]
+PASSED tests/middleware/test_cors.py::test_cors_allowed_origin_does_not_leak_between_requests[trio]
+PASSED tests/middleware/test_cors.py::test_cors_private_network_access_allowed[trio]
+PASSED tests/middleware/test_cors.py::test_cors_private_network_access_disallowed[trio]
+PASSED tests/test_endpoints.py::test_http_endpoint_route[asyncio]
+PASSED tests/test_endpoints.py::test_http_endpoint_route_path_params[asyncio]
+PASSED tests/test_endpoints.py::test_http_endpoint_does_not_dispatch_non_verb_method[asyncio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_connect[asyncio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_bytes[asyncio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_json[asyncio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_json_binary[asyncio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_text[asyncio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_default[asyncio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_disconnect[asyncio]
+PASSED tests/test_endpoints.py::test_http_endpoint_route[trio]
+PASSED tests/test_endpoints.py::test_http_endpoint_route_path_params[trio]
+PASSED tests/test_endpoints.py::test_http_endpoint_does_not_dispatch_non_verb_method[trio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_connect[trio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_bytes[trio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_json[trio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_json_binary[trio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_receive_text[trio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_default[trio]
+PASSED tests/test_endpoints.py::test_websocket_endpoint_on_disconnect[trio]
+PASSED tests/test_routing.py::test_router[asyncio]
+PASSED tests/test_routing.py::test_route_converters[asyncio]
+PASSED tests/test_routing.py::test_router_add_route[asyncio]
+PASSED tests/test_routing.py::test_router_duplicate_path[asyncio]
+PASSED tests/test_routing.py::test_router_query_method[asyncio]
+PASSED tests/test_routing.py::test_router_add_websocket_route[asyncio]
+PASSED tests/test_routing.py::test_router_middleware[asyncio]
+PASSED tests/test_routing.py::test_protocol_switch[asyncio]
+PASSED tests/test_routing.py::test_mount_urls[asyncio]
+PASSED tests/test_routing.py::test_mount_at_root[asyncio]
+PASSED tests/test_routing.py::test_host_routing[asyncio]
+PASSED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[asyncio-api.example.org:evil]
+PASSED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[asyncio-[:::]]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[asyncio-api.example.org:000080]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[asyncio-api.example.org:65536]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[asyncio-api.example.org:100000]
+PASSED tests/test_routing.py::test_host_routing_ip_literals[asyncio]
+PASSED tests/test_routing.py::test_subdomain_routing[asyncio]
+PASSED tests/test_routing.py::test_url_for_with_root_path[asyncio]
+PASSED tests/test_routing.py::test_url_for_with_root_path_ending_with_slash[asyncio]
+PASSED tests/test_routing.py::test_standalone_route_matches[asyncio]
+PASSED tests/test_routing.py::test_standalone_route_does_not_match[asyncio]
+PASSED tests/test_routing.py::test_standalone_ws_route_matches[asyncio]
+PASSED tests/test_routing.py::test_standalone_ws_route_does_not_match[asyncio]
+PASSED tests/test_routing.py::test_lifespan_state_unsupported[asyncio]
+PASSED tests/test_routing.py::test_lifespan_state_async_cm[asyncio]
+PASSED tests/test_routing.py::test_raise_on_startup[asyncio]
+PASSED tests/test_routing.py::test_raise_on_shutdown[asyncio]
+PASSED tests/test_routing.py::test_partial_async_endpoint[asyncio]
+PASSED tests/test_routing.py::test_partial_async_ws_endpoint[asyncio]
+PASSED tests/test_routing.py::test_base_route_middleware[asyncio-app0]
+PASSED tests/test_routing.py::test_base_route_middleware[asyncio-app1]
+PASSED tests/test_routing.py::test_base_route_middleware[asyncio-app2]
+PASSED tests/test_routing.py::test_add_route_to_app_after_mount[asyncio]
+PASSED tests/test_routing.py::test_exception_on_mounted_apps[asyncio]
+PASSED tests/test_routing.py::test_mounted_middleware_does_not_catch_exception[asyncio]
+PASSED tests/test_routing.py::test_websocket_route_middleware[asyncio]
+PASSED tests/test_routing.py::test_paths_with_root_path[asyncio]
+PASSED tests/test_routing.py::test_router[trio]
+PASSED tests/test_routing.py::test_route_converters[trio]
+PASSED tests/test_routing.py::test_router_add_route[trio]
+PASSED tests/test_routing.py::test_router_duplicate_path[trio]
+PASSED tests/test_routing.py::test_router_query_method[trio]
+PASSED tests/test_routing.py::test_router_add_websocket_route[trio]
+PASSED tests/test_routing.py::test_router_middleware[trio]
+PASSED tests/test_routing.py::test_protocol_switch[trio]
+PASSED tests/test_routing.py::test_mount_urls[trio]
+PASSED tests/test_routing.py::test_mount_at_root[trio]
+PASSED tests/test_routing.py::test_host_routing[trio]
+PASSED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[trio-api.example.org:evil]
+PASSED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[trio-[:::]]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[trio-api.example.org:000080]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[trio-api.example.org:65536]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[trio-api.example.org:100000]
+PASSED tests/test_routing.py::test_host_routing_ip_literals[trio]
+PASSED tests/test_routing.py::test_subdomain_routing[trio]
+PASSED tests/test_routing.py::test_url_for_with_root_path[trio]
+PASSED tests/test_routing.py::test_url_for_with_root_path_ending_with_slash[trio]
+PASSED tests/test_routing.py::test_standalone_route_matches[trio]
+PASSED tests/test_routing.py::test_standalone_route_does_not_match[trio]
+PASSED tests/test_routing.py::test_standalone_ws_route_matches[trio]
+PASSED tests/test_routing.py::test_standalone_ws_route_does_not_match[trio]
+PASSED tests/test_routing.py::test_lifespan_state_unsupported[trio]
+PASSED tests/test_routing.py::test_lifespan_state_async_cm[trio]
+PASSED tests/test_routing.py::test_raise_on_startup[trio]
+PASSED tests/test_routing.py::test_raise_on_shutdown[trio]
+PASSED tests/test_routing.py::test_partial_async_endpoint[trio]
+PASSED tests/test_routing.py::test_partial_async_ws_endpoint[trio]
+PASSED tests/test_routing.py::test_base_route_middleware[trio-app0]
+PASSED tests/test_routing.py::test_base_route_middleware[trio-app1]
+PASSED tests/test_routing.py::test_base_route_middleware[trio-app2]
+PASSED tests/test_routing.py::test_add_route_to_app_after_mount[trio]
+PASSED tests/test_routing.py::test_exception_on_mounted_apps[trio]
+PASSED tests/test_routing.py::test_mounted_middleware_does_not_catch_exception[trio]
+PASSED tests/test_routing.py::test_websocket_route_middleware[trio]
+PASSED tests/test_routing.py::test_paths_with_root_path[trio]
+PASSED tests/test_routing.py::test_url_path_for
+PASSED tests/test_routing.py::test_url_for
+PASSED tests/test_routing.py::test_reverse_mount_urls
+PASSED tests/test_routing.py::test_host_reverse_urls
+PASSED tests/test_routing.py::test_subdomain_reverse_urls
+PASSED tests/test_routing.py::test_url_for_with_double_mount
+PASSED tests/test_routing.py::test_duplicated_param_names
+PASSED tests/test_routing.py::test_route_name[function]
+PASSED tests/test_routing.py::test_route_name[method]
+PASSED tests/test_routing.py::test_route_name[classmethod]
+PASSED tests/test_routing.py::test_route_name[staticmethod]
+PASSED tests/test_routing.py::test_route_name[object]
+PASSED tests/test_routing.py::test_route_name[lambda]
+PASSED tests/test_routing.py::test_mount_routes_with_middleware_url_path_for
+PASSED tests/test_routing.py::test_mount_asgi_app_with_middleware_url_path_for
+PASSED tests/test_routing.py::test_route_repr
+PASSED tests/test_routing.py::test_route_repr_without_methods
+PASSED tests/test_routing.py::test_websocket_route_repr
+PASSED tests/test_routing.py::test_mount_repr
+PASSED tests/test_routing.py::test_mount_named_repr
+PASSED tests/test_routing.py::test_host_repr
+PASSED tests/test_routing.py::test_host_named_repr
+FAILED tests/middleware/test_cors.py::test_cors_preflight_allow_all_methods[asyncio]
+FAILED tests/middleware/test_cors.py::test_cors_preflight_allow_all_methods[trio]
+FAILED tests/test_endpoints.py::test_http_endpoint_route_method[asyncio] - As...
+FAILED tests/test_endpoints.py::test_http_endpoint_route_query_method[asyncio]
+FAILED tests/test_endpoints.py::test_http_endpoint_route_method[trio] - Asser...
+FAILED tests/test_endpoints.py::test_http_endpoint_route_query_method[trio]
+FAILED tests/test_schemas.py::test_schema_generation - AssertionError: assert...
+FAILED tests/test_schemas.py::test_query_schema_requires_openapi_3_2 - Assert...
+FAILED tests/test_schemas.py::test_schema_endpoint[asyncio] - AssertionError:...
+FAILED tests/test_schemas.py::test_schema_endpoint[trio] - AssertionError: as...
+======================== 10 failed, 148 passed in 0.93s ========================

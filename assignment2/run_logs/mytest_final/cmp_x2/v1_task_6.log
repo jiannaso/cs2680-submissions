@@ -1,0 +1,9 @@
+== task 6: mytest__schedule-604
+== image: madsloop-mytest:schedule-604
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:schedule-604
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+[madsLoop] fatal: TypeError: 'NoneType' object is not subscriptable
+madsLoop finished: error
+== patch written to model_patch_mytest__schedule-604.diff

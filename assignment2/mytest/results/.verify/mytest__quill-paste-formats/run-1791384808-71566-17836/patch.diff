@@ -1,0 +1,183 @@
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..ef137b7 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -392,7 +392,8 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
++function matchAlias(format: string, node: Element, delta: Delta, scroll: ScrollBlot) {
++  if (scroll.query(format, Scope.BLOT) == null) return delta;
+   return applyFormat(delta, format, true);
+ }
+ 
+@@ -412,12 +413,15 @@ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+       }
+       attr = ATTRIBUTE_ATTRIBUTORS[name];
+       if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+-        formats[attr.attrName] = attr.value(node) || undefined;
++        if (scroll.query(attr, Scope.ATTRIBUTE)) {
++          formats[attr.attrName] = attr.value(node) || undefined;
++        }
+       }
+       attr = STYLE_ATTRIBUTORS[name];
+       if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+-        attr = STYLE_ATTRIBUTORS[name];
+-        formats[attr.attrName] = attr.value(node) || undefined;
++        if (scroll.query(attr, Scope.ATTRIBUTE)) {
++          formats[attr.attrName] = attr.value(node) || undefined;
++        }
+       }
+     });
+   if (Object.keys(formats).length > 0) {
+@@ -447,8 +451,11 @@ function matchBlot(node: Node, delta: Delta, scroll: ScrollBlot) {
+     }
+     // @ts-expect-error
+     if (typeof match.formats === 'function') {
+-      // @ts-expect-error
+-      return applyFormat(delta, match.blotName, match.formats(node, scroll));
++      const formatValue = match.formats(node, scroll);
++      if (scroll.query(match.blotName, Scope.BLOT) != null) {
++        // @ts-expect-error
++        return applyFormat(delta, match.blotName, formatValue);
++      }
+     }
+   }
+   return delta;
+@@ -463,8 +470,15 @@ function matchBreak(node: Node, delta: Delta) {
+ 
+ function matchCodeBlock(node: Node, delta: Delta, scroll: ScrollBlot) {
+   const match = scroll.query('code-block');
++  if (match == null) {
++    // Strip trailing newline that matchNewline added for the <pre> element
++    if (deltaEndsWith(delta, '\n')) {
++      return delta.compose(new Delta().retain(delta.length() - 1).delete(1));
++    }
++    return delta;
++  }
+   // @ts-expect-error
+-  const language = match ? match.formats(node, scroll) : true;
++  const language = match.formats(node, scroll);
+   return applyFormat(delta, 'code-block', language);
+ }
+ 
+@@ -532,7 +546,7 @@ function matchNewline(node: Node, delta: Delta, scroll: ScrollBlot) {
+   return delta;
+ }
+ 
+-function matchStyles(node: HTMLElement, delta: Delta) {
++function matchStyles(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+   const formats: Record<string, unknown> = {};
+   const style: Partial<CSSStyleDeclaration> = node.style || {};
+   if (style.fontStyle === 'italic') {
+@@ -551,8 +565,17 @@ function matchStyles(node: HTMLElement, delta: Delta) {
+   ) {
+     formats.bold = true;
+   }
+-  if (Object.keys(formats).length > 0) {
+-    delta = applyFormat(delta, formats);
++  const supportedFormats = Object.keys(formats).reduce(
++    (supported: Record<string, unknown>, key) => {
++      if (scroll.query(key, Scope.BLOT) != null) {
++        supported[key] = formats[key];
++      }
++      return supported;
++    },
++    {},
++  );
++  if (Object.keys(supportedFormats).length > 0) {
++    delta = applyFormat(delta, supportedFormats);
+   }
+   // @ts-expect-error
+   if (parseFloat(style.textIndent || 0) > 0) {
+diff --git a/packages/quill/test/unit/modules/clipboard_unsupported.spec.ts b/packages/quill/test/unit/modules/clipboard_unsupported.spec.ts
+new file mode 100644
+index 0000000..48cd56d
+--- /dev/null
++++ b/packages/quill/test/unit/modules/clipboard_unsupported.spec.ts
+@@ -0,0 +1,84 @@
++import Delta from 'quill-delta';
++import { describe, expect, test } from 'vitest';
++import Quill from '../../../src/core';
++import Bold from '../../../src/formats/bold';
++import Italic from '../../../src/formats/italic';
++import Strike from '../../../src/formats/strike';
++import { createRegistry } from '../__helpers__/factory';
++
++// Test: unsupported format should be dropped when not registered
++describe('clipboard unsupported formats', () => {
++  test('strike without strike format registered', () => {
++    const container = document.body.appendChild(document.createElement('div'));
++    // Register Bold and Italic but NOT Strike
++    const registry = createRegistry([Bold, Italic]);
++    const quill = new Quill(container, { registry });
++    quill.setSelection(2, 5);
++    
++    const delta = quill.clipboard.convert({ html: '<strike>Test</strike>' });
++    // Should be plain text, no strike format (inline element, no trailing newline)
++    expect(delta).toEqual(new Delta().insert('Test'));
++  });
++
++  test('bold without bold format registered', () => {
++    const container = document.body.appendChild(document.createElement('div'));
++    // Don't register Bold
++    const registry = createRegistry([]);
++    const quill = new Quill(container, { registry });
++    quill.setSelection(2, 5);
++    
++    const delta = quill.clipboard.convert({ html: '<b>Bold</b>' });
++    // Should be plain text, no bold format (inline element, no trailing newline)
++    expect(delta).toEqual(new Delta().insert('Bold'));
++  });
++
++  test('italic without italic format registered', () => {
++    const container = document.body.appendChild(document.createElement('div'));
++    // Don't register Italic
++    const registry = createRegistry([]);
++    const quill = new Quill(container, { registry });
++    quill.setSelection(2, 5);
++    
++    const delta = quill.clipboard.convert({ html: '<i>Italic</i>' });
++    // Should be plain text, no italic format (inline element, no trailing newline)
++    expect(delta).toEqual(new Delta().insert('Italic'));
++  });
++
++  test('code-block without code-block format registered', () => {
++    const container = document.body.appendChild(document.createElement('div'));
++    // Don't register code-block
++    const registry = createRegistry([]);
++    const quill = new Quill(container, { registry });
++    quill.setSelection(2, 5);
++    
++    const delta = quill.clipboard.convert({ html: '<pre> 01 \n 23 </pre>' });
++    // Should be plain text, no code-block format, no trailing newline
++    expect(delta).toEqual(new Delta().insert(' 01 \n 23 '));
++  });
++
++  test('direction without direction format registered', () => {
++    const container = document.body.appendChild(document.createElement('div'));
++    // Don't register any direction attributor
++    const registry = createRegistry([]);
++    const quill = new Quill(container, { registry });
++    quill.setSelection(2, 5);
++    
++    const delta = quill.clipboard.convert({ html: '<p style="direction:rtl;">Test</p>' });
++    // Should be plain text, no direction format (paragraph not registered, so no trailing newline)
++    expect(delta).toEqual(new Delta().insert('Test'));
++  });
++
++  test('color without color format registered', () => {
++    const container = document.body.appendChild(document.createElement('div'));
++    // Don't register any color attributor
++    const registry = createRegistry([]);
++    const quill = new Quill(container, { registry });
++    quill.setSelection(2, 5);
++    
++    const delta = quill.clipboard.convert({ 
++      html: '<span style="color: red;"><span style="color: blue;">Test</span></span>' 
++    });
++    // Should be plain text, no color format
++    expect(delta).toEqual(new Delta().insert('Test'));
++  });
++});

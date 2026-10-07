@@ -1,0 +1,47 @@
+diff --git a/boltons/ioutils.py b/boltons/ioutils.py
+index bfcaf3f..2eaed7f 100644
+--- a/boltons/ioutils.py
++++ b/boltons/ioutils.py
+@@ -309,6 +309,7 @@ class SpooledBytesIO(SpooledIOBase):
+         if self.tell() + len(s) >= self._max_size:
+             self.rollover()
+         self.buffer.write(s)
++        return len(s)
+ 
+     def seek(self, pos, mode=0):
+         self._checkClosed()
+@@ -403,6 +404,7 @@ class SpooledStringIO(SpooledIOBase):
+             self.rollover()
+         self.buffer.write(s.encode('utf-8'))
+         self._tell = current_pos + len(s)
++        return len(s)
+ 
+     def _traverse_codepoints(self, current_position, n):
+         """Traverse from current position to the right n codepoints"""
+@@ -435,14 +437,24 @@ class SpooledStringIO(SpooledIOBase):
+         self._checkClosed()
+         # Seek to position from the start of the file
+         if mode == os.SEEK_SET:
++            if pos < 0:
++                raise ValueError("Negative position")
+             self.buffer.seek(0)
+             self._traverse_codepoints(0, pos)
+             self._tell = pos
+         # Seek to new position relative to current position
+         elif mode == os.SEEK_CUR:
+             start_pos = self.tell()
+-            self._traverse_codepoints(self.tell(), pos)
+-            self._tell = start_pos + pos
++            new_pos = start_pos + pos
++            if pos < 0 and new_pos < 0:
++                raise ValueError("Negative position")
++            if pos < 0:
++                # For backward seeks, reset to start and read to target
++                self.buffer.seek(0)
++                self._traverse_codepoints(0, new_pos)
++            else:
++                self._traverse_codepoints(self.tell(), pos)
++            self._tell = new_pos
+         elif mode == os.SEEK_END:
+             self.buffer.seek(0)
+             dest_position = self.len - pos

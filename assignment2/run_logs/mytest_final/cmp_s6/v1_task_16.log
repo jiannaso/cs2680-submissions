@@ -1,0 +1,28 @@
+== task 16: mytest__react-use-uselatest
+== image: madsloop-mytest:react-use-uselatest
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:react-use-uselatest
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__react-use-uselatest.diff
+diff --git a/src/index.ts b/src/index.ts
+index 6d01816..9a6e8da 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -37,6 +37,7 @@ export { default as useIntersection } from './useIntersection';
+ export { default as useInterval } from './useInterval';
+ export { default as useIsomorphicLayoutEffect } from './useIsomorphicLayoutEffect';
+ export { default as useKey } from './useKey';
++export { default as useLatest } from './useLatest';
+ export { default as createBreakpoint } from './createBreakpoint';
+ // not exported because of peer dependency
+ // export { default as useKeyboardJs } from './useKeyboardJs';
+diff --git a/src/useLatest.ts b/src/useLatest.ts
+new file mode 100644
+index 0000000..7153899
+--- /dev/null
++++ b/src/useLatest.ts
+@@ -0,0 +1,13 @@
++import { useEffect, useRef } from 'react';
++

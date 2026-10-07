@@ -1,0 +1,8 @@
+== task 16: mytest__react-use-uselatest
+== image: madsloop-mytest:react-use-uselatest
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:react-use-uselatest
+== workdir in container: /app
+== no Python >=3.10 in image; bootstrapping one with uv
+/usr/bin/python3: No module named pip
+/bin/bash: line 55: pip: command not found

@@ -1,0 +1,30 @@
+== task 6: mytest__schedule-604
+== image: madsloop-mytest:schedule-604
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:schedule-604
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+[madsLoop] prompt at 83311 tokens; elided 93343 chars of old tool output
+[madsLoop] prompt at 81377 tokens; elided 29399 chars of old tool output
+madsLoop finished: time_limit
+== patch written to model_patch_mytest__schedule-604.diff
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index de082c1..858d1dc 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -750,18 +750,14 @@ class Job:
+             self.next_run = self.next_run.replace(**kwargs)  # type: ignore
+ 
+             if self.at_time_zone is not None:
+-                # Convert next_run from the expected timezone into the local time
+-                # self.next_run is a naive datetime so after conversion remove tzinfo
+-                self.next_run = (
+-                    self.at_time_zone.localize(self.next_run)
+-                    .astimezone()
+-                    .replace(tzinfo=None)
+-                )
++                self._set_next_run_with_timezone()
+ 
+             # Make sure we run at the specified time *today* (or *this hour*)
+             # as well. This accounts for when a job takes so long it finished
+             # in the next period.

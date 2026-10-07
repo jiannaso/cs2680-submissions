@@ -1,0 +1,80 @@
+diff --git a/starlette/middleware/trustedhost.py b/starlette/middleware/trustedhost.py
+index 98451e2..3844a41 100644
+--- a/starlette/middleware/trustedhost.py
++++ b/starlette/middleware/trustedhost.py
+@@ -37,7 +37,32 @@ class TrustedHostMiddleware:
+             return
+ 
+         headers = Headers(scope=scope)
+-        host = headers.get("host", "").split(":")[0]
++        host = headers.get("host", "")
++        # Strip port from host header
++        if host.startswith("["):
++            # Bracketed IPv6 address like [::1] or [::1]:8000
++            bracket_end = host.find("]")
++            if bracket_end == -1:
++                # No closing bracket - malformed
++                host = ""
++            else:
++                rest = host[bracket_end + 1:] if bracket_end + 1 <= len(host) else ""
++                if rest == "":
++                    # No port suffix
++                    host = host[: bracket_end + 1]
++                elif rest.startswith(":"):
++                    # Has a port suffix; validate it's a valid integer port
++                    port_str = rest[1:]
++                    if port_str == "" or not port_str.isdigit():
++                        # Empty or non-numeric port
++                        host = ""
++                    else:
++                        host = host[: bracket_end + 1]
++                else:
++                    # Non-port suffix after bracket - malformed
++                    host = ""
++        else:
++            host = host.split(":")[0]
+         is_valid_host = False
+         found_www_redirect = False
+         for pattern in self.allowed_hosts:
+diff --git a/starlette/testclient.py b/starlette/testclient.py
+index 23ca964..755cd2e 100644
+--- a/starlette/testclient.py
++++ b/starlette/testclient.py
+@@ -231,7 +231,16 @@ class _TestClientTransport(httpx.BaseTransport):
+ 
+         default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+ 
+-        if ":" in netloc:
++        if netloc.startswith("["):
++            # Bracketed IPv6 address like [::1] or [::1]:8000
++            bracket_end = netloc.index("]")
++            host = netloc[1:bracket_end]
++            rest = netloc[bracket_end + 1:]
++            if rest.startswith(":"):
++                port = int(rest[1:])
++            else:
++                port = default_port
++        elif ":" in netloc:
+             host, port_string = netloc.split(":", 1)
+             port = int(port_string)
+         else:
+@@ -242,9 +251,17 @@ class _TestClientTransport(httpx.BaseTransport):
+         if "host" in request.headers:
+             headers: list[tuple[bytes, bytes]] = []
+         elif port == default_port:  # pragma: no cover
+-            headers = [(b"host", host.encode())]
++            if host.count(":"):
++                # IPv6 address - needs brackets
++                headers = [(b"host", (f"[{host}]").encode())]
++            else:
++                headers = [(b"host", host.encode())]
+         else:  # pragma: no cover
+-            headers = [(b"host", (f"{host}:{port}").encode())]
++            if host.count(":"):
++                # IPv6 address - needs brackets
++                headers = [(b"host", (f"[{host}]:{port}").encode())]
++            else:
++                headers = [(b"host", (f"{host}:{port}").encode())]
+ 
+         # Include other request headers.
+         headers += [(key.lower().encode(), value.encode()) for key, value in request.headers.multi_items()]

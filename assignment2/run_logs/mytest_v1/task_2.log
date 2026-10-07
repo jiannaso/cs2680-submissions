@@ -1,0 +1,28 @@
+== task 2: mytest__python-dotenv-698
+== image: madsloop-mytest:python-dotenv-698
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:python-dotenv-698
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__python-dotenv-698.diff
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index 79613e2..bd5bb53 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -190,7 +190,7 @@ def run(ctx: click.Context, override: bool, commandline: tuple[str, ...]) -> Non
+         )
+     dotenv_as_dict = {
+         k: v
+-        for (k, v) in dotenv_values(file).items()
++        for (k, v) in dotenv_values(file, override=override).items()
+         if v is not None and (override or k not in os.environ)
+     }
+ 
+diff --git a/src/dotenv/main.py b/src/dotenv/main.py
+index 3123690..7b60cb0 100644
+--- a/src/dotenv/main.py
++++ b/src/dotenv/main.py
+@@ -441,6 +441,7 @@ def dotenv_values(
+     verbose: bool = False,
+     interpolate: bool = True,

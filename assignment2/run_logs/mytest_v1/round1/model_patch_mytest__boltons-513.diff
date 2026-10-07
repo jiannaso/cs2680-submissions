@@ -1,0 +1,151 @@
+diff --git a/boltons/ioutils.py b/boltons/ioutils.py
+index bfcaf3f..5d076ba 100644
+--- a/boltons/ioutils.py
++++ b/boltons/ioutils.py
+@@ -301,14 +301,16 @@ class SpooledBytesIO(SpooledIOBase):
+ 
+     def write(self, s):
+         self._checkClosed()
+-        if not isinstance(s, bytes):
++        if not isinstance(s, (bytes, bytearray, memoryview)):
+             raise TypeError("bytes expected, got {}".format(
+                 type(s).__name__
+             ))
+ 
+-        if self.tell() + len(s) >= self._max_size:
++        n = len(s)
++        if self.tell() + n >= self._max_size:
+             self.rollover()
+         self.buffer.write(s)
++        return n
+ 
+     def seek(self, pos, mode=0):
+         self._checkClosed()
+@@ -399,59 +401,84 @@ class SpooledStringIO(SpooledIOBase):
+                 type(s).__name__
+             ))
+         current_pos = self.tell()
+-        if self.buffer.tell() + len(s.encode('utf-8')) >= self._max_size:
++        encoded = s.encode('utf-8')
++        if self.buffer.tell() + len(encoded) >= self._max_size:
+             self.rollover()
+-        self.buffer.write(s.encode('utf-8'))
++        self.buffer.write(encoded)
+         self._tell = current_pos + len(s)
++        return len(s)
+ 
+     def _traverse_codepoints(self, current_position, n):
+-        """Traverse from current position to the right n codepoints"""
+-        dest = current_position + n
+-        while True:
+-            if current_position == dest:
+-                # By chance we've landed on the right position, break
+-                break
+-
+-            # If the read would take us past the intended position then
+-            # seek only enough to cover the offset
+-            if current_position + READ_CHUNK_SIZE > dest:
+-                self.read(dest - current_position)
+-                break
+-            else:
+-                ret = self.read(READ_CHUNK_SIZE)
+-
+-            # Increment our current position
+-            current_position += READ_CHUNK_SIZE
+-
+-            # If we kept reading but there was nothing here, break
+-            # as we are at the end of the file
+-            if not ret:
+-                break
+-
++        """Traverse from current position by n codepoints (forward or backward)"""
++        if n >= 0:
++            dest = current_position + n
++            while current_position < dest:
++                read_n = min(dest - current_position, READ_CHUNK_SIZE)
++                ret = self.buffer.reader.read(read_n, read_n)
++                current_position += len(ret)
++                if not ret:
++                    break
++        else:
++            # For negative n, we need to seek backwards.
++            # Since the underlying buffer tracks byte positions (not character
++            # positions), we seek to the start and re-read.
++            dest = current_position + n
++            if dest < 0:
++                raise ValueError(
++                    f"Negative seek position {dest}"
++                )
++            buf = self.buffer
++            buf.seek(0)
++            new_pos = 0
++            while new_pos < dest:
++                read_n = min(dest - new_pos, READ_CHUNK_SIZE)
++                ret = buf.reader.read(read_n, read_n)
++                if not ret:
++                    break
++                new_pos += len(ret)
++            self._tell = dest
++            return dest
+         return dest
+ 
+     def seek(self, pos, mode=0):
+         """Traverse from offset to the specified codepoint"""
+         self._checkClosed()
++        start_pos = self.tell()
+         # Seek to position from the start of the file
+-        if mode == os.SEEK_SET:
+-            self.buffer.seek(0)
+-            self._traverse_codepoints(0, pos)
+-            self._tell = pos
+-        # Seek to new position relative to current position
+-        elif mode == os.SEEK_CUR:
+-            start_pos = self.tell()
+-            self._traverse_codepoints(self.tell(), pos)
+-            self._tell = start_pos + pos
+-        elif mode == os.SEEK_END:
+-            self.buffer.seek(0)
+-            dest_position = self.len - pos
+-            self._traverse_codepoints(0, dest_position)
+-            self._tell = dest_position
+-        else:
+-            raise ValueError(
+-                f"Invalid whence ({mode}, should be 0, 1, or 2)"
+-            )
++        try:
++            if mode == os.SEEK_SET:
++                if pos < 0:
++                    raise ValueError(
++                        f"Negative seek position {pos}"
++                    )
++                self.buffer.seek(0)
++                self._traverse_codepoints(0, pos)
++                self._tell = pos
++            # Seek to new position relative to current position
++            elif mode == os.SEEK_CUR:
++                new_pos = start_pos + pos
++                if new_pos < 0:
++                    raise ValueError(
++                        f"Negative seek position {new_pos}"
++                    )
++                self._traverse_codepoints(start_pos, pos)
++                self._tell = new_pos
++            elif mode == os.SEEK_END:
++                self.buffer.seek(0)
++                dest_position = self.len - pos
++                if dest_position < 0:
++                    raise ValueError(
++                        f"Negative seek position {dest_position}"
++                    )
++                self._traverse_codepoints(0, dest_position)
++                self._tell = dest_position
++            else:
++                raise ValueError(
++                    f"Invalid whence ({mode}, should be 0, 1, or 2)"
++                )
++        except ValueError:
++            self._tell = start_pos
++            raise
+         return self.tell()
+ 
+     def readline(self, length=None):

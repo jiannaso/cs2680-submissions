@@ -1,0 +1,358 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: typeguard-4.6.0
+collected 134 items
+
+tests/test_asyncio.py ........Fs..............                           [ 17%]
+tests/test_tenacity.py ................................................. [ 54%]
+...........................FFFF..............................            [100%]
+
+=================================== FAILURES ===================================
+_______________ TestAsyncEnabled.test_enabled_false_skips_retry ________________
+
+self = <tests.test_asyncio.TestAsyncEnabled testMethod=test_enabled_false_skips_retry>
+
+    @asynctest
+    async def test_enabled_false_skips_retry(self) -> None:
+        """When enabled=False, async function is called directly without retrying."""
+        call_count = 0
+    
+>       @retry(enabled=False, stop=stop_after_attempt(3))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_asyncio.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+f = <function TestAsyncEnabled.test_enabled_false_skips_retry.<locals>.always_fails at 0x7ffffcb4bce0>
+
+    def wrap(f: t.Callable[P, R]) -> _RetryDecorated[P, R]:
+        if isinstance(f, retry_base):
+            warnings.warn(
+                f"Got retry_base instance ({f.__class__.__name__}) as callable argument, "
+                f"this will probably hang indefinitely (did you mean retry={f.__class__.__name__}(...)?)",
+                stacklevel=2,
+            )
+        r: BaseRetrying
+        sleep = dkw.get("sleep")
+        if _utils.is_coroutine_callable(f) or (
+            sleep is not None and _utils.is_coroutine_callable(sleep)
+        ):
+>           r = AsyncRetrying(*dargs, **dkw)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: AsyncRetrying.__init__() got an unexpected keyword argument 'enabled'
+
+tenacity/__init__.py:712: TypeError
+__________________ TestEnabled.test_enabled_false_skips_retry __________________
+
+self = <tests.test_tenacity.TestEnabled object at 0x7ffffd379010>
+
+    def test_enabled_false_skips_retry(self) -> None:
+        """When enabled=False, the function is called directly without retrying."""
+        call_count = 0
+    
+>       @retry(enabled=False, stop=tenacity.stop_after_attempt(3))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:1413: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+f = <function TestEnabled.test_enabled_false_skips_retry.<locals>.always_fails at 0x7ffffcbb36a0>
+
+    def wrap(f: t.Callable[P, R]) -> _RetryDecorated[P, R]:
+        if isinstance(f, retry_base):
+            warnings.warn(
+                f"Got retry_base instance ({f.__class__.__name__}) as callable argument, "
+                f"this will probably hang indefinitely (did you mean retry={f.__class__.__name__}(...)?)",
+                stacklevel=2,
+            )
+        r: BaseRetrying
+        sleep = dkw.get("sleep")
+        if _utils.is_coroutine_callable(f) or (
+            sleep is not None and _utils.is_coroutine_callable(sleep)
+        ):
+            r = AsyncRetrying(*dargs, **dkw)
+        elif (
+            tornado
+            and hasattr(tornado.gen, "is_coroutine_function")
+            and tornado.gen.is_coroutine_function(f)
+        ):
+            r = TornadoRetrying(*dargs, **dkw)
+        else:
+>           r = Retrying(*dargs, **dkw)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: BaseRetrying.__init__() got an unexpected keyword argument 'enabled'
+
+tenacity/__init__.py:720: TypeError
+_____________ TestEnabled.test_enabled_false_preserves_attributes ______________
+
+self = <tests.test_tenacity.TestEnabled object at 0x7ffffd378890>
+
+    def test_enabled_false_preserves_attributes(self) -> None:
+        """When enabled=False, .retry, .retry_with, .statistics are still available."""
+    
+>       @retry(enabled=False, stop=tenacity.stop_after_attempt(3))
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:1426: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+f = <function TestEnabled.test_enabled_false_preserves_attributes.<locals>.my_func at 0x7ffffcbb3ce0>
+
+    def wrap(f: t.Callable[P, R]) -> _RetryDecorated[P, R]:
+        if isinstance(f, retry_base):
+            warnings.warn(
+                f"Got retry_base instance ({f.__class__.__name__}) as callable argument, "
+                f"this will probably hang indefinitely (did you mean retry={f.__class__.__name__}(...)?)",
+                stacklevel=2,
+            )
+        r: BaseRetrying
+        sleep = dkw.get("sleep")
+        if _utils.is_coroutine_callable(f) or (
+            sleep is not None and _utils.is_coroutine_callable(sleep)
+        ):
+            r = AsyncRetrying(*dargs, **dkw)
+        elif (
+            tornado
+            and hasattr(tornado.gen, "is_coroutine_function")
+            and tornado.gen.is_coroutine_function(f)
+        ):
+            r = TornadoRetrying(*dargs, **dkw)
+        else:
+>           r = Retrying(*dargs, **dkw)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: BaseRetrying.__init__() got an unexpected keyword argument 'enabled'
+
+tenacity/__init__.py:720: TypeError
+________________ TestEnabled.test_enabled_false_via_retry_with _________________
+
+self = <tests.test_tenacity.TestEnabled object at 0x7ffffd37a450>
+
+    def test_enabled_false_via_retry_with(self) -> None:
+        """retry_with(enabled=False) disables retrying."""
+        call_count = 0
+    
+        @retry(stop=tenacity.stop_after_attempt(3))
+        def always_fails() -> None:
+            nonlocal call_count
+            call_count += 1
+            raise ValueError("fail")
+    
+>       disabled = always_fails.retry_with(enabled=False)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:1445: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+args = (), kwargs = {'enabled': False}
+
+    def retry_with(*args: t.Any, **kwargs: t.Any) -> "_RetryDecorated[P, R]":
+>       return self.copy(*args, **kwargs).wraps(f)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: BaseRetrying.copy() got an unexpected keyword argument 'enabled'
+
+tenacity/__init__.py:354: TypeError
+________________ TestEnabled.test_enabled_true_retries_normally ________________
+
+self = <tests.test_tenacity.TestEnabled object at 0x7ffffd37a720>
+
+    def test_enabled_true_retries_normally(self) -> None:
+        """When enabled=True (default), retrying works as usual."""
+        call_count = 0
+    
+>       @retry(enabled=True, stop=tenacity.stop_after_attempt(3), reraise=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_tenacity.py:1454: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+f = <function TestEnabled.test_enabled_true_retries_normally.<locals>.fails_twice at 0x7ffffd1f98a0>
+
+    def wrap(f: t.Callable[P, R]) -> _RetryDecorated[P, R]:
+        if isinstance(f, retry_base):
+            warnings.warn(
+                f"Got retry_base instance ({f.__class__.__name__}) as callable argument, "
+                f"this will probably hang indefinitely (did you mean retry={f.__class__.__name__}(...)?)",
+                stacklevel=2,
+            )
+        r: BaseRetrying
+        sleep = dkw.get("sleep")
+        if _utils.is_coroutine_callable(f) or (
+            sleep is not None and _utils.is_coroutine_callable(sleep)
+        ):
+            r = AsyncRetrying(*dargs, **dkw)
+        elif (
+            tornado
+            and hasattr(tornado.gen, "is_coroutine_function")
+            and tornado.gen.is_coroutine_function(f)
+        ):
+            r = TornadoRetrying(*dargs, **dkw)
+        else:
+>           r = Retrying(*dargs, **dkw)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: BaseRetrying.__init__() got an unexpected keyword argument 'enabled'
+
+tenacity/__init__.py:720: TypeError
+==================================== PASSES ====================================
+___________ TestDecoratorWrapper.test_retry_except_exception_of_type ___________
+----------------------------- Captured stdout call -----------------------------
+Hi there, I'm an IOError
+_____________ TestDecoratorWrapper.test_retry_if_exception_of_type _____________
+----------------------------- Captured stdout call -----------------------------
+Hi there, I'm a NameError
+Hi there, I'm a NameError
+________ TestDecoratorWrapper.test_retry_if_not_exception_message_delay ________
+----------------------------- Captured stdout call -----------------------------
+4
+____ TestDecoratorWrapper.test_retry_until_exception_of_type_attempt_number ____
+----------------------------- Captured stdout call -----------------------------
+Hi there, I'm a NameError
+_______ TestDecoratorWrapper.test_retry_until_exception_of_type_no_type ________
+----------------------------- Captured stdout call -----------------------------
+Hi there, I'm a NameError
+___ TestDecoratorWrapper.test_retry_until_exception_of_type_wrong_exception ____
+----------------------------- Captured stdout call -----------------------------
+RetryError[<Future at 0x7ffffd1b4770 state=finished raised OSError>]
+_______________ TestDecoratorWrapper.test_with_stop_on_exception _______________
+----------------------------- Captured stdout call -----------------------------
+Hi there, I'm an IOError
+_____________ TestDecoratorWrapper.test_with_stop_on_return_value ______________
+----------------------------- Captured stdout call -----------------------------
+RetryError[<Future at 0x7ffffd1b6660 state=finished returned NoneType>]
+=========================== short test summary info ============================
+PASSED tests/test_asyncio.py::TestAsyncio::test_attempt_number_is_correct_for_interleaved_coroutines
+PASSED tests/test_asyncio.py::TestAsyncio::test_iscoroutinefunction
+PASSED tests/test_asyncio.py::TestAsyncio::test_repr
+PASSED tests/test_asyncio.py::TestAsyncio::test_retry
+PASSED tests/test_asyncio.py::TestAsyncio::test_retry_attributes
+PASSED tests/test_asyncio.py::TestAsyncio::test_retry_preserves_argument_defaults
+PASSED tests/test_asyncio.py::TestAsyncio::test_retry_using_async_retying
+PASSED tests/test_asyncio.py::TestAsyncio::test_stop_after_attempt
+PASSED tests/test_asyncio.py::TestContextManager::test_async_retying_iterator
+PASSED tests/test_asyncio.py::TestContextManager::test_async_with_attempt_manager
+PASSED tests/test_asyncio.py::TestContextManager::test_do_max_attempts
+PASSED tests/test_asyncio.py::TestContextManager::test_reraise
+PASSED tests/test_asyncio.py::TestContextManager::test_retry_with_async_exc
+PASSED tests/test_asyncio.py::TestContextManager::test_retry_with_async_result
+PASSED tests/test_asyncio.py::TestContextManager::test_retry_with_async_result_and
+PASSED tests/test_asyncio.py::TestContextManager::test_retry_with_async_result_or
+PASSED tests/test_asyncio.py::TestContextManager::test_retry_with_async_result_rand
+PASSED tests/test_asyncio.py::TestContextManager::test_retry_with_async_result_ror
+PASSED tests/test_asyncio.py::TestContextManager::test_retry_with_result
+PASSED tests/test_asyncio.py::TestContextManager::test_sleeps
+PASSED tests/test_asyncio.py::TestDecoratorWrapper::test_retry_function_attributes
+PASSED tests/test_asyncio.py::TestSyncFunctionWithAsyncSleep::test_sync_function_with_async_sleep
+PASSED tests/test_tenacity.py::TestBase::test_callstate_repr
+PASSED tests/test_tenacity.py::TestBase::test_retrying_repr
+PASSED tests/test_tenacity.py::TestRetryingName::test_get_fn_name_context_manager_no_name
+PASSED tests/test_tenacity.py::TestRetryingName::test_get_fn_name_context_manager_with_name
+PASSED tests/test_tenacity.py::TestRetryingName::test_get_fn_name_decorator
+PASSED tests/test_tenacity.py::TestRetryingName::test_logging_uses_name
+PASSED tests/test_tenacity.py::TestRetryingName::test_str_default
+PASSED tests/test_tenacity.py::TestRetryingName::test_str_overridden_by_copy
+PASSED tests/test_tenacity.py::TestRetryingName::test_str_preserved_by_copy
+PASSED tests/test_tenacity.py::TestRetryingName::test_str_with_name
+PASSED tests/test_tenacity.py::TestStopConditions::test_legacy_explicit_stop_type
+PASSED tests/test_tenacity.py::TestStopConditions::test_never_stop
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_after_attempt
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_after_delay
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_all
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_and
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_any
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_before_delay
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_func_with_retry_state
+PASSED tests/test_tenacity.py::TestStopConditions::test_stop_or
+PASSED tests/test_tenacity.py::TestWaitConditions::test_exponential
+PASSED tests/test_tenacity.py::TestWaitConditions::test_exponential_with_max_wait
+PASSED tests/test_tenacity.py::TestWaitConditions::test_exponential_with_max_wait_and_multiplier
+PASSED tests/test_tenacity.py::TestWaitConditions::test_exponential_with_min_wait
+PASSED tests/test_tenacity.py::TestWaitConditions::test_exponential_with_min_wait_and_multiplier
+PASSED tests/test_tenacity.py::TestWaitConditions::test_exponential_with_min_wait_andmax__wait
+PASSED tests/test_tenacity.py::TestWaitConditions::test_fixed_sleep
+PASSED tests/test_tenacity.py::TestWaitConditions::test_incrementing_sleep
+PASSED tests/test_tenacity.py::TestWaitConditions::test_legacy_explicit_wait_type
+PASSED tests/test_tenacity.py::TestWaitConditions::test_no_sleep
+PASSED tests/test_tenacity.py::TestWaitConditions::test_random_sleep
+PASSED tests/test_tenacity.py::TestWaitConditions::test_random_sleep_withoutmin_
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_arbitrary_sum
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_chain
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_chain_multiple_invocations
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_combine
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_double_sum
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_exception
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_exponential_jitter
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_func
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_random_exponential
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_random_exponential_statistically
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_retry_state_attributes
+PASSED tests/test_tenacity.py::TestWaitConditions::test_wait_triple_sum
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_all
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_and
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_and_with_plain_function
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_any
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_if_exception_message_negative_no_inputs
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_if_exception_message_negative_too_many_inputs
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_if_not_result
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_if_result
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_or
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_or_with_plain_function
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_try_again
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_try_again_forever
+PASSED tests/test_tenacity.py::TestRetryConditions::test_retry_try_again_forever_reraise
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_defaults
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_except_exception_of_type
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_function_attributes
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_function_object
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_if_exception_cause_type
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_if_exception_message
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_if_exception_message_match
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_if_exception_of_type
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_if_not_exception_message
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_if_not_exception_message_delay
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_if_not_exception_message_match
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_preserves_argument_defaults
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_until_exception_of_type_attempt_number
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_until_exception_of_type_no_type
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_retry_until_exception_of_type_wrong_exception
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_with_stop_on_exception
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_with_stop_on_return_value
+PASSED tests/test_tenacity.py::TestDecoratorWrapper::test_with_wait
+PASSED tests/test_tenacity.py::TestStatisticsKeys::test_delay_since_first_attempt_available_on_first_attempt
+PASSED tests/test_tenacity.py::TestRetryWith::test_redefine_wait
+PASSED tests/test_tenacity.py::TestRetryWith::test_redefine_stop
+PASSED tests/test_tenacity.py::TestRetryWith::test_retry_error_cls_should_be_preserved
+PASSED tests/test_tenacity.py::TestRetryWith::test_retry_error_callback_should_be_preserved
+PASSED tests/test_tenacity.py::TestBeforeAfterAttempts::test_after_attempts
+PASSED tests/test_tenacity.py::TestBeforeAfterAttempts::test_before_attempts
+PASSED tests/test_tenacity.py::TestBeforeAfterAttempts::test_before_sleep
+PASSED tests/test_tenacity.py::TestBeforeAfterAttempts::test_before_sleep_log_raises
+PASSED tests/test_tenacity.py::TestBeforeAfterAttempts::test_before_sleep_log_raises_with_exc_info
+PASSED tests/test_tenacity.py::TestBeforeAfterAttempts::test_before_sleep_log_returns
+PASSED tests/test_tenacity.py::TestBeforeAfterAttempts::test_before_sleep_log_returns_with_exc_info
+PASSED tests/test_tenacity.py::TestReraiseExceptions::test_reraise_by_default
+PASSED tests/test_tenacity.py::TestReraiseExceptions::test_reraise_from_retry_error
+PASSED tests/test_tenacity.py::TestReraiseExceptions::test_reraise_no_exception
+PASSED tests/test_tenacity.py::TestReraiseExceptions::test_reraise_timeout_from_retry_error
+PASSED tests/test_tenacity.py::TestStatistics::test_stats
+PASSED tests/test_tenacity.py::TestStatistics::test_stats_failing
+PASSED tests/test_tenacity.py::TestRetryErrorCallback::test_retry_error_callback
+PASSED tests/test_tenacity.py::TestContextManager::test_context_manager_on_error
+PASSED tests/test_tenacity.py::TestContextManager::test_context_manager_reraise
+PASSED tests/test_tenacity.py::TestContextManager::test_context_manager_retry_error
+PASSED tests/test_tenacity.py::TestContextManager::test_context_manager_retry_one
+PASSED tests/test_tenacity.py::TestInvokeAsCallable::test_retry_one
+PASSED tests/test_tenacity.py::TestInvokeAsCallable::test_on_error
+PASSED tests/test_tenacity.py::TestInvokeAsCallable::test_retry_error
+PASSED tests/test_tenacity.py::TestInvokeAsCallable::test_reraise
+PASSED tests/test_tenacity.py::TestRetryException::test_retry_error_is_pickleable
+PASSED tests/test_tenacity.py::TestRetryTyping::test_retry_type_annotations
+PASSED tests/test_tenacity.py::TestMockingSleep::test_decorated
+PASSED tests/test_tenacity.py::TestMockingSleep::test_decorated_retry_with
+SKIPPED [1] tests/test_asyncio.py:182: trio not installed
+FAILED tests/test_asyncio.py::TestAsyncEnabled::test_enabled_false_skips_retry
+FAILED tests/test_tenacity.py::TestEnabled::test_enabled_false_skips_retry - ...
+FAILED tests/test_tenacity.py::TestEnabled::test_enabled_false_preserves_attributes
+FAILED tests/test_tenacity.py::TestEnabled::test_enabled_false_via_retry_with
+FAILED tests/test_tenacity.py::TestEnabled::test_enabled_true_retries_normally
+=================== 5 failed, 128 passed, 1 skipped in 2.62s ===================

@@ -1,0 +1,28 @@
+== task 1: mytest__python-dotenv-615
+== image: madsloop-mytest:python-dotenv-615
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:python-dotenv-615
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__python-dotenv-615.diff
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index 44495e9..8cd1126 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -17,7 +17,7 @@ except ImportError:
+     )
+     sys.exit(1)
+ 
+-from .main import DotEnv, dotenv_values, set_key, unset_key
++from .main import DotEnv, dotenv_values, set_key, unset_key, _resolve_env_path
+ from .version import __version__
+ 
+ 
+@@ -61,7 +61,7 @@ def enumerate_env() -> Optional[str]:
+ @click.pass_context
+ def cli(ctx: click.Context, file: Any, quote: Any, export: Any) -> None:
+     """This script is used to set, get or unset values from a .env file."""
+-    ctx.obj = {"QUOTE": quote, "EXPORT": export, "FILE": file}
++    ctx.obj = {"QUOTE": quote, "EXPORT": export, "FILE": _resolve_env_path(file)}
+ 

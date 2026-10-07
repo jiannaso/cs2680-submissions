@@ -1,0 +1,28 @@
+== task 22: mytest__starlette-3489
+== image: madsloop-mytest:starlette-3489
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:starlette-3489
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__starlette-3489.diff
+diff --git a/starlette/endpoints.py b/starlette/endpoints.py
+index bdd51dc..21481f6 100644
+--- a/starlette/endpoints.py
++++ b/starlette/endpoints.py
+@@ -22,7 +22,7 @@ class HTTPEndpoint:
+         self.send = send
+         self._allowed_methods = [
+             method
+-            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
++            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "QUERY")
+             if getattr(self, method.lower(), None) is not None
+         ]
+ 
+diff --git a/starlette/middleware/cors.py b/starlette/middleware/cors.py
+index b65fc15..b10cc11 100644
+--- a/starlette/middleware/cors.py
++++ b/starlette/middleware/cors.py
+@@ -8,7 +8,7 @@ from starlette.datastructures import Headers, MutableHeaders
+ from starlette.responses import PlainTextResponse, Response
+ from starlette.types import ASGIApp, Message, Receive, Scope, Send

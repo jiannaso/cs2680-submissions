@@ -1,0 +1,93 @@
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..4acbd0b 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -392,7 +392,14 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
++function matchAlias(
++  format: string,
++  node: Element,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
++  const match = scroll.query(format);
++  if (match == null) return delta;
+   return applyFormat(delta, format, true);
+ }
+ 
+@@ -411,12 +418,19 @@ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+         if (formats[attr.attrName]) return;
+       }
+       attr = ATTRIBUTE_ATTRIBUTORS[name];
+-      if (attr != null && (attr.attrName === name || attr.keyName === name)) {
++      if (
++        attr != null &&
++        (attr.attrName === name || attr.keyName === name) &&
++        scroll.query(attr.attrName, Scope.ATTRIBUTE) != null
++      ) {
+         formats[attr.attrName] = attr.value(node) || undefined;
+       }
+       attr = STYLE_ATTRIBUTORS[name];
+-      if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+-        attr = STYLE_ATTRIBUTORS[name];
++      if (
++        attr != null &&
++        (attr.attrName === name || attr.keyName === name) &&
++        scroll.query(attr.attrName, Scope.ATTRIBUTE) != null
++      ) {
+         formats[attr.attrName] = attr.value(node) || undefined;
+       }
+     });
+@@ -463,9 +477,9 @@ function matchBreak(node: Node, delta: Delta) {
+ 
+ function matchCodeBlock(node: Node, delta: Delta, scroll: ScrollBlot) {
+   const match = scroll.query('code-block');
++  if (match == null) return delta;
+   // @ts-expect-error
+-  const language = match ? match.formats(node, scroll) : true;
+-  return applyFormat(delta, 'code-block', language);
++  return applyFormat(delta, 'code-block', match.formats(node, scroll));
+ }
+ 
+ function matchIgnore() {
+@@ -532,24 +546,32 @@ function matchNewline(node: Node, delta: Delta, scroll: ScrollBlot) {
+   return delta;
+ }
+ 
+-function matchStyles(node: HTMLElement, delta: Delta) {
++function matchStyles(
++  node: HTMLElement,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
+   const formats: Record<string, unknown> = {};
+   const style: Partial<CSSStyleDeclaration> = node.style || {};
+   if (style.fontStyle === 'italic') {
+-    formats.italic = true;
++    const match = scroll.query('italic');
++    if (match != null) formats.italic = true;
+   }
+   if (style.textDecoration === 'underline') {
+-    formats.underline = true;
++    const match = scroll.query('underline');
++    if (match != null) formats.underline = true;
+   }
+   if (style.textDecoration === 'line-through') {
+-    formats.strike = true;
++    const match = scroll.query('strike');
++    if (match != null) formats.strike = true;
+   }
+   if (
+     style.fontWeight?.startsWith('bold') ||
+     // @ts-expect-error Fix me later
+     parseInt(style.fontWeight, 10) >= 700
+   ) {
+-    formats.bold = true;
++    const match = scroll.query('bold');
++    if (match != null) formats.bold = true;
+   }
+   if (Object.keys(formats).length > 0) {
+     delta = applyFormat(delta, formats);

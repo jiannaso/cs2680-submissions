@@ -1,0 +1,52 @@
+== task 4: instance_qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+== image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c
+qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c: Pulling from jefzda/sweap-images
+f9f8b6904996: Pulling fs layer
+1675f68f1954: Pulling fs layer
+34e40d88f130: Pulling fs layer
+f70900a37a1b: Pulling fs layer
+f56ed788953b: Pulling fs layer
+c9e96d40cb9b: Pulling fs layer
+f9f8b6904996: Download complete
+1675f68f1954: Download complete
+f70900a37a1b: Download complete
+f9f8b6904996: Pull complete
+f56ed788953b: Download complete
+f56ed788953b: Pull complete
+c9e96d40cb9b: Download complete
+1675f68f1954: Pull complete
+f70900a37a1b: Pull complete
+c9e96d40cb9b: Pull complete
+34e40d88f130: Download complete
+34e40d88f130: Pull complete
+Digest: sha256:6a08dff104ff4864f91b0d3c6f32d67237f4b3aa469066be0fd92d85898b80aa
+Status: Downloaded newer image for jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c
+docker.io/jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c
+== workdir in container: /app
+== harness interpreter: /usr/bin/python3.11 (Python 3.11.2)
+/usr/bin/python3.11: No module named pip
+== WARNING: docker_env.sh failed; continuing (harness deps are ensured separately)
+== bootstrapping pip for /usr/bin/python3.11 via get-pip.py
+[madsLoop] prompt at 80124 tokens; elided 154320 chars of old tool output
+madsLoop finished: done
+== patch written to model_patch_instance_qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c171.diff
+diff --git a/core b/core
+new file mode 100644
+index 000000000..6f85a1f21
+Binary files /dev/null and b/core differ
+diff --git a/qutebrowser/app.py b/qutebrowser/app.py
+index 3d82ff9d4..6676764a9 100644
+--- a/qutebrowser/app.py
++++ b/qutebrowser/app.py
+@@ -51,7 +51,7 @@ from PyQt5.QtCore import pyqtSlot, QUrl, QObject, QEvent, pyqtSignal, Qt
+ import qutebrowser
+ import qutebrowser.resources
+ from qutebrowser.commands import runners
+-from qutebrowser.config import config, websettings, configfiles, configinit
++from qutebrowser.config import config, websettings, configfiles, configinit, qtargs
+ from qutebrowser.browser import (urlmarks, history, browsertab,
+                                  qtnetworkdownloads, downloads, greasemonkey)
+ from qutebrowser.browser.network import proxy
+@@ -491,7 +491,7 @@ class Application(QApplication):
+         """
+         self._last_focus_object = None

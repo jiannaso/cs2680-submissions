@@ -1,0 +1,13 @@
+diff --git a/tldextract/tldextract.py b/tldextract/tldextract.py
+index ea20f02..e501415 100644
+--- a/tldextract/tldextract.py
++++ b/tldextract/tldextract.py
+@@ -411,6 +411,8 @@ class _PublicSuffixListTLDExtractor:
+ 
+         Returns len(spl) if no suffix is found.
+         """
++        if include_psl_private_domains is None:
++            include_psl_private_domains = self.include_psl_private_domains
+         node = (
+             self.tlds_incl_private_trie
+             if include_psl_private_domains

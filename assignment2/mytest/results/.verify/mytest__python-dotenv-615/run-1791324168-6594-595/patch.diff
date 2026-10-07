@@ -1,0 +1,75 @@
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index 44495e9..8cd1126 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -17,7 +17,7 @@ except ImportError:
+     )
+     sys.exit(1)
+ 
+-from .main import DotEnv, dotenv_values, set_key, unset_key
++from .main import DotEnv, dotenv_values, set_key, unset_key, _resolve_env_path
+ from .version import __version__
+ 
+ 
+@@ -61,7 +61,7 @@ def enumerate_env() -> Optional[str]:
+ @click.pass_context
+ def cli(ctx: click.Context, file: Any, quote: Any, export: Any) -> None:
+     """This script is used to set, get or unset values from a .env file."""
+-    ctx.obj = {"QUOTE": quote, "EXPORT": export, "FILE": file}
++    ctx.obj = {"QUOTE": quote, "EXPORT": export, "FILE": _resolve_env_path(file)}
+ 
+ 
+ @contextmanager
+diff --git a/src/dotenv/main.py b/src/dotenv/main.py
+index 13f6776..dcfb5e5 100644
+--- a/src/dotenv/main.py
++++ b/src/dotenv/main.py
+@@ -19,6 +19,14 @@ StrPath = Union[str, "os.PathLike[str]"]
+ logger = logging.getLogger(__name__)
+ 
+ 
++def _resolve_env_path(path: Optional[StrPath]) -> Optional[StrPath]:
++    """Expand a leading ~ in a path to the user's home directory."""
++    if path is None:
++        return None
++    expanded = os.path.expanduser(path)
++    return expanded
++
++
+ def _load_dotenv_disabled() -> bool:
+     """
+     Determine if dotenv loading has been disabled.
+@@ -49,7 +57,7 @@ class DotEnv:
+         interpolate: bool = True,
+         override: bool = True,
+     ) -> None:
+-        self.dotenv_path: Optional[StrPath] = dotenv_path
++        self.dotenv_path: Optional[StrPath] = _resolve_env_path(dotenv_path)
+         self.stream: Optional[IO[str]] = stream
+         self._dict: Optional[Dict[str, Optional[str]]] = None
+         self.verbose: bool = verbose
+@@ -132,7 +140,7 @@ def get_key(
+ 
+     Returns `None` if the key isn't found or doesn't have a value.
+     """
+-    return DotEnv(dotenv_path, verbose=True, encoding=encoding).get(key_to_get)
++    return DotEnv(_resolve_env_path(dotenv_path), verbose=True, encoding=encoding).get(key_to_get)
+ 
+ 
+ def _discard_temp_file(path: pathlib.Path) -> None:
+@@ -160,6 +168,7 @@ def rewrite(
+     encoding: Optional[str],
+     follow_symlinks: bool = False,
+ ) -> Iterator[Tuple[IO[str], IO[str]]]:
++    path = _resolve_env_path(path)
+     if follow_symlinks:
+         path = os.path.realpath(path)
+ 
+@@ -294,6 +303,7 @@ def unset_key(
+     modifying a file at a potentially untrusted path. If you don't need this
+     protection and need symlinks to be followed, use `follow_symlinks`.
+     """
++    dotenv_path = _resolve_env_path(dotenv_path)
+     if not os.path.exists(dotenv_path):
+         logger.warning("Can't delete from %s - it doesn't exist.", dotenv_path)
+         return None, key_to_unset

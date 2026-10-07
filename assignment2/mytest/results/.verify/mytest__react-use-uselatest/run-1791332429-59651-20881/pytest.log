@@ -1,0 +1,19 @@
+ERROR tests/useLatest.test.ts   ● Test suite failed to run
+PASSED tests/useHash.test.ts | returns current url hash
+PASSED tests/useHash.test.ts | returns latest url hash when change the hash with setHash
+PASSED tests/useHash.test.ts | returns latest url hash when change the hash with "hashchange" event
+PASSED tests/useEffectOnce.test.ts | should run provided effect only once
+PASSED tests/useEffectOnce.test.ts | should run clean-up provided on unmount
+PASSED tests/useDebounce.test.ts | useDebounce should be defined
+PASSED tests/useDebounce.test.ts | useDebounce should return three functions
+PASSED tests/useDebounce.test.ts | useDebounce should call passed function after given amount of time
+PASSED tests/useDebounce.test.ts | useDebounce should cancel function call on unmount
+PASSED tests/useDebounce.test.ts | useDebounce first function should return actual state of debounce
+PASSED tests/useDebounce.test.ts | useDebounce second function should cancel debounce
+PASSED tests/useDebounce.test.ts | useDebounce should reset timeout on delay change
+PASSED tests/useDebounce.test.ts | useDebounce should reset timeout on deps change
+PASSED tests/useCookie.test.tsx | should have initial value of null if no cookie exists
+PASSED tests/useCookie.test.tsx | should have initial value of the cookie if it exists
+PASSED tests/useCookie.test.tsx | should update the cookie on call to updateCookie
+PASSED tests/useCookie.test.tsx | should delete the cookie on call to deleteCookie
+===== 0 failed, 17 passed =====

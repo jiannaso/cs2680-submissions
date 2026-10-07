@@ -1,0 +1,212 @@
+diff --git a/tldextract/cli.py b/tldextract/cli.py
+index e9aa6ce..d65d101 100644
+--- a/tldextract/cli.py
++++ b/tldextract/cli.py
+@@ -98,7 +98,9 @@ def main() -> None:
+     for i in args.input:
+         ext = tld_extract(i)
+         if args.json:
+-            properties = ("fqdn", "ipv4", "ipv6", "registered_domain")
++            properties = ("fqdn", "ipv4", "ipv6", "registered_domain",
++                          "top_domain_under_public_suffix",
++                          "top_domain_under_registry_suffix")
+             print(
+                 json.dumps(
+                     {
+diff --git a/tldextract/tldextract.py b/tldextract/tldextract.py
+index d346c03..4f41058 100644
+--- a/tldextract/tldextract.py
++++ b/tldextract/tldextract.py
+@@ -5,25 +5,25 @@ It does this via the Public Suffix List (PSL).
+     >>> import tldextract
+ 
+     >>> tldextract.extract("http://forums.news.cnn.com/")
+-    ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False)
++    ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False, registry_suffix='com')
+ 
+     >>> tldextract.extract("http://forums.bbc.co.uk/")  # United Kingdom
+-    ExtractResult(subdomain='forums', domain='bbc', suffix='co.uk', is_private=False)
++    ExtractResult(subdomain='forums', domain='bbc', suffix='co.uk', is_private=False, registry_suffix='co.uk')
+ 
+     >>> tldextract.extract("http://www.worldbank.org.kg/")  # Kyrgyzstan
+-    ExtractResult(subdomain='www', domain='worldbank', suffix='org.kg', is_private=False)
++    ExtractResult(subdomain='www', domain='worldbank', suffix='org.kg', is_private=False, registry_suffix='org.kg')
+ 
+ Note subdomain and suffix are _optional_. Not all URL-like inputs have a
+ subdomain or a valid suffix.
+ 
+     >>> tldextract.extract("google.com")
+-    ExtractResult(subdomain='', domain='google', suffix='com', is_private=False)
++    ExtractResult(subdomain='', domain='google', suffix='com', is_private=False, registry_suffix='com')
+ 
+     >>> tldextract.extract("google.notavalidsuffix")
+-    ExtractResult(subdomain='google', domain='notavalidsuffix', suffix='', is_private=False)
++    ExtractResult(subdomain='google', domain='notavalidsuffix', suffix='', is_private=False, registry_suffix='')
+ 
+     >>> tldextract.extract("http://127.0.0.1:8080/deployed/")
+-    ExtractResult(subdomain='', domain='127.0.0.1', suffix='', is_private=False)
++    ExtractResult(subdomain='', domain='127.0.0.1', suffix='', is_private=False, registry_suffix='')
+ 
+ To rejoin the original hostname, if it was indeed a valid, registered hostname:
+ 
+@@ -96,6 +96,17 @@ class ExtractResult:
+     `False`.
+     """
+ 
++    registry_suffix: str
++    """The ICANN registry suffix, i.e. the suffix the name would have if private
++    rules were ignored.
++
++    For example, with private domains enabled, ``foo.blogspot.com`` gives
++    ``registry_suffix='com'``. Without private domains,
++    ``foo.blogspot.com`` gives ``registry_suffix='com'`` as well.
++    For ``www.bbc.co.uk``, ``registry_suffix='co.uk'``.
++    For IP addresses or names without a known suffix, this is the empty string.
++    """
++
+     @property
+     def registered_domain(self) -> str:
+         """The `domain` and `suffix` fields joined with a dot, if they're both set, or else the empty string.
+@@ -109,6 +120,50 @@ class ExtractResult:
+             return f"{self.domain}.{self.suffix}"
+         return ""
+ 
++    @property
++    def top_domain_under_public_suffix(self) -> str:
++        """The ``domain`` plus ``suffix`` fields joined with a dot.
++
++        This is the same as ``registered_domain``.
++
++        >>> extract("http://forums.bbc.co.uk").top_domain_under_public_suffix
++        'bbc.co.uk'
++        """
++        return self.registered_domain
++
++    @property
++    def top_domain_under_registry_suffix(self) -> str:
++        """The single label directly under ``registry_suffix``, joined with ``registry_suffix``.
++
++        For ``www.bbc.co.uk``, ``registry_suffix='co.uk'``, the label directly
++        under it is ``bbc``, so this returns ``bbc.co.uk``.
++
++        For ``www.example.auth.us-east-1.amazoncognito.com``,
++        ``registry_suffix='com'``, the label directly under it is
++        ``amazoncognito``, so this returns ``amazoncognito.com``.
++
++        For IP addresses or names without a known suffix, this is the empty
++        string.
++
++        >>> extract("http://forums.bbc.co.uk").top_domain_under_registry_suffix
++        'bbc.co.uk'
++        >>> extract("http://forums.bbc.co.uk").top_domain_under_public_suffix
++        'bbc.co.uk'
++        """
++        if not self.registry_suffix:
++            return ""
++        registry_suffix_labels = self.registry_suffix.split(".")
++        # Build the full label stack (only non-empty labels)
++        label_stack = (
++            (self.subdomain.split(".") if self.subdomain else []) +
++            ([self.domain] if self.domain else []) +
++            (self.suffix.split(".") if self.suffix else [])
++        )
++        label_idx = len(label_stack) - len(registry_suffix_labels) - 1
++        if label_idx >= 0 and label_idx < len(label_stack):
++            return f"{label_stack[label_idx]}.{self.registry_suffix}"
++        return ""
++
+     @property
+     def fqdn(self) -> str:
+         """The Fully Qualified Domain Name (FQDN), if there is a proper `domain` and `suffix`, or else the empty string.
+@@ -293,9 +348,9 @@ class TLDExtract:
+ 
+         >>> extractor = TLDExtract()
+         >>> extractor.extract_str("http://forums.news.cnn.com/")
+-        ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False)
++        ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False, registry_suffix='com')
+         >>> extractor.extract_str("http://forums.bbc.co.uk/")
+-        ExtractResult(subdomain='forums', domain='bbc', suffix='co.uk', is_private=False)
++        ExtractResult(subdomain='forums', domain='bbc', suffix='co.uk', is_private=False, registry_suffix='co.uk')
+ 
+         Allows configuring the HTTP request via the optional `session`
+         parameter. For example, if you need to use a HTTP proxy. See also
+@@ -306,7 +361,7 @@ class TLDExtract:
+         >>> # customize your session here
+         >>> with session:
+         ...     extractor.extract_str("http://forums.news.cnn.com/", session=session)
+-        ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False)
++        ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False, registry_suffix='com')
+         """
+         return self._extract_netloc(
+             lenient_netloc(url), include_psl_private_domains, session=session
+@@ -330,9 +385,9 @@ class TLDExtract:
+         >>> extractor.extract_urllib(
+         ...     urllib.parse.urlsplit("http://forums.news.cnn.com/")
+         ... )
+-        ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False)
++        ExtractResult(subdomain='forums.news', domain='cnn', suffix='com', is_private=False, registry_suffix='com')
+         >>> extractor.extract_urllib(urllib.parse.urlsplit("http://forums.bbc.co.uk/"))
+-        ExtractResult(subdomain='forums', domain='bbc', suffix='co.uk', is_private=False)
++        ExtractResult(subdomain='forums', domain='bbc', suffix='co.uk', is_private=False, registry_suffix='co.uk')
+         """
+         return self._extract_netloc(
+             url.netloc, include_psl_private_domains, session=session
+@@ -357,24 +412,35 @@ class TLDExtract:
+             and netloc_with_ascii_dots[-1] == "]"
+             and looks_like_ipv6(netloc_with_ascii_dots[1:-1])
+         ):
+-            return ExtractResult("", netloc_with_ascii_dots, "", is_private=False)
++            return ExtractResult("", netloc_with_ascii_dots, "", is_private=False, registry_suffix="")
+ 
+         labels = netloc_with_ascii_dots.split(".")
+ 
+-        suffix_index, is_private = self._get_tld_extractor(
+-            session=session
+-        ).suffix_index(labels, include_psl_private_domains=include_psl_private_domains)
++        tld_extractor = self._get_tld_extractor(session=session)
++        suffix_index, is_private = tld_extractor.suffix_index(
++            labels, include_psl_private_domains=include_psl_private_domains
++        )
++
++        registry_suffix_index = tld_extractor.registry_suffix_index(labels)
+ 
+         num_ipv4_labels = 4
+         if suffix_index == len(labels) == num_ipv4_labels and looks_like_ip(
+             netloc_with_ascii_dots
+         ):
+-            return ExtractResult("", netloc_with_ascii_dots, "", is_private)
++            return ExtractResult(
++                "", netloc_with_ascii_dots, "", is_private, registry_suffix=""
++            )
+ 
+         suffix = ".".join(labels[suffix_index:]) if suffix_index != len(labels) else ""
+         subdomain = ".".join(labels[: suffix_index - 1]) if suffix_index >= 2 else ""
+         domain = labels[suffix_index - 1] if suffix_index else ""
+-        return ExtractResult(subdomain, domain, suffix, is_private)
++
++        registry_suffix = (
++            ".".join(labels[registry_suffix_index:])
++            if registry_suffix_index != len(labels)
++            else ""
++        )
++        return ExtractResult(subdomain, domain, suffix, is_private, registry_suffix)
+ 
+     def update(
+         self, fetch_now: bool = False, session: requests.Session | None = None
+@@ -566,6 +632,16 @@ class _PublicSuffixListTLDExtractor:
+ 
+         return i, node.is_private
+ 
++    def registry_suffix_index(self, spl: list[str]) -> int:
++        """Return the index of the first label of the registry (ICANN) suffix.
++
++        This always ignores private domain rules, so it returns the suffix
++        under which domains can be registered through a registrar.
++
++        Returns len(spl) if no suffix is found.
++        """
++        return self.suffix_index(spl, include_psl_private_domains=False)[0]
++
+ 
+ def _decode_punycode(label: str) -> str:
+     lowered = label.lower()

@@ -1,0 +1,76 @@
+== task 7: instance_qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d
+== image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366
+qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366: Pulling from jefzda/sweap-images
+1cb3a3c7ff55: Pulling fs layer
+03f8843a2c70: Pulling fs layer
+047dc68622c0: Pulling fs layer
+de6dc7e3d0d8: Pulling fs layer
+8b4fdfb67480: Pulling fs layer
+276c7eca0cf7: Pulling fs layer
+dad67da3f26b: Pulling fs layer
+a2826676bf58: Pulling fs layer
+62069bd4cfea: Pulling fs layer
+799440a7bae7: Pulling fs layer
+5c71dcbf9bdd: Pulling fs layer
+15658014cd85: Pulling fs layer
+9596beeb5a6d: Pulling fs layer
+dcccccc71058: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+4f4fb700ef54: Already exists
+15658014cd85: Download complete
+047dc68622c0: Download complete
+62069bd4cfea: Download complete
+03f8843a2c70: Download complete
+5c71dcbf9bdd: Download complete
+dcccccc71058: Download complete
+276c7eca0cf7: Download complete
+799440a7bae7: Download complete
+a2826676bf58: Download complete
+9596beeb5a6d: Download complete
+dad67da3f26b: Download complete
+dad67da3f26b: Pull complete
+799440a7bae7: Pull complete
+9596beeb5a6d: Pull complete
+4f4fb700ef54: Pull complete
+15658014cd85: Pull complete
+dcccccc71058: Pull complete
+8b4fdfb67480: Download complete
+1cb3a3c7ff55: Download complete
+de6dc7e3d0d8: Download complete
+de6dc7e3d0d8: Pull complete
+03f8843a2c70: Pull complete
+5c71dcbf9bdd: Pull complete
+276c7eca0cf7: Pull complete
+8b4fdfb67480: Pull complete
+047dc68622c0: Pull complete
+62069bd4cfea: Pull complete
+a2826676bf58: Pull complete
+1cb3a3c7ff55: Pull complete
+Digest: sha256:e3cf12bea66940ccc3c62684a75d1124c4d1d06b4696bb302db3b9ae68a8d990
+Status: Downloaded newer image for jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366
+docker.io/jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.11 (Python 3.11.13)
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+madsLoop finished: done
+== patch written to model_patch_instance_qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d.diff
+diff --git a/core b/core
+new file mode 100644
+index 000000000..33a1c88b5
+Binary files /dev/null and b/core differ
+diff --git a/qutebrowser/config/configutils.py b/qutebrowser/config/configutils.py
+index 48d699d8b..5348f8cb0 100644
+--- a/qutebrowser/config/configutils.py
++++ b/qutebrowser/config/configutils.py
+@@ -21,6 +21,7 @@
+ """Utilities and data structures used by various config code."""
+ 
+ 
++import collections
+ import typing
+ 
+ import attr
+@@ -83,10 +84,13 @@ class Values:
+                  opt: 'configdata.Option',
+                  values: typing.MutableSequence = None) -> None:
+         self.opt = opt

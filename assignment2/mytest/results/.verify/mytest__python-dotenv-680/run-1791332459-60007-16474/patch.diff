@@ -1,0 +1,28 @@
+diff --git a/src/dotenv/main.py b/src/dotenv/main.py
+index 3c4608d..5711543 100644
+--- a/src/dotenv/main.py
++++ b/src/dotenv/main.py
+@@ -216,7 +216,9 @@ def set_key(
+     )
+ 
+     if quote:
+-        value_out = "'{}'".format(value_to_set.replace("'", "\\'"))
++        value_out = "'{}'".format(
++            value_to_set.replace("\\", "\\\\").replace("'", "\\'")
++        )
+     else:
+         value_out = value_to_set
+     if export:
+diff --git a/src/dotenv/parser.py b/src/dotenv/parser.py
+index 6677360..c0873cf 100644
+--- a/src/dotenv/parser.py
++++ b/src/dotenv/parser.py
+@@ -22,7 +22,7 @@ _export = make_regex(r"(?:export[^\S\r\n]+)?")
+ _single_quoted_key = make_regex(r"'([^']+)'")
+ _unquoted_key = make_regex(r"([^=\#\s]+)")
+ _equal_sign = make_regex(r"(=[^\S\r\n]*)")
+-_single_quoted_value = make_regex(r"'((?:\\'|[^'])*)'")
++_single_quoted_value = make_regex(r"'((?:\\\\|\\'|[^'])*)'")
+ _double_quoted_value = make_regex(r'"((?:\\"|[^"])*)"')
+ _unquoted_value = make_regex(r"([^\r\n]*)")
+ _comment = make_regex(r"(?:[^\S\r\n]*#[^\r\n]*)?")

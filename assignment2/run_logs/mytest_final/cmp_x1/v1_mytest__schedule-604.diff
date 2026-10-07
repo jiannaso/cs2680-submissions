@@ -1,0 +1,270 @@
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index de082c1..87c7845 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -739,51 +739,231 @@ class Job:
+             if days_ahead <= 0:  # Target day already happened this week
+                 days_ahead += 7
+             self.next_run += datetime.timedelta(days_ahead) - self.period
++
+         if self.at_time is not None:
+             if self.unit not in ("days", "hours", "minutes") and self.start_day is None:
+                 raise ScheduleValueError("Invalid unit without specifying start day")
+-            kwargs = {"second": self.at_time.second, "microsecond": 0}
+-            if self.unit == "days" or self.start_day is not None:
+-                kwargs["hour"] = self.at_time.hour
+-            if self.unit in ["days", "hours"] or self.start_day is not None:
+-                kwargs["minute"] = self.at_time.minute
+-            self.next_run = self.next_run.replace(**kwargs)  # type: ignore
+ 
+             if self.at_time_zone is not None:
+-                # Convert next_run from the expected timezone into the local time
+-                # self.next_run is a naive datetime so after conversion remove tzinfo
+-                self.next_run = (
+-                    self.at_time_zone.localize(self.next_run)
+-                    .astimezone()
+-                    .replace(tzinfo=None)
++                # Timezone-aware jobs: compute next occurrence entirely in the
++                # target timezone to handle DST transitions and non-whole-hour
++                # offsets correctly.
++                self._schedule_next_run_tz(
++                    interval, self.at_time, self.at_time_zone,
+                 )
+-
+-            # Make sure we run at the specified time *today* (or *this hour*)
+-            # as well. This accounts for when a job takes so long it finished
+-            # in the next period.
+-            if not self.last_run or (self.next_run - self.last_run) > self.period:
+-                now = datetime.datetime.now()
+-                if (
+-                    self.unit == "days"
+-                    and self.next_run.time() > now.time()
+-                    and self.interval == 1
+-                ):
+-                    self.next_run = self.next_run - datetime.timedelta(days=1)
+-                elif self.unit == "hours" and (
+-                    self.at_time.minute > now.minute
+-                    or (
+-                        self.at_time.minute == now.minute
+-                        and self.at_time.second > now.second
+-                    )
+-                ):
+-                    self.next_run = self.next_run - datetime.timedelta(hours=1)
+-                elif self.unit == "minutes" and self.at_time.second > now.second:
+-                    self.next_run = self.next_run - datetime.timedelta(minutes=1)
++            else:
++                # Naive jobs: keep the original logic.
++                kwargs = {"second": self.at_time.second, "microsecond": 0}
++                if self.unit == "days" or self.start_day is not None:
++                    kwargs["hour"] = self.at_time.hour
++                if self.unit in ["days", "hours"] or self.start_day is not None:
++                    kwargs["minute"] = self.at_time.minute
++                self.next_run = self.next_run.replace(**kwargs)  # type: ignore
++
++                # Make sure we run at the specified time *today* (or *this hour*)
++                # as well. This accounts for when a job takes so long it finished
++                # in the next period.
++                if not self.last_run or (self.next_run - self.last_run) > self.period:
++                    now = datetime.datetime.now()
++                    if (
++                        self.unit == "days"
++                        and self.next_run.time() > now.time()
++                        and self.interval == 1
++                    ):
++                        self.next_run = self.next_run - datetime.timedelta(days=1)
++                    elif self.unit == "hours" and (
++                        self.at_time.minute > now.minute
++                        or (
++                            self.at_time.minute == now.minute
++                            and self.at_time.second > now.second
++                        )
++                    ):
++                        self.next_run = self.next_run - datetime.timedelta(hours=1)
++                    elif self.unit == "minutes" and self.at_time.second > now.second:
++                        self.next_run = self.next_run - datetime.timedelta(minutes=1)
+         if self.start_day is not None and self.at_time is not None:
+             # Let's see if we will still make that time we specified today
+             if (self.next_run - datetime.datetime.now()).days >= 7:
+                 self.next_run -= self.period
+ 
++    def _schedule_next_run_tz(
++        self,
++        interval: int,
++        at_time: datetime.time,
++        tz,
++    ) -> None:
++        """
++        Compute next_run for a timezone-aware job.
++
++        All calculations are performed in the target timezone so that
++        DST transitions and non-whole-hour offsets are handled correctly.
++        The final result is returned as a naive datetime in the local
++        system timezone.
++        """
++        import pytz
++
++        now_local = datetime.datetime.now()
++
++        # Determine the local timezone (the system TZ, handling DST).
++        local_tz = now_local.astimezone().tzinfo
++
++        # Convert now to the target timezone as an aware datetime.
++        now_aware_local = datetime.datetime(
++            now_local.year,
++            now_local.month,
++            now_local.day,
++            now_local.hour,
++            now_local.minute,
++            now_local.second,
++            tzinfo=local_tz,
++        )
++        now_utc = now_aware_local.astimezone(pytz.UTC)
++        now_target = now_utc.astimezone(tz)
++
++        # Build a candidate datetime in the target timezone.
++        candidate = self._build_candidate_in_tz(
++            now_target, at_time, interval
++        )
++
++        # Handle DST transitions for the candidate.
++        try:
++            candidate_aware = tz.localize(candidate, is_dst=None)
++        except pytz.exceptions.NonExistentTimeError:
++            # The wall-clock time falls in a DST gap (spring forward).
++            # Return the first valid moment *after* the gap.
++            dt_fallback = tz.localize(candidate, is_dst=False)
++            gap_start = self._gap_start_for_unit(candidate, at_time)
++            offset_into_gap = candidate - gap_start
++            transition_utc = dt_fallback - offset_into_gap
++            candidate_aware = transition_utc.astimezone(tz)
++            # If the adjusted time is still before now_target, advance by one period.
++            if candidate_aware <= now_target:
++                candidate_aware += self._period_for_unit()
++        except pytz.exceptions.AmbiguousTimeError:
++            # The wall-clock time occurs twice (fall back). Use the first
++            # occurrence (before the clock moves backward).
++            candidate_aware = tz.localize(candidate, is_dst=True)
++
++        # Convert back to local time (naive).
++        next_utc = candidate_aware.astimezone(pytz.UTC)
++        next_local = next_utc.astimezone(local_tz)
++        self.next_run = next_local.replace(tzinfo=None)
++
++    def _build_candidate_in_tz(
++        self,
++        now_target,
++        at_time: datetime.time,
++        interval: int,
++    ) -> datetime.datetime:
++        """
++        Build the next candidate datetime in the target timezone.
++        """
++        if self.unit == "days" or self.start_day is not None:
++            candidate = datetime.datetime(
++                now_target.year,
++                now_target.month,
++                now_target.day,
++                at_time.hour,
++                at_time.minute,
++                at_time.second,
++            )
++            # Localize before comparing; handle DST gaps by using is_dst=False.
++            try:
++                candidate_for_cmp = self.at_time_zone.localize(
++                    candidate, is_dst=None
++                )
++            except pytz.exceptions.NonExistentTimeError:
++                # The candidate falls in a DST gap; treat as if it is
++                # *after* the gap (i.e. after the wall-clock transition),
++                # so the job will be scheduled for the next day.
++                candidate_for_cmp = self.at_time_zone.localize(
++                    candidate, is_dst=False
++                )
++            if candidate_for_cmp <= now_target:
++                candidate += datetime.timedelta(days=interval)
++            if self.start_day is not None:
++                weekdays = (
++                    "monday",
++                    "tuesday",
++                    "wednesday",
++                    "thursday",
++                    "friday",
++                    "saturday",
++                    "sunday",
++                )
++                weekday = weekdays.index(self.start_day)
++                days_ahead = weekday - candidate.weekday()
++                if days_ahead <= 0:
++                    days_ahead += 7
++                candidate += datetime.timedelta(days=days_ahead)
++        elif self.unit == "hours":
++            candidate = datetime.datetime(
++                now_target.year,
++                now_target.month,
++                now_target.day,
++                now_target.hour,
++                at_time.minute,
++                at_time.second,
++            )
++            try:
++                candidate_for_cmp = self.at_time_zone.localize(
++                    candidate, is_dst=None
++                )
++            except pytz.exceptions.NonExistentTimeError:
++                candidate_for_cmp = self.at_time_zone.localize(
++                    candidate, is_dst=False
++                )
++            if candidate_for_cmp <= now_target:
++                candidate += datetime.timedelta(hours=interval)
++        elif self.unit == "minutes":
++            candidate = datetime.datetime(
++                now_target.year,
++                now_target.month,
++                now_target.day,
++                now_target.hour,
++                now_target.minute,
++                at_time.second,
++            )
++            try:
++                candidate_for_cmp = self.at_time_zone.localize(
++                    candidate, is_dst=None
++                )
++            except pytz.exceptions.NonExistentTimeError:
++                candidate_for_cmp = self.at_time_zone.localize(
++                    candidate, is_dst=False
++                )
++            if candidate_for_cmp <= now_target:
++                candidate += datetime.timedelta(minutes=interval)
++        return candidate
++
++    def _gap_start_for_unit(
++        self, candidate: datetime.datetime, at_time: datetime.time
++    ) -> datetime.datetime:
++        """
++        Compute the start of the DST gap for the given unit and candidate time.
++        """
++        if self.unit == "hours":
++            return candidate.replace(minute=at_time.minute, second=at_time.second, microsecond=0)
++        elif self.unit == "minutes":
++            return candidate.replace(second=at_time.second, microsecond=0)
++        else:
++            return candidate.replace(minute=0, second=0, microsecond=0)
++
++    def _period_for_unit(self) -> datetime.timedelta:
++        """
++        Return a one-unit period as a timedelta.
++        """
++        if self.unit == "days":
++            return datetime.timedelta(days=1)
++        elif self.unit == "hours":
++            return datetime.timedelta(hours=1)
++        elif self.unit == "minutes":
++            return datetime.timedelta(minutes=1)
++        else:
++            raise ScheduleValueError(
++                f"Unsupported unit for tz scheduling: {self.unit}"
++            )
++
+     def _is_overdue(self, when: datetime.datetime):
+         return self.cancel_after is not None and when > self.cancel_after
+ 

@@ -1,0 +1,233 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+collected 207 items
+
+tests/test_cli.py ...............................s....................   [ 25%]
+tests/test_main.py .................................ss..s............... [ 50%]
+........................................................................ [ 85%]
+..............................                                           [100%]
+
+=============================== warnings summary ===============================
+tests/test_cli.py: 31 warnings
+  /app/tests/conftest.py:8: DeprecationWarning: 'isolated_filesystem' is deprecated and will be removed in Click 9.0. Use 'tempfile.TemporaryDirectory' or pytest's 'tmp_path' fixture with absolute paths instead.
+    with runner.isolated_filesystem():
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+________________________ test_unset_non_existent_value _________________________
+------------------------------ Captured log call -------------------------------
+WARNING  dotenv.main:main.py:323 Key a not removed from /tmp/pytest-of-root/pytest-0/test_unset_non_existent_value0/.env - key doesn't exist.
+____________ test_rewrite_reports_original_error_when_cleanup_fails ____________
+------------------------------ Captured log call -------------------------------
+WARNING  dotenv.main:main.py:164 python-dotenv could not remove the temporary file /tmp/pytest-of-root/pytest-0/test_rewrite_reports_original_0/.tmp_qg2h97q1
+=========================== short test summary info ============================
+PASSED tests/test_cli.py::test_list[None-x='a b c'-x=a b c\n]
+PASSED tests/test_cli.py::test_list[simple-x='a b c'-x=a b c\n]
+PASSED tests/test_cli.py::test_list[simple-x='"a b c"'-x="a b c"\n]
+PASSED tests/test_cli.py::test_list[simple-x="'a b c'"-x='a b c'\n]
+PASSED tests/test_cli.py::test_list[json-x='a b c'-{\n  "x": "a b c"\n}\n]
+PASSED tests/test_cli.py::test_list[shell-x='a b c'-x='a b c'\n]
+PASSED tests/test_cli.py::test_list[shell-x='"a b c"'-x='"a b c"'\n]
+PASSED tests/test_cli.py::test_list[shell-x="'a b c'"-x=''"'"'a b c'"'"''\n]
+PASSED tests/test_cli.py::test_list[shell-x='a\nb\nc'-x='a\nb\nc'\n]
+PASSED tests/test_cli.py::test_list[export-x='a b c'-export x='a b c'\n]
+PASSED tests/test_cli.py::test_list_non_existent_file
+PASSED tests/test_cli.py::test_list_not_a_file
+PASSED tests/test_cli.py::test_list_no_file
+PASSED tests/test_cli.py::test_get_existing_value
+PASSED tests/test_cli.py::test_get_empty_string_value
+PASSED tests/test_cli.py::test_get_value_without_equals
+PASSED tests/test_cli.py::test_get_non_existent_value
+PASSED tests/test_cli.py::test_get_non_existent_file
+PASSED tests/test_cli.py::test_get_not_a_file
+PASSED tests/test_cli.py::test_unset_existing_value
+PASSED tests/test_cli.py::test_unset_non_existent_value
+PASSED tests/test_cli.py::test_set_quote_options[always-a-x-a='x'\n]
+PASSED tests/test_cli.py::test_set_quote_options[never-a-x-a=x\n]
+PASSED tests/test_cli.py::test_set_quote_options[auto-a-x-a=x\n]
+PASSED tests/test_cli.py::test_set_quote_options[auto-a-x y-a='x y'\n]
+PASSED tests/test_cli.py::test_set_quote_options[auto-a-$-a='$'\n]
+PASSED tests/test_cli.py::test_set_export[dotenv_path0-true-a-x-export a='x'\n]
+PASSED tests/test_cli.py::test_set_export[dotenv_path1-false-a-x-a='x'\n]
+PASSED tests/test_cli.py::test_set_non_existent_file
+PASSED tests/test_cli.py::test_set_no_file
+PASSED tests/test_cli.py::test_set_missing_directory
+PASSED tests/test_cli.py::test_get_default_path
+PASSED tests/test_cli.py::test_run
+PASSED tests/test_cli.py::test_run_with_existing_variable
+PASSED tests/test_cli.py::test_run_with_existing_variable_not_overridden
+PASSED tests/test_cli.py::test_run_interpolation_respects_override[--override-environment-file\nfile/suffix\n]
+PASSED tests/test_cli.py::test_run_interpolation_respects_override[--no-override-environment-environment\nenvironment/suffix\n]
+PASSED tests/test_cli.py::test_run_interpolation_respects_override[--no-override--\n/suffix\n]
+PASSED tests/test_cli.py::test_run_with_none_value
+PASSED tests/test_cli.py::test_run_with_other_env
+PASSED tests/test_cli.py::test_file_option_expands_user[list]
+PASSED tests/test_cli.py::test_file_option_expands_user[get]
+PASSED tests/test_cli.py::test_file_option_expands_user[set]
+PASSED tests/test_cli.py::test_file_option_expands_user[unset]
+PASSED tests/test_cli.py::test_file_option_expands_user[run]
+PASSED tests/test_cli.py::test_run_without_cmd
+PASSED tests/test_cli.py::test_run_with_invalid_cmd
+PASSED tests/test_cli.py::test_run_with_env_missing_and_invalid_cmd
+PASSED tests/test_cli.py::test_run_with_version
+PASSED tests/test_cli.py::test_run_with_command_flags
+PASSED tests/test_cli.py::test_run_with_dotenv_and_command_flags
+PASSED tests/test_main.py::test_set_key_no_file
+PASSED tests/test_main.py::test_set_key[-a--expected0-a=''\n]
+PASSED tests/test_main.py::test_set_key[-a-b-expected1-a='b'\n]
+PASSED tests/test_main.py::test_set_key[-a-'b'-expected2-a='\\'b\\''\n]
+PASSED tests/test_main.py::test_set_key[-a-"b"-expected3-a='"b"'\n]
+PASSED tests/test_main.py::test_set_key[-a-b'c-expected4-a='b\\'c'\n]
+PASSED tests/test_main.py::test_set_key[-a-b"c-expected5-a='b"c'\n]
+PASSED tests/test_main.py::test_set_key[a=b-a-c-expected6-a='c'\n]
+PASSED tests/test_main.py::test_set_key[a=b\n-a-c-expected7-a='c'\n]
+PASSED tests/test_main.py::test_set_key[a=b\n\n-a-c-expected8-a='c'\n\n]
+PASSED tests/test_main.py::test_set_key[a=b\nc=d-a-e-expected9-a='e'\nc=d]
+PASSED tests/test_main.py::test_set_key[a=b\nc=d\ne=f-c-g-expected10-a=b\nc='g'\ne=f]
+PASSED tests/test_main.py::test_set_key[a=b\n-c-d-expected11-a=b\nc='d'\n]
+PASSED tests/test_main.py::test_set_key[a=b-c-d-expected12-a=b\nc='d'\n]
+PASSED tests/test_main.py::test_set_key[-a-b\\c-expected13-a='b\\\\c'\n]
+PASSED tests/test_main.py::test_set_key[-a-b\\-expected14-a='b\\\\'\n]
+PASSED tests/test_main.py::test_set_key[-a-b\\'c-expected15-a='b\\\\\\'c'\n]
+PASSED tests/test_main.py::test_set_key_round_trips[C:\\Users]
+PASSED tests/test_main.py::test_set_key_round_trips[C:\\Users\\]
+PASSED tests/test_main.py::test_set_key_round_trips[\\d+]
+PASSED tests/test_main.py::test_set_key_round_trips[back\\]
+PASSED tests/test_main.py::test_set_key_round_trips[a\\'b]
+PASSED tests/test_main.py::test_set_key_round_trips[it's]
+PASSED tests/test_main.py::test_set_key_round_trips[say "hi"]
+PASSED tests/test_main.py::test_set_key_round_trips[a\\nb]
+PASSED tests/test_main.py::test_set_key_round_trips[plain]
+PASSED tests/test_main.py::test_set_key_round_trips[]
+PASSED tests/test_main.py::test_set_key_encoding
+PASSED tests/test_main.py::test_set_key_preserves_file_mode
+PASSED tests/test_main.py::test_rewrite_closes_file_handle_on_lstat_failure
+PASSED tests/test_main.py::test_set_key_symlink_to_existing_file
+PASSED tests/test_main.py::test_set_key_symlink_to_missing_file
+PASSED tests/test_main.py::test_set_key_follow_symlinks
+PASSED tests/test_main.py::test_rewrite_reports_original_error_when_cleanup_fails
+PASSED tests/test_main.py::test_set_key_missing_directory
+PASSED tests/test_main.py::test_rewrite_read_only_file_leaves_no_temp_file[set_key]
+PASSED tests/test_main.py::test_rewrite_read_only_file_leaves_no_temp_file[unset_key]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[dotenv_values-str]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[dotenv_values-Path]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[get_key-str]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[get_key-Path]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[set_key-str]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[set_key-Path]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[unset_key-str]
+PASSED tests/test_main.py::test_dotenv_path_expands_user[unset_key-Path]
+PASSED tests/test_main.py::test_load_dotenv_expands_user
+PASSED tests/test_main.py::test_dotenv_path_keeps_type[~/.env-{home}/.env]
+PASSED tests/test_main.py::test_dotenv_path_keeps_type[path1-expected1]
+PASSED tests/test_main.py::test_dotenv_path_keeps_type[.env-.env]
+PASSED tests/test_main.py::test_dotenv_path_keeps_type[None-None]
+PASSED tests/test_main.py::test_get_key_no_file
+PASSED tests/test_main.py::test_get_key_not_found
+PASSED tests/test_main.py::test_get_key_ok
+PASSED tests/test_main.py::test_get_key_encoding
+PASSED tests/test_main.py::test_get_key_none
+PASSED tests/test_main.py::test_empty_dotenv_dict_is_cached
+PASSED tests/test_main.py::test_unset_with_value
+PASSED tests/test_main.py::test_unset_no_value
+PASSED tests/test_main.py::test_unset_encoding
+PASSED tests/test_main.py::test_unset_non_existent_file
+PASSED tests/test_main.py::test_unset_key_symlink_to_existing_file
+PASSED tests/test_main.py::test_unset_key_symlink_to_missing_file
+PASSED tests/test_main.py::test_unset_key_follow_symlinks
+PASSED tests/test_main.py::test_find_dotenv_no_file_raise
+PASSED tests/test_main.py::test_find_dotenv_no_file_no_raise
+PASSED tests/test_main.py::test_find_dotenv_found
+PASSED tests/test_main.py::test_load_dotenv_existing_file
+PASSED tests/test_main.py::test_load_dotenv_disabled[true]
+PASSED tests/test_main.py::test_load_dotenv_disabled[yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled[1]
+PASSED tests/test_main.py::test_load_dotenv_disabled[t]
+PASSED tests/test_main.py::test_load_dotenv_disabled[y]
+PASSED tests/test_main.py::test_load_dotenv_disabled[True]
+PASSED tests/test_main.py::test_load_dotenv_disabled[Yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled[TRUE]
+PASSED tests/test_main.py::test_load_dotenv_disabled[YES]
+PASSED tests/test_main.py::test_load_dotenv_disabled[T]
+PASSED tests/test_main.py::test_load_dotenv_disabled[Y]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[true]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[1]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[t]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[y]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[True]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[Yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[TRUE]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[YES]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[T]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[Y]
+PASSED tests/test_main.py::test_load_dotenv_enabled[]
+PASSED tests/test_main.py::test_load_dotenv_enabled[false]
+PASSED tests/test_main.py::test_load_dotenv_enabled[no]
+PASSED tests/test_main.py::test_load_dotenv_enabled[0]
+PASSED tests/test_main.py::test_load_dotenv_enabled[f]
+PASSED tests/test_main.py::test_load_dotenv_enabled[n]
+PASSED tests/test_main.py::test_load_dotenv_enabled[False]
+PASSED tests/test_main.py::test_load_dotenv_enabled[No]
+PASSED tests/test_main.py::test_load_dotenv_enabled[FALSE]
+PASSED tests/test_main.py::test_load_dotenv_enabled[NO]
+PASSED tests/test_main.py::test_load_dotenv_enabled[F]
+PASSED tests/test_main.py::test_load_dotenv_enabled[N]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[false]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[no]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[0]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[f]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[n]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[False]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[No]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[FALSE]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[NO]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[F]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[N]
+PASSED tests/test_main.py::test_load_dotenv_doesnt_disable_itself
+PASSED tests/test_main.py::test_load_dotenv_no_file_verbose
+PASSED tests/test_main.py::test_load_dotenv_existing_variable_no_override
+PASSED tests/test_main.py::test_load_dotenv_existing_variable_override
+PASSED tests/test_main.py::test_load_dotenv_redefine_var_used_in_file_no_override
+PASSED tests/test_main.py::test_load_dotenv_redefine_var_used_in_file_with_override
+PASSED tests/test_main.py::test_load_dotenv_string_io_utf_8
+PASSED tests/test_main.py::test_load_dotenv_file_stream
+PASSED tests/test_main.py::test_load_dotenv_in_current_dir
+PASSED tests/test_main.py::test_dotenv_values_file
+PASSED tests/test_main.py::test_dotenv_values_string_io[env0-a=$b-False-expected0]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env1-a=$b-True-expected1]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env2-a=${b}-False-expected2]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env3-a=${b}-True-expected3]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env4-a=${b:-d}-False-expected4]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env5-a=${b:-d}-True-expected5]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env6-b=c\na=${b}-True-expected6]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env7-a=${b}-True-expected7]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env8-a=${b:-d}-True-expected8]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env9-a="${b}"-True-expected9]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env10-a='${b}'-True-expected10]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env11-a=x${b}y-True-expected11]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env12-a=${a}-True-expected12]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env13-a=${a}-True-expected13]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env14-a=${a:-c}-True-expected14]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env15-a=${a:-c}-True-expected15]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env16-a=${b}${b}-True-expected16]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env17-b=d\na=${b}-True-expected17]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env18-a=b\na=c\nd=${a}-True-expected18]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env19-a=b\nc=${a}\nd=e\nc=${d}-True-expected19]
+PASSED tests/test_main.py::test_dotenv_values_file_stream
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY= # comment-expected0]
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY=  # comment-expected1]
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY=val # comment-expected2]
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY=a#b-expected3]
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY=#novalue-expected4]
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY=# # comment-expected5]
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY=\t# comment-expected6]
+PASSED tests/test_main.py::test_dotenv_values_empty_value_with_inline_comment[KEY= # comment\nOTHER=val-expected7]
+SKIPPED [1] tests/test_cli.py:205: Directory permissions are not enforced on Windows or for root.
+SKIPPED [1] tests/test_main.py:176: Root user can access files even with 000 permissions.
+SKIPPED [1] tests/test_main.py:199: Root user can access files even with 000 permissions.
+SKIPPED [1] tests/test_main.py:251: Directory permissions are not enforced on Windows or for root.
+================= 203 passed, 4 skipped, 31 warnings in 4.65s ==================

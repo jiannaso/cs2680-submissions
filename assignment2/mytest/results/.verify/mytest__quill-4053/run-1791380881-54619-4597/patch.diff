@@ -1,0 +1,124 @@
+diff --git a/packages/quill/src/core/quill.ts b/packages/quill/src/core/quill.ts
+index 140d5b2..38ff2c5 100644
+--- a/packages/quill/src/core/quill.ts
++++ b/packages/quill/src/core/quill.ts
+@@ -23,6 +23,7 @@ import Theme from './theme.js';
+ import type { ThemeConstructor } from './theme.js';
+ import scrollRectIntoView from './utils/scrollRectIntoView.js';
+ import type { Rect } from './utils/scrollRectIntoView.js';
++import createRegistryWithFormats from './utils/createRegistryWithFormats.js';
+ 
+ const debug = logger('quill');
+ 
+@@ -33,6 +34,7 @@ interface Options {
+   theme?: string;
+   debug?: DebugLevel | boolean;
+   registry?: Parchment.Registry;
++  formats?: string[] | null;
+   readOnly?: boolean;
+   placeholder?: string;
+   bounds?: HTMLElement | string | null;
+@@ -785,10 +787,28 @@ function expandConfig(
+ 
+   const config = { ...quillDefaults, ...themeDefaults, ...options };
+ 
++  // Determine registry: explicit registry option takes precedence,
++  // then formats option, then global registry
++  const passedRegistry = options.registry;
++  let registry: Parchment.Registry;
++  if (passedRegistry != null) {
++    // Explicit registry option takes precedence over everything
++    registry = passedRegistry;
++  } else if (Array.isArray(options.formats)) {
++    registry = createRegistryWithFormats(
++      options.formats,
++      globalRegistry,
++      debug,
++    );
++  } else {
++    registry = globalRegistry;
++  }
++
+   return {
+     ...config,
+     container,
+     theme,
++    registry,
+     modules: Object.entries(modules).reduce(
+       (modulesWithDefaults, [name, value]) => {
+         if (!value) return modulesWithDefaults;
+diff --git a/packages/quill/src/core/utils/createRegistryWithFormats.ts b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+new file mode 100644
+index 0000000..e52b405
+--- /dev/null
++++ b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+@@ -0,0 +1,68 @@
++import * as Parchment from 'parchment';
++import type { BlotConstructor } from 'parchment';
++
++const CORE_BLOTS = [
++  'block',
++  'break',
++  'cursor',
++  'inline',
++  'scroll',
++  'text',
++];
++
++function createRegistryWithFormats(
++  formats: string[],
++  sourceRegistry: Parchment.Registry,
++  debug: { error: (message: string) => void },
++): Parchment.Registry {
++  const registry = new Parchment.Registry();
++  const registered = new Set<string>(CORE_BLOTS);
++  const inProgress = new Set<string>();
++
++  function resolveFormat(formatName: string): void {
++    // Cycle detected - we're trying to resolve something we're already resolving
++    if (inProgress.has(formatName)) {
++      debug.error(`Cycle detected in required containers`);
++      return;
++    }
++
++    // Already registered, skip
++    if (registered.has(formatName)) return;
++
++    inProgress.add(formatName);
++
++    // Check if this format exists in the source registry
++    const blotDef = sourceRegistry.query(formatName, Parchment.Scope.BLOT);
++    if (blotDef == null) {
++      debug.error(`Unknown format: ${formatName}`);
++      inProgress.delete(formatName);
++      return;
++    }
++
++    registered.add(formatName);
++
++    // Check if this blot has a requiredContainer, and register it (recursively)
++    const blotConstructor = blotDef as BlotConstructor;
++    if (blotConstructor.requiredContainer != null) {
++      resolveFormat(blotConstructor.requiredContainer.blotName);
++    }
++
++    inProgress.delete(formatName);
++  }
++
++  for (const formatName of formats) {
++    resolveFormat(formatName);
++  }
++
++  // Register all resolved formats into the new registry
++  for (const name of registered) {
++    const definition = sourceRegistry.query(name, Parchment.Scope.BLOT);
++    if (definition) {
++      registry.register(definition);
++    }
++  }
++
++  return registry;
++}
++
++export default createRegistryWithFormats;
+\ No newline at end of file

@@ -1,0 +1,2 @@
+error: cannot apply binary patch to 'packages/quill/core' without full index line
+error: packages/quill/core: patch does not apply

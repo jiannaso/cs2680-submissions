@@ -1,0 +1,87 @@
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..86b118d 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -392,8 +392,11 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
+-  return applyFormat(delta, format, true);
++function matchAlias(format: string, node: Element, delta: Delta, scroll: ScrollBlot) {
++  if (scroll.query(format, Scope.BLOT) != null) {
++    return applyFormat(delta, format, true);
++  }
++  return delta;
+ }
+ 
+ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+@@ -420,8 +423,15 @@ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+         formats[attr.attrName] = attr.value(node) || undefined;
+       }
+     });
+-  if (Object.keys(formats).length > 0) {
+-    return applyFormat(delta, formats);
++  // Filter out formats not present in the registry
++  const supportedFormats: Record<string, string | undefined> = {};
++  Object.keys(formats).forEach((name) => {
++    if (formats[name] != null && scroll.query(name, Scope.ATTRIBUTE) != null) {
++      supportedFormats[name] = formats[name];
++    }
++  });
++  if (Object.keys(supportedFormats).length > 0) {
++    return applyFormat(delta, supportedFormats);
+   }
+   return delta;
+ }
+@@ -463,8 +473,9 @@ function matchBreak(node: Node, delta: Delta) {
+ 
+ function matchCodeBlock(node: Node, delta: Delta, scroll: ScrollBlot) {
+   const match = scroll.query('code-block');
++  if (match == null) return delta;
+   // @ts-expect-error
+-  const language = match ? match.formats(node, scroll) : true;
++  const language = match.formats(node, scroll);
+   return applyFormat(delta, 'code-block', language);
+ }
+ 
+@@ -532,22 +543,32 @@ function matchNewline(node: Node, delta: Delta, scroll: ScrollBlot) {
+   return delta;
+ }
+ 
+-function matchStyles(node: HTMLElement, delta: Delta) {
++function matchStyles(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+   const formats: Record<string, unknown> = {};
+   const style: Partial<CSSStyleDeclaration> = node.style || {};
+-  if (style.fontStyle === 'italic') {
++  if (
++    style.fontStyle === 'italic' &&
++    scroll.query('italic', Scope.BLOT) != null
++  ) {
+     formats.italic = true;
+   }
+-  if (style.textDecoration === 'underline') {
++  if (
++    style.textDecoration === 'underline' &&
++    scroll.query('underline', Scope.BLOT) != null
++  ) {
+     formats.underline = true;
+   }
+-  if (style.textDecoration === 'line-through') {
++  if (
++    style.textDecoration === 'line-through' &&
++    scroll.query('strike', Scope.BLOT) != null
++  ) {
+     formats.strike = true;
+   }
+   if (
+-    style.fontWeight?.startsWith('bold') ||
+-    // @ts-expect-error Fix me later
+-    parseInt(style.fontWeight, 10) >= 700
++    (style.fontWeight?.startsWith('bold') ||
++      // @ts-expect-error Fix me later
++      parseInt(style.fontWeight, 10) >= 700) &&
++    scroll.query('bold', Scope.BLOT) != null
+   ) {
+     formats.bold = true;
+   }

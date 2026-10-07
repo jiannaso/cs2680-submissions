@@ -1,0 +1,29 @@
+diff --git a/src/index.ts b/src/index.ts
+index 6d01816..2570a76 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -42,6 +42,7 @@ export { default as createBreakpoint } from './createBreakpoint';
+ // export { default as useKeyboardJs } from './useKeyboardJs';
+ export { default as useKeyPress } from './useKeyPress';
+ export { default as useKeyPressEvent } from './useKeyPressEvent';
++export { default as useLatest } from './useLatest';
+ export { default as useLifecycles } from './useLifecycles';
+ export { default as useList } from './useList';
+ export { default as useLocalStorage } from './useLocalStorage';
+diff --git a/src/useLatest.ts b/src/useLatest.ts
+new file mode 100644
+index 0000000..8399783
+--- /dev/null
++++ b/src/useLatest.ts
+@@ -0,0 +1,11 @@
++import { useRef } from 'react';
++
++const useLatest = <T>(value: T): React.MutableRefObject<T> => {
++  const ref = useRef(value);
++
++  ref.current = value;
++
++  return ref;
++};
++
++export default useLatest;

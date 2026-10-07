@@ -1,0 +1,284 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+collected 42 items
+
+test_schedule.py ...F......................................              [100%]
+
+=================================== FAILURES ===================================
+_______________________ SchedulerTests.test_at_timezone ________________________
+
+self = Every 1 day at 02:30:00 do job() (last run: [never], next run: 2023-03-27 01:30:00)
+now_target = MockDate(2023, 3, 26, 1, 30, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+at_time = datetime.time(2, 30), interval = 1
+
+    def _build_candidate_in_tz(
+        self,
+        now_target,
+        at_time: datetime.time,
+        interval: int,
+    ) -> datetime.datetime:
+        """
+        Build the next candidate datetime in the target timezone.
+        """
+        if self.unit == "days" or self.start_day is not None:
+            candidate = datetime.datetime(
+                now_target.year,
+                now_target.month,
+                now_target.day,
+                at_time.hour,
+                at_time.minute,
+                at_time.second,
+            )
+            # Localize before comparing; handle DST gaps by using is_dst=False.
+            try:
+>               candidate_for_cmp = self.at_time_zone.localize(
+                    candidate, is_dst=None
+                )
+
+schedule/__init__.py:872: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <DstTzInfo 'Europe/Berlin' LMT+0:53:00 STD>
+dt = MockDate(2023, 3, 26, 2, 30), is_dst = None
+
+    def localize(self, dt, is_dst=False):
+        '''Convert naive time to local time.
+    
+        This method should be used to construct localtimes, rather
+        than passing a tzinfo argument to a datetime constructor.
+    
+        is_dst is used to determine the correct timezone in the ambigous
+        period at the end of daylight saving time.
+    
+        >>> from pytz import timezone
+        >>> fmt = '%Y-%m-%d %H:%M:%S %Z (%z)'
+        >>> amdam = timezone('Europe/Amsterdam')
+        >>> dt  = datetime(2004, 10, 31, 2, 0, 0)
+        >>> loc_dt1 = amdam.localize(dt, is_dst=True)
+        >>> loc_dt2 = amdam.localize(dt, is_dst=False)
+        >>> loc_dt1.strftime(fmt)
+        '2004-10-31 02:00:00 CEST (+0200)'
+        >>> loc_dt2.strftime(fmt)
+        '2004-10-31 02:00:00 CET (+0100)'
+        >>> str(loc_dt2 - loc_dt1)
+        '1:00:00'
+    
+        Use is_dst=None to raise an AmbiguousTimeError for ambiguous
+        times at the end of daylight saving time
+    
+        >>> try:
+        ...     loc_dt1 = amdam.localize(dt, is_dst=None)
+        ... except AmbiguousTimeError:
+        ...     print('Ambiguous')
+        Ambiguous
+    
+        is_dst defaults to False
+    
+        >>> amdam.localize(dt) == amdam.localize(dt, False)
+        True
+    
+        is_dst is also used to determine the correct timezone in the
+        wallclock times jumped over at the start of daylight saving time.
+    
+        >>> pacific = timezone('US/Pacific')
+        >>> dt = datetime(2008, 3, 9, 2, 0, 0)
+        >>> ploc_dt1 = pacific.localize(dt, is_dst=True)
+        >>> ploc_dt2 = pacific.localize(dt, is_dst=False)
+        >>> ploc_dt1.strftime(fmt)
+        '2008-03-09 02:00:00 PDT (-0700)'
+        >>> ploc_dt2.strftime(fmt)
+        '2008-03-09 02:00:00 PST (-0800)'
+        >>> str(ploc_dt2 - ploc_dt1)
+        '1:00:00'
+    
+        Use is_dst=None to raise a NonExistentTimeError for these skipped
+        times.
+    
+        >>> try:
+        ...     loc_dt1 = pacific.localize(dt, is_dst=None)
+        ... except NonExistentTimeError:
+        ...     print('Non-existent')
+        Non-existent
+        '''
+        if dt.tzinfo is not None:
+            raise ValueError('Not naive datetime (tzinfo is already set)')
+    
+        # Find the two best possibilities.
+        possible_loc_dt = set()
+        for delta in [timedelta(days=-1), timedelta(days=1)]:
+            try:
+                loc_dt = dt + delta
+            except OverflowError:
+                # dt is close to datetime.min or datetime.max; skip this
+                # direction rather than raising an OverflowError to the caller.
+                continue
+            idx = max(0, bisect_right(
+                self._utc_transition_times, loc_dt) - 1)
+            inf = self._transition_info[idx]
+            tzinfo = self._tzinfos[inf]
+            loc_dt = tzinfo.normalize(dt.replace(tzinfo=tzinfo))
+            if loc_dt.replace(tzinfo=None) == dt:
+                possible_loc_dt.add(loc_dt)
+    
+        if len(possible_loc_dt) == 1:
+            return possible_loc_dt.pop()
+    
+        # If there are no possibly correct timezones, we are attempting
+        # to convert a time that never happened - the time period jumped
+        # during the start-of-DST transition period.
+        if len(possible_loc_dt) == 0:
+            # If we refuse to guess, raise an exception.
+            if is_dst is None:
+>               raise NonExistentTimeError(dt)
+E               pytz.exceptions.NonExistentTimeError: 2023-03-26 02:30:00
+
+/usr/local/lib/python3.12/site-packages/pytz/tzinfo.py:349: NonExistentTimeError
+
+During handling of the above exception, another exception occurred:
+
+self = <test_schedule.SchedulerTests testMethod=test_at_timezone>
+
+    def test_at_timezone(self):
+        mock_job = make_mock_job()
+        try:
+            import pytz
+        except ModuleNotFoundError:
+            self.skipTest("pytz unavailable")
+            return
+    
+        with mock_datetime(2022, 2, 1, 23, 15):
+            # Current Berlin time: feb-1 23:15 (local)
+            # Current India time: feb-2 03:45
+            # Expected to run India time: feb-2 06:30
+            # Next run Berlin time: feb-2 02:00
+            next = every().day.at("06:30", "Asia/Kolkata").do(mock_job).next_run
+            assert next.day == 2
+            assert next.hour == 2
+            assert next.minute == 0
+    
+        with mock_datetime(2023, 4, 14, 4, 50):
+            # Current Berlin time: april-14 04:50 (local) (during daylight saving)
+            # Current US/Central time: april-13 21:50
+            # Expected to run US/Central time: april-14 00:00
+            # Next run Berlin time: april-14 07:00
+            next = every().day.at("00:00", "US/Central").do(mock_job).next_run
+            assert next.day == 14
+            assert next.hour == 7
+            assert next.minute == 0
+    
+        with mock_datetime(2022, 4, 8, 10, 0):
+            # Current Berlin time: 10:00 (local) (during daylight saving)
+            # Current NY time: 04:00
+            # Expected to run NY time: 10:30
+            # Next run Berlin time: 16:30
+            next = every().day.at("10:30", "America/New_York").do(mock_job).next_run
+            assert next.hour == 16
+            assert next.minute == 30
+    
+        with mock_datetime(2022, 3, 20, 10, 0):
+            # Current Berlin time: 10:00 (local) (NOT during daylight saving)
+            # Current NY time: 04:00 (during daylight saving)
+            # Expected to run NY time: 10:30
+            # Next run Berlin time: 15:30
+            tz = pytz.timezone("America/New_York")
+            next = every().day.at("10:30", tz).do(mock_job).next_run
+            assert next.hour == 15
+            assert next.minute == 30
+    
+        # Test the DST-case that is described in the documentation
+        with mock_datetime(2023, 3, 26, 1, 30):
+            # Current Berlin time: 01:30 (NOT during daylight saving)
+            # Expected to run: 02:30 - this time doesn't exist
+            #  because clock moves from 02:00 to 03:00
+            # Next run: 03:30
+>           job = every().day.at("02:30", "Europe/Berlin").do(mock_job)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test_schedule.py:646: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+schedule/__init__.py:659: in do
+    self._schedule_next_run()
+schedule/__init__.py:751: in _schedule_next_run
+    self._schedule_next_run_tz(
+schedule/__init__.py:824: in _schedule_next_run_tz
+    candidate = self._build_candidate_in_tz(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = Every 1 day at 02:30:00 do job() (last run: [never], next run: 2023-03-27 01:30:00)
+now_target = MockDate(2023, 3, 26, 1, 30, tzinfo=<DstTzInfo 'Europe/Berlin' CET+1:00:00 STD>)
+at_time = datetime.time(2, 30), interval = 1
+
+    def _build_candidate_in_tz(
+        self,
+        now_target,
+        at_time: datetime.time,
+        interval: int,
+    ) -> datetime.datetime:
+        """
+        Build the next candidate datetime in the target timezone.
+        """
+        if self.unit == "days" or self.start_day is not None:
+            candidate = datetime.datetime(
+                now_target.year,
+                now_target.month,
+                now_target.day,
+                at_time.hour,
+                at_time.minute,
+                at_time.second,
+            )
+            # Localize before comparing; handle DST gaps by using is_dst=False.
+            try:
+                candidate_for_cmp = self.at_time_zone.localize(
+                    candidate, is_dst=None
+                )
+>           except pytz.exceptions.NonExistentTimeError:
+                   ^^^^
+E           NameError: name 'pytz' is not defined
+
+schedule/__init__.py:875: NameError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test_schedule.py::SchedulerTests::test_at_time
+PASSED test_schedule.py::SchedulerTests::test_at_time_hour
+PASSED test_schedule.py::SchedulerTests::test_at_time_minute
+PASSED test_schedule.py::SchedulerTests::test_cancel_job
+PASSED test_schedule.py::SchedulerTests::test_cancel_jobs
+PASSED test_schedule.py::SchedulerTests::test_clear_by_tag
+PASSED test_schedule.py::SchedulerTests::test_daylight_saving_time
+PASSED test_schedule.py::SchedulerTests::test_get_by_tag
+PASSED test_schedule.py::SchedulerTests::test_idle_seconds
+PASSED test_schedule.py::SchedulerTests::test_job_func_args_are_passed_on
+PASSED test_schedule.py::SchedulerTests::test_misconfigured_job_wont_break_scheduler
+PASSED test_schedule.py::SchedulerTests::test_next_run_property
+PASSED test_schedule.py::SchedulerTests::test_next_run_time
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_day_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_katmandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_katmhandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_with_tag
+PASSED test_schedule.py::SchedulerTests::test_repr_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_run_all
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_args
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_defaultargs
+PASSED test_schedule.py::SchedulerTests::test_run_every_n_days_at_specific_time
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_past_today
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_today
+PASSED test_schedule.py::SchedulerTests::test_run_pending
+PASSED test_schedule.py::SchedulerTests::test_singular_time_units_match_plural_units
+PASSED test_schedule.py::SchedulerTests::test_tag_type_enforcement
+PASSED test_schedule.py::SchedulerTests::test_time_range
+PASSED test_schedule.py::SchedulerTests::test_time_range_repr
+PASSED test_schedule.py::SchedulerTests::test_time_units
+PASSED test_schedule.py::SchedulerTests::test_to_repr
+PASSED test_schedule.py::SchedulerTests::test_to_string
+PASSED test_schedule.py::SchedulerTests::test_to_string_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_to_string_lambda_job_func
+PASSED test_schedule.py::SchedulerTests::test_until_time
+PASSED test_schedule.py::SchedulerTests::test_weekday_at_todady
+FAILED test_schedule.py::SchedulerTests::test_at_timezone - NameError: name '...
+========================= 1 failed, 41 passed in 0.39s =========================

@@ -1,0 +1,28 @@
+== task 20: mytest__starlette-3471
+== image: madsloop-mytest:starlette-3471
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:starlette-3471
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__starlette-3471.diff
+diff --git a/starlette/middleware/trustedhost.py b/starlette/middleware/trustedhost.py
+index 98451e2..f94c0ea 100644
+--- a/starlette/middleware/trustedhost.py
++++ b/starlette/middleware/trustedhost.py
+@@ -1,5 +1,6 @@
+ from __future__ import annotations
+ 
++import re
+ from collections.abc import Sequence
+ 
+ from starlette.datastructures import URL, Headers
+@@ -8,6 +9,31 @@ from starlette.types import ASGIApp, Receive, Scope, Send
+ 
+ ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'."
+ 
++# Regex for validating host headers.
++# Matches valid hostnames and bracketed IPv6 addresses, optionally with a numeric port.
++_HOST_RE = re.compile(
++    r"^([a-z0-9._-]+|\[[a-f0-9]*:[a-f0-9.:]+\])(?::[0-9]+)?$", re.IGNORECASE
++)

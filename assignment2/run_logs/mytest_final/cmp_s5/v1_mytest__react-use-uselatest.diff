@@ -1,0 +1,83 @@
+diff --git a/src/index.ts b/src/index.ts
+index 6d01816..390c63f 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -43,6 +43,7 @@ export { default as createBreakpoint } from './createBreakpoint';
+ export { default as useKeyPress } from './useKeyPress';
+ export { default as useKeyPressEvent } from './useKeyPressEvent';
+ export { default as useLifecycles } from './useLifecycles';
++export { default as useLatest } from './useLatest';
+ export { default as useList } from './useList';
+ export { default as useLocalStorage } from './useLocalStorage';
+ export { default as useLocation } from './useLocation';
+diff --git a/src/useLatest.ts b/src/useLatest.ts
+new file mode 100644
+index 0000000..afd4104
+--- /dev/null
++++ b/src/useLatest.ts
+@@ -0,0 +1,13 @@
++import { useRef, useEffect } from 'react';
++
++const useLatest = <T>(value: T): React.MutableRefObject<T> => {
++  const ref = useRef<T>(value);
++
++  useEffect(() => {
++    ref.current = value;
++  });
++
++  return ref;
++};
++
++export default useLatest;
+diff --git a/tests/useLatest.test.ts b/tests/useLatest.test.ts
+new file mode 100644
+index 0000000..fcfc80f
+--- /dev/null
++++ b/tests/useLatest.test.ts
+@@ -0,0 +1,46 @@
++import { renderHook } from '@testing-library/react-hooks';
++import useLatest from '../src/useLatest';
++
++const setUp = ({ value }: { value: number }) => renderHook(({ value }) => useLatest(value), { initialProps: { value } });
++
++it('should return a ref with the initial value on mount', () => {
++  const { result } = setUp({ value: 0 });
++
++  expect(result.current.current).toBe(0);
++});
++
++it('should update the ref on each rerender', () => {
++  const { result, rerender } = setUp({ value: 0 });
++
++  rerender({ value: 1 });
++  expect(result.current.current).toBe(1);
++
++  rerender({ value: 2 });
++  expect(result.current.current).toBe(2);
++});
++
++it('should always return the same ref object', () => {
++  const { result, rerender } = setUp({ value: 0 });
++  const ref1 = result.current;
++
++  rerender({ value: 1 });
++  const ref2 = result.current;
++
++  rerender({ value: 2 });
++  const ref3 = result.current;
++
++  expect(ref1).toBe(ref2);
++  expect(ref2).toBe(ref3);
++});
++
++it('should work with non-number values', () => {
++  const { result, rerender } = renderHook(({ value }) => useLatest(value), { initialProps: { value: 'hello' as string | number } });
++
++  expect(result.current.current).toBe('hello');
++
++  rerender({ value: 42 });
++  expect(result.current.current).toBe(42);
++
++  rerender({ value: 'world' });
++  expect(result.current.current).toBe('world');
++});

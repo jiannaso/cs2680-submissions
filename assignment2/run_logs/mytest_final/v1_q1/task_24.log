@@ -1,0 +1,28 @@
+== task 24: mytest__quill-4053
+== image: madsloop-mytest:quill-4053
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:quill-4053
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__quill-4053.diff
+diff --git a/packages/quill/src/core/quill.ts b/packages/quill/src/core/quill.ts
+index 140d5b2..38ff2c5 100644
+--- a/packages/quill/src/core/quill.ts
++++ b/packages/quill/src/core/quill.ts
+@@ -23,6 +23,7 @@ import Theme from './theme.js';
+ import type { ThemeConstructor } from './theme.js';
+ import scrollRectIntoView from './utils/scrollRectIntoView.js';
+ import type { Rect } from './utils/scrollRectIntoView.js';
++import createRegistryWithFormats from './utils/createRegistryWithFormats.js';
+ 
+ const debug = logger('quill');
+ 
+@@ -33,6 +34,7 @@ interface Options {
+   theme?: string;
+   debug?: DebugLevel | boolean;
+   registry?: Parchment.Registry;
++  formats?: string[] | null;
+   readOnly?: boolean;
+   placeholder?: string;
+   bounds?: HTMLElement | string | null;

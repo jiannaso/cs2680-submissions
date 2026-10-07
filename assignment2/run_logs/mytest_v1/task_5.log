@@ -1,0 +1,28 @@
+== task 5: mytest__tldextract-383
+== image: madsloop-mytest:tldextract-383
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:tldextract-383
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__tldextract-383.diff
+diff --git a/tldextract/tldextract.py b/tldextract/tldextract.py
+index 566cea3..407e2f0 100644
+--- a/tldextract/tldextract.py
++++ b/tldextract/tldextract.py
+@@ -758,6 +758,7 @@ class _PublicSuffixListTLDExtractor:
+             else self.tlds_excl_private_trie
+         )
+         suffix_idx = reg_idx = label_idx = len(spl)
++        suffix_node = None
+         for label in reversed(spl):
+             decoded_label = _decode_punycode(label)
+             if decoded_label in node.matches:
+@@ -765,6 +766,7 @@ class _PublicSuffixListTLDExtractor:
+                 node = node.matches[decoded_label]
+                 if node.end:
+                     suffix_idx = label_idx
++                    suffix_node = node
+                     if not node.is_private:
+                         reg_node = node
+                         reg_idx = label_idx

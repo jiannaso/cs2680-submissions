@@ -1,0 +1,68 @@
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index 44495e9..09ccaee 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -17,7 +17,7 @@ except ImportError:
+     )
+     sys.exit(1)
+ 
+-from .main import DotEnv, dotenv_values, set_key, unset_key
++from .main import DotEnv, _expand_path, dotenv_values, set_key, unset_key
+ from .version import __version__
+ 
+ 
+@@ -61,7 +61,7 @@ def enumerate_env() -> Optional[str]:
+ @click.pass_context
+ def cli(ctx: click.Context, file: Any, quote: Any, export: Any) -> None:
+     """This script is used to set, get or unset values from a .env file."""
+-    ctx.obj = {"QUOTE": quote, "EXPORT": export, "FILE": file}
++    ctx.obj = {"QUOTE": quote, "EXPORT": export, "FILE": _expand_path(file)}
+ 
+ 
+ @contextmanager
+diff --git a/src/dotenv/main.py b/src/dotenv/main.py
+index 13f6776..0c67067 100644
+--- a/src/dotenv/main.py
++++ b/src/dotenv/main.py
+@@ -39,6 +39,16 @@ def with_warn_for_invalid_lines(mappings: Iterator[Binding]) -> Iterator[Binding
+         yield mapping
+ 
+ 
++def _expand_path(path: Optional[StrPath]) -> Optional[StrPath]:
++    """Expand a path that may contain a leading ~ to the user's home directory."""
++    if path is None:
++        return None
++    # Convert PathLike to str so expanduser works on it
++    if isinstance(path, os.PathLike):
++        path = os.fspath(path)
++    return os.path.expanduser(path)
++
++
+ class DotEnv:
+     def __init__(
+         self,
+@@ -49,7 +59,7 @@ class DotEnv:
+         interpolate: bool = True,
+         override: bool = True,
+     ) -> None:
+-        self.dotenv_path: Optional[StrPath] = dotenv_path
++        self.dotenv_path: Optional[StrPath] = _expand_path(dotenv_path)
+         self.stream: Optional[IO[str]] = stream
+         self._dict: Optional[Dict[str, Optional[str]]] = None
+         self.verbose: bool = verbose
+@@ -235,6 +245,7 @@ def set_key(
+     modifying a file at a potentially untrusted path. If you don't need this
+     protection and need symlinks to be followed, use `follow_symlinks`.
+     """
++    dotenv_path = _expand_path(dotenv_path)
+     if quote_mode not in ("always", "auto", "never"):
+         raise ValueError(f"Unknown quote_mode: {quote_mode}")
+ 
+@@ -294,6 +305,7 @@ def unset_key(
+     modifying a file at a potentially untrusted path. If you don't need this
+     protection and need symlinks to be followed, use `follow_symlinks`.
+     """
++    dotenv_path = _expand_path(dotenv_path)
+     if not os.path.exists(dotenv_path):
+         logger.warning("Can't delete from %s - it doesn't exist.", dotenv_path)
+         return None, key_to_unset

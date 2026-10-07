@@ -1,0 +1,21 @@
+== task 15: mytest__tldextract-289
+== image: madsloop-mytest:tldextract-289
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:tldextract-289
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__tldextract-289.diff
+diff --git a/tldextract/tldextract.py b/tldextract/tldextract.py
+index ea20f02..361fc33 100644
+--- a/tldextract/tldextract.py
++++ b/tldextract/tldextract.py
+@@ -257,6 +257,8 @@ class TLDExtract:
+     def _extract_netloc(
+         self, netloc: str, include_psl_private_domains: Optional[bool]
+     ) -> ExtractResult:
++        if include_psl_private_domains is None:
++            include_psl_private_domains = self.include_psl_private_domains
+         labels = (
+             netloc.replace("\u3002", "\u002e")
+             .replace("\uff0e", "\u002e")

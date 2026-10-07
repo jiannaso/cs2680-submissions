@@ -1,0 +1,29 @@
+diff --git a/tldextract/tldextract.py b/tldextract/tldextract.py
+index 566cea3..407e2f0 100644
+--- a/tldextract/tldextract.py
++++ b/tldextract/tldextract.py
+@@ -758,6 +758,7 @@ class _PublicSuffixListTLDExtractor:
+             else self.tlds_excl_private_trie
+         )
+         suffix_idx = reg_idx = label_idx = len(spl)
++        suffix_node = None
+         for label in reversed(spl):
+             decoded_label = _decode_punycode(label)
+             if decoded_label in node.matches:
+@@ -765,6 +766,7 @@ class _PublicSuffixListTLDExtractor:
+                 node = node.matches[decoded_label]
+                 if node.end:
+                     suffix_idx = label_idx
++                    suffix_node = node
+                     if not node.is_private:
+                         reg_node = node
+                         reg_idx = label_idx
+@@ -786,7 +788,7 @@ class _PublicSuffixListTLDExtractor:
+         if suffix_idx == len(spl):
+             return None
+ 
+-        return ((suffix_idx, node), (reg_idx, reg_node))
++        return ((suffix_idx, suffix_node), (reg_idx, reg_node))
+ 
+ 
+ def _decode_punycode(label: str) -> str:

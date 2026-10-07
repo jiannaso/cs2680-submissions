@@ -1,0 +1,171 @@
+diff --git a/starlette/_utils.py b/starlette/_utils.py
+index c50ebec..2b33f91 100644
+--- a/starlette/_utils.py
++++ b/starlette/_utils.py
+@@ -5,6 +5,8 @@ import re
+ import sys
+ from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
+ from contextlib import AbstractAsyncContextManager, asynccontextmanager
++from dataclasses import dataclass
++from ipaddress import AddressValueError, IPv6Address
+ from typing import Any, Generic, Protocol, TypeVar, overload
+ 
+ import anyio.abc
+@@ -32,7 +34,28 @@ T = TypeVar("T")
+ AwaitableCallable = Callable[..., Awaitable[T]]
+ 
+ # Reject characters that could make a Host header change the URL path or authority.
+-_HOST_RE = re.compile(r"^([a-z0-9._~%!$&'()*+,;=-]+|\[[a-f0-9]*:[a-f0-9.:]+\])(?::[0-9]+)?$", re.IGNORECASE)
++_HOST_RE = re.compile(
++    r"^(?P<host>[a-z0-9._~%!$&'()*+,;=-]+|\[(?:(?P<ipv6>[a-f0-9]*:[a-f0-9.:]+)|"
++    r"(?-i:v)[a-f0-9]+\.[a-z0-9._~!$&'()*+,;=:-]+)\])(?::(?P<port>[0-9]+))?$",
++    re.IGNORECASE,
++)
++
++
++@dataclass(frozen=True, slots=True)
++class ParsedHost:
++    host: str
++    port: str | None
++
++    @property
++    def authority(self) -> str:
++        return self.host if self.port is None else f"{self.host}:{self.port}"
++
++    @property
++    def is_valid_port(self) -> bool:
++        if self.port is None:
++            return True
++        port = self.port.lstrip("0")
++        return len(port) <= 5 and int(port or "0") <= 65535
+ 
+ 
+ @overload
+@@ -97,14 +120,26 @@ async def create_collapsing_task_group() -> AsyncGenerator[anyio.abc.TaskGroup,
+         raise exc from exc.__cause__ or context
+ 
+ 
+-def parse_host_header(host_header: str) -> str | None:
+-    """Parse `host_header` into its host component.
++def parse_host_header(host_header: str | None) -> ParsedHost | None:
++    """Parse `host_header` into its host and port components.
+ 
+-    The result excludes the port and preserves brackets around IPv6 addresses.
+-    Invalid headers produce `None`.
++    The host preserves brackets around IP literals. Invalid headers produce `None`.
+     """
++    if host_header is None:
++        return None
++
+     match = _HOST_RE.fullmatch(host_header)
+-    return match.group(1) if match is not None else None
++    if match is None:
++        return None
++
++    ipv6 = match["ipv6"]
++    if ipv6 is not None:
++        try:
++            IPv6Address(ipv6)
++        except AddressValueError:
++            return None
++
++    return ParsedHost(match["host"], match["port"])
+ 
+ 
+ def get_route_path(scope: Scope) -> str:
+diff --git a/starlette/datastructures.py b/starlette/datastructures.py
+index 01d49d5..d4ec95e 100644
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -43,10 +43,13 @@ class URL:
+                     host_header = value.decode("latin-1")
+                     break
+ 
+-            if host_header is not None and parse_host_header(host_header) is not None:
+-                netloc = host_header
++            parsed_host = parse_host_header(host_header)
++            if parsed_host is not None and parsed_host.is_valid_port:
++                netloc = parsed_host.authority
+             elif server is not None:
+                 host, port = server
++                if ":" in host and not host.startswith("["):
++                    host = f"[{host}]"
+                 default_port = {"http": 80, "https": 443, "ws": 80, "wss": 443}[scheme]
+                 netloc = host if port == default_port else f"{host}:{port}"
+             else:
+diff --git a/starlette/middleware/httpsredirect.py b/starlette/middleware/httpsredirect.py
+index a835906..da40919 100644
+--- a/starlette/middleware/httpsredirect.py
++++ b/starlette/middleware/httpsredirect.py
+@@ -1,5 +1,5 @@
+ from starlette.datastructures import URL
+-from starlette.responses import RedirectResponse
++from starlette.responses import PlainTextResponse, RedirectResponse
+ from starlette.types import ASGIApp, Receive, Scope, Send
+ 
+ 
+@@ -10,6 +10,9 @@ class HTTPSRedirectMiddleware:
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+         if scope["type"] in ("http", "websocket") and scope["scheme"] in ("http", "ws"):
+             url = URL(scope=scope)
++            if not url.netloc:
++                await PlainTextResponse("Invalid host header", status_code=400)(scope, receive, send)
++                return
+             redirect_scheme = {"http": "https", "ws": "wss"}[url.scheme]
+             netloc = url.hostname if url.port in (80, 443) else url.netloc
+             url = url.replace(scheme=redirect_scheme, netloc=netloc)
+diff --git a/starlette/middleware/trustedhost.py b/starlette/middleware/trustedhost.py
+index cccdfd2..c57aa9a 100644
+--- a/starlette/middleware/trustedhost.py
++++ b/starlette/middleware/trustedhost.py
+@@ -38,10 +38,11 @@ class TrustedHostMiddleware:
+             return
+ 
+         headers = Headers(scope=scope)
+-        host = parse_host_header(headers.get("host", ""))
+-        if host is None:
++        parsed_host = parse_host_header(headers.get("host"))
++        if parsed_host is None:
+             await PlainTextResponse("Invalid host header", status_code=400)(scope, receive, send)
+             return
++        host = parsed_host.host
+ 
+         is_valid_host = False
+         found_www_redirect = False
+diff --git a/starlette/routing.py b/starlette/routing.py
+index 9795f4e..9969d38 100644
+--- a/starlette/routing.py
++++ b/starlette/routing.py
+@@ -14,7 +14,7 @@ from re import Pattern
+ from typing import Any, TypeVar
+ 
+ from starlette._exception_handler import wrap_app_handling_exceptions
+-from starlette._utils import get_route_path, is_async_callable
++from starlette._utils import get_route_path, is_async_callable, parse_host_header
+ from starlette.concurrency import run_in_threadpool
+ from starlette.convertors import CONVERTOR_TYPES, Convertor
+ from starlette.datastructures import URL, Headers, URLPath
+@@ -154,7 +154,9 @@ def compile_path(
+ 
+     if is_host:
+         # Align with `Host.matches()` behavior, which ignores port.
+-        hostname = path[idx:].split(":")[0]
++        hostname = path[idx:]
++        if not hostname.endswith("]"):
++            hostname = hostname.rsplit(":", 1)[0]
+         path_regex += re.escape(hostname) + "$"
+     else:
+         path_regex += re.escape(path[idx:]) + "$"
+@@ -478,7 +480,11 @@ class Host(BaseRoute):
+     def matches(self, scope: Scope) -> tuple[Match, Scope]:
+         if scope["type"] in ("http", "websocket"):  # pragma:no branch
+             headers = Headers(scope=scope)
+-            host = headers.get("host", "").split(":")[0]
++            parsed_host = parse_host_header(headers.get("host"))
++            if parsed_host is None:
++                return Match.NONE, {}
++            host = parsed_host.host
++
+             match = self.host_regex.match(host)
+             if match:
+                 matched_params = match.groupdict()

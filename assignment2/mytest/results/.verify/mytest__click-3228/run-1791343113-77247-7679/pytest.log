@@ -1,0 +1,834 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+collected 642 items
+
+tests/test_commands.py ................................................. [  7%]
+...............................FF                                        [ 12%]
+tests/test_options.py ...........FFFFF.................................. [ 20%]
+........................................................................ [ 31%]
+........................................................................ [ 42%]
+........................................................................ [ 54%]
+........................................................................ [ 65%]
+........................................................................ [ 76%]
+........................................................................ [ 87%]
+........................................................................ [ 99%]
+......                                                                   [100%]
+
+=================================== FAILURES ===================================
+__________ test_suggest_possible_commands[pause-Did you mean 'push'?] __________
+
+runner = <click.testing.CliRunner object at 0x7ffffdc5d190>, value = 'pause'
+expect = "Did you mean 'push'?"
+
+    @pytest.mark.parametrize(
+        ("value", "expect"),
+        [
+            ("pause", "Did you mean 'push'?"),
+            ("decline", "(Did you mean one of: 'declare', 'refine'?)"),
+        ],
+    )
+    def test_suggest_possible_commands(runner, value, expect):
+        cli = click.Group()
+    
+        @cli.command()
+        def push():
+            pass
+    
+        @cli.command()
+        def declare():
+            pass
+    
+        @cli.command()
+        def refine():
+            pass
+    
+        result = runner.invoke(cli, [value])
+>       assert expect in result.output
+E       assert "Did you mean 'push'?" in "Usage: root [OPTIONS] COMMAND [ARGS]...\nTry 'root --help' for help.\n\nError: No such command 'pause'.\n"
+E        +  where "Usage: root [OPTIONS] COMMAND [ARGS]...\nTry 'root --help' for help.\n\nError: No such command 'pause'.\n" = <Result SystemExit(2)>.output
+
+tests/test_commands.py:607: AssertionError
+_ test_suggest_possible_commands[decline-(Did you mean one of: 'declare', 'refine'?)] _
+
+runner = <click.testing.CliRunner object at 0x7ffffddaee10>, value = 'decline'
+expect = "(Did you mean one of: 'declare', 'refine'?)"
+
+    @pytest.mark.parametrize(
+        ("value", "expect"),
+        [
+            ("pause", "Did you mean 'push'?"),
+            ("decline", "(Did you mean one of: 'declare', 'refine'?)"),
+        ],
+    )
+    def test_suggest_possible_commands(runner, value, expect):
+        cli = click.Group()
+    
+        @cli.command()
+        def push():
+            pass
+    
+        @cli.command()
+        def declare():
+            pass
+    
+        @cli.command()
+        def refine():
+            pass
+    
+        result = runner.invoke(cli, [value])
+>       assert expect in result.output
+E       assert "(Did you mean one of: 'declare', 'refine'?)" in "Usage: root [OPTIONS] COMMAND [ARGS]...\nTry 'root --help' for help.\n\nError: No such command 'decline'.\n"
+E        +  where "Usage: root [OPTIONS] COMMAND [ARGS]...\nTry 'root --help' for help.\n\nError: No such command 'decline'.\n" = <Result SystemExit(2)>.output
+
+tests/test_commands.py:607: AssertionError
+_________________________ test_unknown_options[--foo] __________________________
+
+runner = <click.testing.CliRunner object at 0x7ffffdc5d5e0>
+unknown_flag = '--foo'
+
+    @pytest.mark.parametrize("unknown_flag", ["--foo", "-f"])
+    def test_unknown_options(runner, unknown_flag):
+        @click.command()
+        def cli():
+            pass
+    
+        result = runner.invoke(cli, [unknown_flag])
+        assert result.exception
+>       assert f"No such option '{unknown_flag}'." in result.output
+E       assert "No such option '--foo'." in "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --foo\n"
+E        +  where "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --foo\n" = <Result SystemExit(2)>.output
+
+tests/test_options.py:144: AssertionError
+___________________________ test_unknown_options[-f] ___________________________
+
+runner = <click.testing.CliRunner object at 0x7ffffdc5f440>, unknown_flag = '-f'
+
+    @pytest.mark.parametrize("unknown_flag", ["--foo", "-f"])
+    def test_unknown_options(runner, unknown_flag):
+        @click.command()
+        def cli():
+            pass
+    
+        result = runner.invoke(cli, [unknown_flag])
+        assert result.exception
+>       assert f"No such option '{unknown_flag}'." in result.output
+E       assert "No such option '-f'." in "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: -f\n"
+E        +  where "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: -f\n" = <Result SystemExit(2)>.output
+
+tests/test_options.py:144: AssertionError
+_________ test_suggest_possible_options[--cat-Did you mean '--count'?] _________
+
+runner = <click.testing.CliRunner object at 0x7ffffdc66240>, value = '--cat'
+expect = "Did you mean '--count'?"
+
+    @pytest.mark.parametrize(
+        ("value", "expect"),
+        [
+            ("--cat", "Did you mean '--count'?"),
+            ("--bounds", "(Did you mean one of: '--bound', '--count'?)"),
+            ("--bount", "(Did you mean one of: '--bound', '--count'?)"),
+        ],
+    )
+    def test_suggest_possible_options(runner, value, expect):
+        cli = click.Command(
+            "cli", params=[click.Option(["--bound"]), click.Option(["--count"])]
+        )
+        result = runner.invoke(cli, [value])
+>       assert expect in result.output
+E       assert "Did you mean '--count'?" in "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --cat Did you mean --count?\n"
+E        +  where "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --cat Did you mean --count?\n" = <Result SystemExit(2)>.output
+
+tests/test_options.py:160: AssertionError
+_ test_suggest_possible_options[--bounds-(Did you mean one of: '--bound', '--count'?)] _
+
+runner = <click.testing.CliRunner object at 0x7ffffdc66bd0>, value = '--bounds'
+expect = "(Did you mean one of: '--bound', '--count'?)"
+
+    @pytest.mark.parametrize(
+        ("value", "expect"),
+        [
+            ("--cat", "Did you mean '--count'?"),
+            ("--bounds", "(Did you mean one of: '--bound', '--count'?)"),
+            ("--bount", "(Did you mean one of: '--bound', '--count'?)"),
+        ],
+    )
+    def test_suggest_possible_options(runner, value, expect):
+        cli = click.Command(
+            "cli", params=[click.Option(["--bound"]), click.Option(["--count"])]
+        )
+        result = runner.invoke(cli, [value])
+>       assert expect in result.output
+E       assert "(Did you mean one of: '--bound', '--count'?)" in "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --bounds (Possible options: --bound, --count)\n"
+E        +  where "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --bounds (Possible options: --bound, --count)\n" = <Result SystemExit(2)>.output
+
+tests/test_options.py:160: AssertionError
+_ test_suggest_possible_options[--bount-(Did you mean one of: '--bound', '--count'?)] _
+
+runner = <click.testing.CliRunner object at 0x7ffffdc65d30>, value = '--bount'
+expect = "(Did you mean one of: '--bound', '--count'?)"
+
+    @pytest.mark.parametrize(
+        ("value", "expect"),
+        [
+            ("--cat", "Did you mean '--count'?"),
+            ("--bounds", "(Did you mean one of: '--bound', '--count'?)"),
+            ("--bount", "(Did you mean one of: '--bound', '--count'?)"),
+        ],
+    )
+    def test_suggest_possible_options(runner, value, expect):
+        cli = click.Command(
+            "cli", params=[click.Option(["--bound"]), click.Option(["--count"])]
+        )
+        result = runner.invoke(cli, [value])
+>       assert expect in result.output
+E       assert "(Did you mean one of: '--bound', '--count'?)" in "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --bount (Possible options: --bound, --count)\n"
+E        +  where "Usage: cli [OPTIONS]\nTry 'cli --help' for help.\n\nError: No such option: --bount (Possible options: --bound, --count)\n" = <Result SystemExit(2)>.output
+
+tests/test_options.py:160: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_commands.py::test_other_command_invoke
+PASSED tests/test_commands.py::test_other_command_forward
+PASSED tests/test_commands.py::test_forwarded_params_consistency
+PASSED tests/test_commands.py::test_auto_shorthelp
+PASSED tests/test_commands.py::test_command_no_args_is_help
+PASSED tests/test_commands.py::test_default_maps
+PASSED tests/test_commands.py::test_group_with_args[args0-2-Error: Missing command.]
+PASSED tests/test_commands.py::test_group_with_args[args1-0-Show this message and exit.]
+PASSED tests/test_commands.py::test_group_with_args[args2-0-obj=obj1\nmove\n]
+PASSED tests/test_commands.py::test_group_with_args[args3-2-Show this message and exit.]
+PASSED tests/test_commands.py::test_custom_parser
+PASSED tests/test_commands.py::test_object_propagation
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params0-42]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params1-15]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params2-expected2]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params3-None]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params4-None]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params5-False]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params6-True]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params7-3.14]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params8-expected8]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params9-expected9]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params10-None]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params11-b]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params12-/tmp]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params13-False]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params14-True]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params15-0]
+PASSED tests/test_commands.py::test_other_command_invoke_with_defaults[opt_params16-secret]
+PASSED tests/test_commands.py::test_invoked_subcommand
+PASSED tests/test_commands.py::test_aliased_command_canonical_name
+PASSED tests/test_commands.py::test_group_add_command_name
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order0-declaration_order0-expected_order0]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order1-declaration_order1-expected_order1]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order2-declaration_order2-expected_order2]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order3-declaration_order3-expected_order3]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order4-declaration_order4-expected_order4]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order5-declaration_order5-expected_order5]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order6-declaration_order6-expected_order6]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order7-declaration_order7-expected_order7]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order8-declaration_order8-expected_order8]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order9-declaration_order9-expected_order9]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order10-declaration_order10-expected_order10]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order11-declaration_order11-expected_order11]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order12-declaration_order12-expected_order12]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order13-declaration_order13-expected_order13]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order14-declaration_order14-expected_order14]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order15-declaration_order15-expected_order15]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order16-declaration_order16-expected_order16]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order17-declaration_order17-expected_order17]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order18-declaration_order18-expected_order18]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order19-declaration_order19-expected_order19]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order20-declaration_order20-expected_order20]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order21-declaration_order21-expected_order21]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order22-declaration_order22-expected_order22]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order23-declaration_order23-expected_order23]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order24-declaration_order24-expected_order24]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order25-declaration_order25-expected_order25]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order26-declaration_order26-expected_order26]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order27-declaration_order27-expected_order27]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order28-declaration_order28-expected_order28]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order29-declaration_order29-expected_order29]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order30-declaration_order30-expected_order30]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order31-declaration_order31-expected_order31]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order32-declaration_order32-expected_order32]
+PASSED tests/test_commands.py::test_iter_params_for_processing[invocation_order33-declaration_order33-expected_order33]
+PASSED tests/test_commands.py::test_help_param_priority
+PASSED tests/test_commands.py::test_unprocessed_options
+PASSED tests/test_commands.py::test_deprecated_in_help_messages[True-CLI HELP]
+PASSED tests/test_commands.py::test_deprecated_in_help_messages[True-None]
+PASSED tests/test_commands.py::test_deprecated_in_help_messages[USE OTHER COMMAND INSTEAD-CLI HELP]
+PASSED tests/test_commands.py::test_deprecated_in_help_messages[USE OTHER COMMAND INSTEAD-None]
+PASSED tests/test_commands.py::test_deprecated_in_invocation[True]
+PASSED tests/test_commands.py::test_deprecated_in_invocation[USE OTHER COMMAND INSTEAD]
+PASSED tests/test_commands.py::test_command_parse_args_collects_option_prefixes
+PASSED tests/test_commands.py::test_group_parse_args_collects_base_option_prefixes
+PASSED tests/test_commands.py::test_group_invoke_collects_used_option_prefixes
+PASSED tests/test_commands.py::test_abort_exceptions_with_disabled_standalone_mode[EOFError]
+PASSED tests/test_commands.py::test_abort_exceptions_with_disabled_standalone_mode[KeyboardInterrupt]
+PASSED tests/test_commands.py::test_unknown_command
+PASSED tests/test_options.py::test_prefixes
+PASSED tests/test_options.py::test_invalid_option
+PASSED tests/test_options.py::test_deprecated_usage[True]
+PASSED tests/test_options.py::test_deprecated_usage[USE B INSTEAD]
+PASSED tests/test_options.py::test_deprecated_warning[True]
+PASSED tests/test_options.py::test_deprecated_warning[USE B INSTEAD]
+PASSED tests/test_options.py::test_deprecated_required
+PASSED tests/test_options.py::test_deprecated_prompt
+PASSED tests/test_options.py::test_invalid_nargs
+PASSED tests/test_options.py::test_nargs_tup_composite_mult
+PASSED tests/test_options.py::test_counting
+PASSED tests/test_options.py::test_multiple_required
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default0-expected0]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default1-expected1]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default2-expected2]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default3-expected3]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default4-expected4]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default5-expected5]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-None-expected6]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-Sentinel.UNSET-expected7]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default8-expected8]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default9-expected9]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default10-expected10]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default11-expected11]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default12-expected12]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default13-expected13]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default14-expected14]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default15-expected15]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-1-default16-expected16]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default17-expected17]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default18-expected18]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default19-expected19]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default20-expected20]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default21-expected21]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default22-expected22]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-None-expected23]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-Sentinel.UNSET-expected24]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default25-expected25]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default26-expected26]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default27-expected27]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default28-expected28]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default29-expected29]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default30-expected30]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default31-expected31]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[True-2-default32-expected32]
+PASSED tests/test_options.py::test_good_defaults_for_multiple[False-2-default33-expected33]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-1-Yo-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-1--None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-1-True-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-1-False-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-1-12-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-1-7.9-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[False-2-42-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default7-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default8-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default9-None-Error: Invalid value for '-a': Value must be an iterable.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default10-ValueError-'nargs' must be 0 \\(or None\\) for type <click\\.types\\.Tuple object at 0x[0-9A-Fa-f]+>, but it was 2\\.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default11-ValueError-'nargs' must be 1 \\(or None\\) for type <click\\.types\\.Tuple object at 0x[0-9A-Fa-f]+>, but it was 2\\.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default12-ValueError-'nargs' must be 3 \\(or None\\) for type <click\\.types\\.Tuple object at 0x[0-9A-Fa-f]+>, but it was 2\\.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default13-None-Error: Invalid value for '-a': 2 values are required, but 0 were given.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[False-2-default14-None-Error: Invalid value for '-a': Takes 2 values but 1 was given.]
+PASSED tests/test_options.py::test_bad_defaults_for_multiple[True-2-default15-ValueError-'nargs' must be 1 \\(or None\\) for type <click\\.types\\.Tuple object at 0x[0-9A-Fa-f]+>, but it was 2\\.]
+PASSED tests/test_options.py::test_empty_envvar[MYPATH]
+PASSED tests/test_options.py::test_empty_envvar[AUTO_MYPATH]
+PASSED tests/test_options.py::test_multiple_envvar
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-true-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-false-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-True-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-False-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-TRUE-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-FALSE-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-TruE-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-truE-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-FaLsE-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-falsE-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-true    -True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-  true  -True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-    true-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-false   -False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-  false -False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-   false-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-1-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-0-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-t-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-T-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-  T  -True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-f-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-y-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-n-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-yes-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-no-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-on-True]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-off-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-None-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT--False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT- -False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT-       -False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT    -True-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SHOUT    -False-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[  SHOUT  -True-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[  SHOUT  -False-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[    SHOUT-True-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[    SHOUT-False-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SH    OUT-True-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[SH    OUT-False-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[RANDOM-True-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[NO_SHOUT-True-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[NO_SHOUT-False-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[NOSHOUT-True-False]
+PASSED tests/test_options.py::test_boolean_flag_envvar[NOSHOUT-False-False]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[tr ue]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[fa lse]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[10]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[01]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[00]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[11]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[0.0]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[1.1]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[randomstring]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[None]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values['None']
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[A B]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[ 1 2 ]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[9.3]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[a;n]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[x:y]
+PASSED tests/test_options.py::test_boolean_envvar_bad_values[i/o]
+PASSED tests/test_options.py::test_multiple_default_help
+PASSED tests/test_options.py::test_show_default_default_map
+PASSED tests/test_options.py::test_multiple_default_type
+PASSED tests/test_options.py::test_multiple_default_composite_type
+PASSED tests/test_options.py::test_parse_multiple_default_composite_type
+PASSED tests/test_options.py::test_dynamic_default_help_unset
+PASSED tests/test_options.py::test_dynamic_default_help_text
+PASSED tests/test_options.py::test_dynamic_default_help_special_method
+PASSED tests/test_options.py::test_intrange_default_help_text[type0-1<=x<=32]
+PASSED tests/test_options.py::test_intrange_default_help_text[type1-1<x<32]
+PASSED tests/test_options.py::test_intrange_default_help_text[type2-x>=1]
+PASSED tests/test_options.py::test_intrange_default_help_text[type3-x<=32]
+PASSED tests/test_options.py::test_count_default_type_help
+PASSED tests/test_options.py::test_file_type_help_default
+PASSED tests/test_options.py::test_toupper_envvar_prefix
+PASSED tests/test_options.py::test_nargs_envvar
+PASSED tests/test_options.py::test_show_envvar
+PASSED tests/test_options.py::test_show_envvar_auto_prefix
+PASSED tests/test_options.py::test_show_envvar_auto_prefix_dash_in_command
+PASSED tests/test_options.py::test_custom_validation
+PASSED tests/test_options.py::test_callback_validates_prompt
+PASSED tests/test_options.py::test_winstyle_options
+PASSED tests/test_options.py::test_legacy_options
+PASSED tests/test_options.py::test_required_option[Sentinel.UNSET-True-None]
+PASSED tests/test_options.py::test_required_option[None-False-None]
+PASSED tests/test_options.py::test_required_option[-False-]
+PASSED tests/test_options.py::test_required_option[  -False-  ]
+PASSED tests/test_options.py::test_required_option[foo-False-foo]
+PASSED tests/test_options.py::test_required_option[12-False-12_0]
+PASSED tests/test_options.py::test_required_option[12-False-12_1]
+PASSED tests/test_options.py::test_required_option[12.1-False-12.1]
+PASSED tests/test_options.py::test_required_option[value8-False-[]]
+PASSED tests/test_options.py::test_required_option[value9-False-()]
+PASSED tests/test_options.py::test_required_option[value10-False-set()]
+PASSED tests/test_options.py::test_required_option[value11-False-frozenset()]
+PASSED tests/test_options.py::test_required_option[value12-False-{}]
+PASSED tests/test_options.py::test_missing_required_flag
+PASSED tests/test_options.py::test_missing_choice
+PASSED tests/test_options.py::test_missing_envvar
+PASSED tests/test_options.py::test_case_insensitive_choice
+PASSED tests/test_options.py::test_case_insensitive_choice_returned_exactly
+PASSED tests/test_options.py::test_option_help_preserve_paragraphs
+PASSED tests/test_options.py::test_argument_custom_class
+PASSED tests/test_options.py::test_option_custom_class
+PASSED tests/test_options.py::test_option_custom_class_can_override_type_cast_value_and_never_sees_unset[--opt-option_kwargs0-pass_argv0]
+PASSED tests/test_options.py::test_option_custom_class_can_override_type_cast_value_and_never_sees_unset[--opt-option_kwargs1-pass_argv1]
+PASSED tests/test_options.py::test_option_custom_class_can_override_type_cast_value_and_never_sees_unset[--opt-option_kwargs2-pass_argv2]
+PASSED tests/test_options.py::test_option_custom_class_can_override_type_cast_value_and_never_sees_unset[--opt/--no-opt-option_kwargs3-pass_argv3]
+PASSED tests/test_options.py::test_option_custom_class_can_override_type_cast_value_and_never_sees_unset[--req-option_kwargs4-pass_argv4]
+PASSED tests/test_options.py::test_option_custom_class_reusable
+PASSED tests/test_options.py::test_help_option_custom_names_and_class[name_specs0-  -h, --help  Show this message and exit.\n-True]
+PASSED tests/test_options.py::test_help_option_custom_names_and_class[name_specs0-  -h, --help  Show this message and exit.\n-False]
+PASSED tests/test_options.py::test_help_option_custom_names_and_class[name_specs1-  -h      Show this message and exit.\n  --help  Show this message and exit.\n-True]
+PASSED tests/test_options.py::test_help_option_custom_names_and_class[name_specs1-  -h      Show this message and exit.\n  --help  Show this message and exit.\n-False]
+PASSED tests/test_options.py::test_help_option_custom_names_and_class[name_specs2-  --help  Show this message and exit.\n-True]
+PASSED tests/test_options.py::test_help_option_custom_names_and_class[name_specs2-  --help  Show this message and exit.\n-False]
+PASSED tests/test_options.py::test_bool_flag_with_type
+PASSED tests/test_options.py::test_aliases_for_flags
+PASSED tests/test_options.py::test_option_names[option_args0-aggressive]
+PASSED tests/test_options.py::test_option_names[option_args1-first]
+PASSED tests/test_options.py::test_option_names[option_args2-apple]
+PASSED tests/test_options.py::test_option_names[option_args3-cantaloupe]
+PASSED tests/test_options.py::test_option_names[option_args4-a]
+PASSED tests/test_options.py::test_option_names[option_args5-c]
+PASSED tests/test_options.py::test_option_names[option_args6-apple]
+PASSED tests/test_options.py::test_option_names[option_args7-cantaloupe]
+PASSED tests/test_options.py::test_option_names[option_args8-_from]
+PASSED tests/test_options.py::test_option_names[option_args9-_ret]
+PASSED tests/test_options.py::test_flag_duplicate_names
+PASSED tests/test_options.py::test_show_default_boolean_flag_name[False-no-cache]
+PASSED tests/test_options.py::test_show_default_boolean_flag_name[True-cache]
+PASSED tests/test_options.py::test_show_true_default_boolean_flag_value
+PASSED tests/test_options.py::test_hide_false_default_boolean_flag_value[False]
+PASSED tests/test_options.py::test_hide_false_default_boolean_flag_value[None]
+PASSED tests/test_options.py::test_show_default_string
+PASSED tests/test_options.py::test_string_show_default_shows_custom_string_in_prompt
+PASSED tests/test_options.py::test_show_default_with_empty_string[empty-string]
+PASSED tests/test_options.py::test_show_default_with_empty_string[non-string-comparable-object]
+PASSED tests/test_options.py::test_do_not_show_no_default
+PASSED tests/test_options.py::test_do_not_show_default_empty_multiple
+PASSED tests/test_options.py::test_show_default_precedence[None-None-extra_value0-False]
+PASSED tests/test_options.py::test_show_default_precedence[None-False-extra_value1-False]
+PASSED tests/test_options.py::test_show_default_precedence[None-True-extra_value2-True]
+PASSED tests/test_options.py::test_show_default_precedence[False-None-extra_value3-False]
+PASSED tests/test_options.py::test_show_default_precedence[False-False-extra_value4-False]
+PASSED tests/test_options.py::test_show_default_precedence[False-True-extra_value5-True]
+PASSED tests/test_options.py::test_show_default_precedence[True-None-extra_value6-True]
+PASSED tests/test_options.py::test_show_default_precedence[True-False-extra_value7-False]
+PASSED tests/test_options.py::test_show_default_precedence[True-True-extra_value8-True]
+PASSED tests/test_options.py::test_show_default_precedence[False-one-extra_value9-True]
+PASSED tests/test_options.py::test_option_with_optional_value[None-expect0]
+PASSED tests/test_options.py::test_option_with_optional_value[args1-expect1]
+PASSED tests/test_options.py::test_option_with_optional_value[args2-expect2]
+PASSED tests/test_options.py::test_option_with_optional_value[args3-expect3]
+PASSED tests/test_options.py::test_option_with_optional_value[args4-expect4]
+PASSED tests/test_options.py::test_option_with_optional_value[args5-expect5]
+PASSED tests/test_options.py::test_option_with_optional_value[args6-expect6]
+PASSED tests/test_options.py::test_option_with_optional_value[args7-expect7]
+PASSED tests/test_options.py::test_option_with_optional_value[args8-expect8]
+PASSED tests/test_options.py::test_option_with_optional_value[args9-expect9]
+PASSED tests/test_options.py::test_option_with_optional_value[args10-expect10]
+PASSED tests/test_options.py::test_option_with_optional_value[args11-expect11]
+PASSED tests/test_options.py::test_option_with_optional_value[args12-expect12]
+PASSED tests/test_options.py::test_option_with_optional_value[args13-expect13]
+PASSED tests/test_options.py::test_multiple_option_with_optional_value
+PASSED tests/test_options.py::test_type_from_flag_value
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params0-args0-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params1-args1-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params2-args2-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params3-args3-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params4-args4-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params5-args5-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params6-args6-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params7-args7-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params8-args8-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params9-args9-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params10-args10-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params11-args11-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params12-args12-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params13-args13-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params14-args14-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params15-args15-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params16-args16-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params17-args17-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params18-args18-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params19-args19-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params20-args20-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params21-args21-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params22-args22-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params23-args23-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params24-args24-foo]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params25-args25-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params26-args26-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params27-args27-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params28-args28-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params29-args29-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params30-args30-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params31-args31-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params32-args32-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params33-args33-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params34-args34-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params35-args35-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params36-args36-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params37-args37-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params38-args38-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params39-args39-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params40-args40-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params41-args41-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params42-args42-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params43-args43-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params44-args44-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params45-args45-foo]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params46-args46-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params47-args47-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params48-args48-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params49-args49-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params50-args50-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params51-args51-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params52-args52-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params53-args53-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params54-args54-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params55-args55-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params56-args56-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params57-args57-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params58-args58-foo]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params59-args59-foo]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params60-args60-foo]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params61-args61-foo]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params62-args62-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params63-args63-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params64-args64-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params65-args65-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params66-args66-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params67-args67-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params68-args68-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params69-args69-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params70-args70-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params71-args71-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params72-args72-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params73-args73-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params74-args74-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params75-args75-False]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params76-args76-bar]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params77-args77-None]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params78-args78-True]
+PASSED tests/test_options.py::test_flag_value_and_default[opt_params79-args79-False]
+PASSED tests/test_options.py::test_invalid_flag_definition[args0-opts0]
+PASSED tests/test_options.py::test_invalid_flag_definition[args1-opts1]
+PASSED tests/test_options.py::test_invalid_flag_definition[args2-opts2]
+PASSED tests/test_options.py::test_invalid_flag_definition[args3-opts3]
+PASSED tests/test_options.py::test_default_dual_option_callback[True-args0-js]
+PASSED tests/test_options.py::test_default_dual_option_callback[True-args1-xml]
+PASSED tests/test_options.py::test_default_dual_option_callback[False-args2-js]
+PASSED tests/test_options.py::test_default_dual_option_callback[False-args3-xml]
+PASSED tests/test_options.py::test_default_dual_option_callback[None-args4-js]
+PASSED tests/test_options.py::test_default_dual_option_callback[None-args5-xml]
+PASSED tests/test_options.py::test_default_dual_option_callback[Sentinel.UNSET-args6-js]
+PASSED tests/test_options.py::test_default_dual_option_callback[Sentinel.UNSET-args7-xml]
+PASSED tests/test_options.py::test_default_dual_option_callback[True-args8-xml]
+PASSED tests/test_options.py::test_default_dual_option_callback[True-args9-js]
+PASSED tests/test_options.py::test_default_dual_option_callback[js-args10-js]
+PASSED tests/test_options.py::test_default_dual_option_callback[xml-args11-xml]
+PASSED tests/test_options.py::test_default_dual_option_callback[jS-args12-jS]
+PASSED tests/test_options.py::test_default_dual_option_callback[xMl-args13-xMl]
+PASSED tests/test_options.py::test_default_dual_option_callback[ \u1555( \u141b )\u1557 -args14- \u1555( \u141b )\u1557 ]
+PASSED tests/test_options.py::test_default_dual_option_callback[None-args15-None]
+PASSED tests/test_options.py::test_default_dual_option_callback[Sentinel.UNSET-args16-None]
+PASSED tests/test_options.py::test_default_dual_option_callback[True-args17-js]
+PASSED tests/test_options.py::test_default_dual_option_callback[False-args18-False]
+PASSED tests/test_options.py::test_default_dual_option_callback[42-args19-42]
+PASSED tests/test_options.py::test_default_dual_option_callback[12.3-args20-12.3]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-bar-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[BAR-BAR-BAR]
+PASSED tests/test_options.py::test_envvar_string_flag_value[ bar - bar - bar ]
+PASSED tests/test_options.py::test_envvar_string_flag_value[42-42-42]
+PASSED tests/test_options.py::test_envvar_string_flag_value[None-None-None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[True-True-True]
+PASSED tests/test_options.py::test_envvar_string_flag_value[False-False-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[true-true-true]
+PASSED tests/test_options.py::test_envvar_string_flag_value[false-false-false]
+PASSED tests/test_options.py::test_envvar_string_flag_value[A B-A B-A B]
+PASSED tests/test_options.py::test_envvar_string_flag_value[ 1 2 - 1 2 - 1 2 ]
+PASSED tests/test_options.py::test_envvar_string_flag_value[9.3-9.3-9.3]
+PASSED tests/test_options.py::test_envvar_string_flag_value[a;n-a;n-a;n]
+PASSED tests/test_options.py::test_envvar_string_flag_value[x:y-x:y-x:y]
+PASSED tests/test_options.py::test_envvar_string_flag_value[i/o-i/o-i/o]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar--None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-None-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[BAR--None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[BAR-None-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[ bar --None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[ bar -None-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[42--None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[42-None-None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[42--None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[42-None-None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[None--None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[None-None-None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[None--None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[None-None-None2]
+PASSED tests/test_options.py::test_envvar_string_flag_value[True--None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[True-None-None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[True--None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[True-None-None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[true--None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[true-None-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[False--None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[False-None-None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[False--None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[False-None-None1]
+PASSED tests/test_options.py::test_envvar_string_flag_value[false--None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[false-None-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-True-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-true-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-trUe-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-  TRUE  -bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-1-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-yes-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-on-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-t-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-y-bar]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-False-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-false-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-faLse-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-  FALSE  -False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-0-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-no-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-off-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-f-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-n-False]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar- bar -None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-BAR-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-random-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-bar random-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[bar-random bar-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[BAR-bar-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[ bar -bar-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[ bar -BAR-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[42-42-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[42-foo-None]
+PASSED tests/test_options.py::test_envvar_string_flag_value[None-foo-None0]
+PASSED tests/test_options.py::test_envvar_string_flag_value[None-foo-None1]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params0-False-False]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params1-False-False]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params2-False-False]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params3-False-False]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params4-True-False]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params5-True-True]
+PASSED tests/test_options.py::test_flag_auto_detection[-a/-A-opt_params6-True-True]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params7-True-True]
+PASSED tests/test_options.py::test_flag_auto_detection[-a-opt_params8-False-False]
+PASSED tests/test_options.py::test_invalid_flag_combinations[kwargs0-'count' is not valid with 'multiple'.]
+PASSED tests/test_options.py::test_invalid_flag_combinations[kwargs1-'count' is not valid with 'is_flag'.]
+PASSED tests/test_options.py::test_non_flag_with_non_negatable_default
+PASSED tests/test_options.py::test_choice_usage_rendering[choices0-[TEXT]]
+PASSED tests/test_options.py::test_choice_usage_rendering[choices1-[INTEGER]]
+PASSED tests/test_options.py::test_choice_usage_rendering[choices2-[FLOAT]]
+PASSED tests/test_options.py::test_choice_usage_rendering[choices3-[BOOLEAN]]
+PASSED tests/test_options.py::test_choice_usage_rendering[choices4-[TEXT|INTEGER]]
+PASSED tests/test_options.py::test_choice_usage_rendering[HashType-[HASHTYPE]]
+PASSED tests/test_options.py::test_choice_usage_rendering[Number-[NUMBER]]
+PASSED tests/test_options.py::test_choice_usage_rendering[Letter-[LETTER]]
+PASSED tests/test_options.py::test_choice_usage_rendering[Color-[COLOR]]
+PASSED tests/test_options.py::test_choice_usage_rendering[ColorInt-[COLORINT]]
+PASSED tests/test_options.py::test_choice_default_rendering[choices0-bar-bar]
+PASSED tests/test_options.py::test_choice_default_rendering[choices1-random-random]
+PASSED tests/test_options.py::test_choice_default_rendering[choices2-None-None]
+PASSED tests/test_options.py::test_choice_default_rendering[choices3-0-0]
+PASSED tests/test_options.py::test_choice_default_rendering[choices4-0.0-0.0]
+PASSED tests/test_options.py::test_choice_default_rendering[choices5-2-2]
+PASSED tests/test_options.py::test_choice_default_rendering[choices6-2-2]
+PASSED tests/test_options.py::test_choice_default_rendering[choices7-2.0-2.0]
+PASSED tests/test_options.py::test_choice_default_rendering[choices8-True-True]
+PASSED tests/test_options.py::test_choice_default_rendering[choices9-False-False]
+PASSED tests/test_options.py::test_choice_default_rendering[choices10-foo-foo]
+PASSED tests/test_options.py::test_choice_default_rendering[choices11-1-1]
+PASSED tests/test_options.py::test_choice_default_rendering[HashType-HashType.SHA1-SHA1]
+PASSED tests/test_options.py::test_choice_default_rendering[HashType-HashType.SHA256-SHA256]
+PASSED tests/test_options.py::test_choice_default_rendering[HashType-SHA256-SHA256]
+PASSED tests/test_options.py::test_choice_default_rendering[Number-2-TWO]
+PASSED tests/test_options.py::test_choice_default_rendering[Number-TWO-TWO]
+PASSED tests/test_options.py::test_choice_default_rendering[Letter-Value-1-NAME_1]
+PASSED tests/test_options.py::test_choice_default_rendering[Letter-Value_2-NAME_2]
+PASSED tests/test_options.py::test_choice_default_rendering[Letter-42_value-NAME_3]
+PASSED tests/test_options.py::test_choice_default_rendering[Letter-NAME_1-NAME_1]
+PASSED tests/test_options.py::test_choice_default_rendering[Letter-NAME_2-NAME_2]
+PASSED tests/test_options.py::test_choice_default_rendering[Letter-NAME_3-NAME_3]
+PASSED tests/test_options.py::test_choice_default_rendering[Color-Color.GREEN-GREEN]
+PASSED tests/test_options.py::test_choice_default_rendering[Color-GREEN-GREEN]
+PASSED tests/test_options.py::test_choice_default_rendering[ColorInt-2-GREEN]
+PASSED tests/test_options.py::test_choice_default_rendering[ColorInt-GREEN-GREEN]
+PASSED tests/test_options.py::test_duplicate_names_warning[opts_one0-opts_two0]
+PASSED tests/test_options.py::test_duplicate_names_warning[opts_one1-opts_two1]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args0-None-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args0-None-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args1-Error:\\ Option\\ '\\-\\-config'\\ requires\\ an\\ argument\\.\\\n-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args1-Error:\\ Option\\ '\\-\\-config'\\ requires\\ an\\ argument\\.\\\n-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args2-Error:\\ Option\\ '\\-\\-config'\\ requires\\ an\\ argument\\.\\\n-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args2-Error:\\ Option\\ '\\-\\-config'\\ requires\\ an\\ argument\\.\\\n-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args3-No configuration file provided.-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args3-No configuration file provided.-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args4-foo.conf-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args4-foo.conf-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args5-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Got unexpected extra argument (.+)\\n-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args5-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Got unexpected extra argument (.+)\\n-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args6-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Invalid value for '-c' / '--config': File 'random-file.conf' does not exist.\\n-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args6-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Invalid value for '-c' / '--config': File 'random-file.conf' does not exist.\\n-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args7-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Invalid value for '-c' / '--config': File '--no-config' does not exist.\\n-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args7-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Invalid value for '-c' / '--config': File '--no-config' does not exist.\\n-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args8-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Invalid value for '-c' / '--config': File '--no-config' does not exist.\\n-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args8-Usage: main \\[OPTIONS\\]\\nTry 'main --help' for help.\\n\\nError: Invalid value for '-c' / '--config': File '--no-config' does not exist.\\n-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args9-foo.conf-sentinel0]
+PASSED tests/test_options.py::test_dual_options_custom_type_sentinel_flag_value[args9-foo.conf-EnumSentinel.FALSY_SENTINEL]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params0-args0-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params1-args1-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params2-args2-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params3-args3-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params4-args4-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params5-args5-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params6-args6-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params7-args7-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params8-args8-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params9-args9-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params10-args10-Error:\\ Option\\ '\\-\\-pro'\\ requires\\ an\\ argument\\.\\\n]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params11-args11-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params12-args12-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params13-args13-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params14-args14-1]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params15-args15-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params16-args16-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params17-args17-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params18-args18-1]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params19-args19-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params20-args20-1]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params21-args21-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params22-args22-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params23-args23-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params24-args24-1]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params25-args25-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params26-args26-1]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params27-args27-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params28-args28-1]
+PASSED tests/test_options.py::test_custom_type_flag_value_standalone_option[opt_params29-args29-42]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params0-opt2_params0-args0-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params1-opt2_params1-args1-EngineType.OSS]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params2-opt2_params2-args2-EngineType.PRO]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params3-opt2_params3-args3-Class1]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params4-opt2_params4-args4-Class1]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params5-opt2_params5-args5-Class2]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params6-opt2_params6-args6-True]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params7-opt2_params7-args7-None]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params8-opt2_params8-args8-Class1]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params9-opt2_params9-args9-Class1]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params10-opt2_params10-args10-Class2]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params11-opt2_params11-args11-<test_options.Class1 object at 0x[0-9A-Fa-f]+>]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params12-opt2_params12-args12-<test_options.Class2 object at 0x[0-9A-Fa-f]+>]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params13-opt2_params13-args13-<test_options.Class1 object at 0x[0-9A-Fa-f]+>]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params14-opt2_params14-args14-<test_options.Class2 object at 0x[0-9A-Fa-f]+>]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params15-opt2_params15-args15-1]
+PASSED tests/test_options.py::test_custom_type_flag_value_dual_options[opt1_params16-opt2_params16-args16-1]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params0-args0-Class1]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params1-args1-Class1]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params2-args2-Class1]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params3-args3-Class1]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params4-args4-<test_options.Class1 object at 0x[0-9A-Fa-f]+>]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params5-args5-<test_options.Class2 object at 0x[0-9A-Fa-f]+>]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params6-args6-upper]
+PASSED tests/test_options.py::test_callable_flag_value_not_instantiated[opt_params7-args7-upper]
+PASSED tests/test_options.py::test_callable_flag_value_default_map
+PASSED tests/test_options.py::test_callable_flag_value_show_default
+PASSED tests/test_options.py::test_callable_flag_value_get_default_override[opt_params0-True-Class1]
+PASSED tests/test_options.py::test_callable_flag_value_get_default_override[opt_params1-True-upper]
+PASSED tests/test_options.py::test_callable_flag_value_get_default_override[opt_params2-custom-custom]
+PASSED tests/test_options.py::test_callable_flag_value_get_default_override[opt_params3-Sentinel.UNSET-Sentinel.UNSET]
+PASSED tests/test_options.py::test_flag_value_not_stringified_for_custom_types
+PASSED tests/test_options.py::test_custom_type_frozenset_flag_value
+PASSED tests/test_options.py::test_bool_flag_pair_default[None-args0-None]
+PASSED tests/test_options.py::test_bool_flag_pair_default[None-args1-True]
+PASSED tests/test_options.py::test_bool_flag_pair_default[None-args2-False]
+PASSED tests/test_options.py::test_bool_flag_pair_default[True-args3-True]
+PASSED tests/test_options.py::test_bool_flag_pair_default[True-args4-True]
+PASSED tests/test_options.py::test_bool_flag_pair_default[True-args5-False]
+PASSED tests/test_options.py::test_flag_value_on_option_with_zero_or_one_args[str-args0-Default\n]
+PASSED tests/test_options.py::test_flag_value_on_option_with_zero_or_one_args[str-args1-FlagValue\n]
+PASSED tests/test_options.py::test_flag_value_on_option_with_zero_or_one_args[str-args2-value\n]
+PASSED tests/test_options.py::test_flag_value_on_option_with_zero_or_one_args[int-args3-0\n]
+PASSED tests/test_options.py::test_flag_value_on_option_with_zero_or_one_args[int-args4-1\n]
+PASSED tests/test_options.py::test_flag_value_on_option_with_zero_or_one_args[int-args5-2\n]
+FAILED tests/test_commands.py::test_suggest_possible_commands[pause-Did you mean 'push'?]
+FAILED tests/test_commands.py::test_suggest_possible_commands[decline-(Did you mean one of: 'declare', 'refine'?)]
+FAILED tests/test_options.py::test_unknown_options[--foo] - assert "No such o...
+FAILED tests/test_options.py::test_unknown_options[-f] - assert "No such opti...
+FAILED tests/test_options.py::test_suggest_possible_options[--cat-Did you mean '--count'?]
+FAILED tests/test_options.py::test_suggest_possible_options[--bounds-(Did you mean one of: '--bound', '--count'?)]
+FAILED tests/test_options.py::test_suggest_possible_options[--bount-(Did you mean one of: '--bound', '--count'?)]
+======================== 7 failed, 635 passed in 1.35s =========================

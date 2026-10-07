@@ -1,0 +1,108 @@
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index 3f7267d..fb221b9 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -49,6 +49,34 @@ from typing import Set, List, Optional, Callable, Union
+ logger = logging.getLogger("schedule")
+ 
+ 
++_WEEKDAY_NAMES = (
++    "monday",
++    "tuesday",
++    "wednesday",
++    "thursday",
++    "friday",
++    "saturday",
++    "sunday",
++)
++
++
++def _move_to_next_weekday(moment: datetime.datetime, weekday: str) -> datetime.datetime:
++    """Return the same time of day on the next *weekday* (or the same day if it already matches).
++
++    *moment* is a naive datetime. *weekday* is a lower-case weekday name
++    (e.g. ``"monday"``, ``"tuesday"``).
++
++    Monday 2024-05-13 10:27:54 with ``"monday"`` stays the 13th.
++    With ``"tuesday"`` it gives the 14th.
++    Wednesday the 15th with ``"tuesday"`` gives the 21st.
++    """
++    target = _WEEKDAY_NAMES.index(weekday)
++    days_ahead = target - moment.weekday()
++    if days_ahead < 0:
++        days_ahead += 7
++    return moment + datetime.timedelta(days=days_ahead)
++
++
+ class ScheduleError(Exception):
+     """Base schedule exception"""
+ 
+@@ -820,6 +848,68 @@ class Job:
+     def _is_overdue(self, when: datetime.datetime):
+         return self.cancel_after is not None and when > self.cancel_after
+ 
++    def _correct_utc_offset(
++        self, moment: datetime.datetime, fixate_time: bool = False
++    ) -> datetime.datetime:
++        """Return *moment* with the correct UTC offset for its wall-clock time.
++
++        *naive* datetimes and *jobs without a timezone* are returned unchanged.
++
++        When the job's timezone uses pytz and the wall-clock time falls in a DST
++        gap (non-existent time), *fixate_time* controls the result:
++        - ``fixate_time=True``  : move the wall-clock time forward by the gap
++          (e.g. ``02:30`` in Europe/Berlin on 2024-03-31 becomes ``03:30+02:00``).
++        - ``fixate_time=False`` : use the pre-transition (is_dst=True) offset for
++          the non-existent wall-clock time.
++
++        A wall-clock time that is already valid (including each occurrence of a
++        folded hour) is left unchanged.
++
++        If the wall-clock time became stale after date arithmetic (e.g. adding
++        hours crossed a DST boundary), the correct offset for the wall-clock time
++        is applied.
++        """
++        import pytz
++
++        if self.at_time_zone is None or moment is None:
++            return moment
++
++        tz = self.at_time_zone
++
++        # Naive datetimes: return unchanged
++        if moment.tzinfo is None:
++            return moment
++
++        naive = moment.replace(tzinfo=None)
++
++        try:
++            # Strict localization: works for valid times and gives correct offset.
++            return tz.localize(naive, is_dst=None)
++        except pytz.exceptions.AmbiguousTimeError:
++            # Folded / repeated hour — both occurrences are valid, leave unchanged.
++            return moment
++        except pytz.exceptions.NonExistentTimeError:
++            if fixate_time:
++                # Wall-clock is in a gap.  Move forward by the gap size so the
++                # result falls after the gap with the post-transition offset.
++                pre_offset = tz.localize(naive, is_dst=False).utcoffset()
++                candidate = naive + datetime.timedelta(minutes=1)
++                while True:
++                    try:
++                        post_offset = tz.localize(
++                            candidate, is_dst=None
++                        ).utcoffset()
++                        gap = post_offset - pre_offset
++                        moved = naive + gap
++                        return tz.localize(moved, is_dst=None)
++                    except pytz.exceptions.NonExistentTimeError:
++                        candidate += datetime.timedelta(minutes=1)
++                    except pytz.exceptions.AmbiguousTimeError:
++                        # Should not happen inside a gap, but fall through.
++                        break
++            # fixate_time == False: use the pre-transition offset.
++            return tz.localize(naive, is_dst=True)
++
+     def _decode_datetimestr(
+         self, datetime_str: str, formats: List[str]
+     ) -> Optional[datetime.datetime]:

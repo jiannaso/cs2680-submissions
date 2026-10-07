@@ -1,0 +1,10 @@
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/raw_samples.csv (10 instances)
+Skipping instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26 - output already exists
+Skipping instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547 - output already exists
+  0%|          | 0/2 [00:00<?, ?it/s]Accuracy: 0.00%:   0%|          | 0/2 [00:00<?, ?it/s]Accuracy: 0.00%:   0%|          | 0/2 [00:00<?, ?it/s]Accuracy: 0.00%: 100%|██████████| 2/2 [00:00<00:00, 2573.98it/s]
+Overall accuracy:  0.0
+
+== results (/Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/eval_results.json):
+unresolved instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+unresolved instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+0/2 resolved

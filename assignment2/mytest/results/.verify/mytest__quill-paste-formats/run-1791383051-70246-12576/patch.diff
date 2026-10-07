@@ -1,0 +1,86 @@
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..6bb7614 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -392,7 +392,10 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
++function matchAlias(format: string, node: Element, delta: Delta, scroll: ScrollBlot) {
++  if (scroll.registry.types[format] == null) {
++    return delta;
++  }
+   return applyFormat(delta, format, true);
+ }
+ 
+@@ -420,8 +423,14 @@ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+         formats[attr.attrName] = attr.value(node) || undefined;
+       }
+     });
+-  if (Object.keys(formats).length > 0) {
+-    return applyFormat(delta, formats);
++  const filteredFormats: Record<string, string | undefined> = {};
++  Object.keys(formats).forEach((name) => {
++    if (scroll.registry.types[name] != null) {
++      filteredFormats[name] = formats[name];
++    }
++  });
++  if (Object.keys(filteredFormats).length > 0) {
++    return applyFormat(delta, filteredFormats);
+   }
+   return delta;
+ }
+@@ -447,8 +456,11 @@ function matchBlot(node: Node, delta: Delta, scroll: ScrollBlot) {
+     }
+     // @ts-expect-error
+     if (typeof match.formats === 'function') {
+-      // @ts-expect-error
+-      return applyFormat(delta, match.blotName, match.formats(node, scroll));
++      const formatValue = match.formats(node, scroll);
++      if (formatValue != null) {
++        // @ts-expect-error
++        return applyFormat(delta, match.blotName, formatValue);
++      }
+     }
+   }
+   return delta;
+@@ -463,8 +475,11 @@ function matchBreak(node: Node, delta: Delta) {
+ 
+ function matchCodeBlock(node: Node, delta: Delta, scroll: ScrollBlot) {
+   const match = scroll.query('code-block');
++  if (match == null) {
++    return delta;
++  }
+   // @ts-expect-error
+-  const language = match ? match.formats(node, scroll) : true;
++  const language = match.formats(node, scroll);
+   return applyFormat(delta, 'code-block', language);
+ }
+ 
+@@ -532,7 +547,7 @@ function matchNewline(node: Node, delta: Delta, scroll: ScrollBlot) {
+   return delta;
+ }
+ 
+-function matchStyles(node: HTMLElement, delta: Delta) {
++function matchStyles(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+   const formats: Record<string, unknown> = {};
+   const style: Partial<CSSStyleDeclaration> = node.style || {};
+   if (style.fontStyle === 'italic') {
+@@ -551,8 +566,14 @@ function matchStyles(node: HTMLElement, delta: Delta) {
+   ) {
+     formats.bold = true;
+   }
+-  if (Object.keys(formats).length > 0) {
+-    delta = applyFormat(delta, formats);
++  const filteredFormats: Record<string, unknown> = {};
++  Object.keys(formats).forEach((name) => {
++    if (scroll.registry.types[name] != null) {
++      filteredFormats[name] = formats[name];
++    }
++  });
++  if (Object.keys(filteredFormats).length > 0) {
++    delta = applyFormat(delta, filteredFormats);
+   }
+   // @ts-expect-error
+   if (parseFloat(style.textIndent || 0) > 0) {

@@ -1,0 +1,38 @@
+== task 0: instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+== image: jefzda/sweap-images:ansible.ansible-ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+ansible.ansible-ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5: Pulling from jefzda/sweap-images
+Digest: sha256:a2ea931d3b4a4ca9d19cf4577f1f97b970553f459fedb13a18ed01c804d88ace
+Status: Image is up to date for jefzda/sweap-images:ansible.ansible-ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+docker.io/jefzda/sweap-images:ansible.ansible-ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+== workdir in container: /app
+== no Python >=3.10 in image; bootstrapping one with uv
+WARNING: You are using pip version 21.0.1; however, version 26.0.1 is available.
+You should consider upgrading via the '/usr/bin/python3 -m pip install --upgrade pip' command.
+Downloading cpython-3.12.15-linux-x86_64-gnu (download) (32.7MiB)
+ Downloaded cpython-3.12.15-linux-x86_64-gnu (download)
+Installed Python 3.12.15 in 2.48s
+ + cpython-3.12.15-linux-x86_64-gnu (python3.12)
+warning: `/root/.local/bin` is not on your PATH. To use installed Python executables, run `export PATH="/root/.local/bin:$PATH"` or `uv python update-shell`.
+== harness interpreter: /tmp/uv-pythons/cpython-3.12-linux-x86_64-gnu/bin/python3.12 (Python 3.12.15)
+madsLoop finished: max_iterations
+== patch written to model_patch_instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5.diff
+diff --git a/lib/ansible/galaxy/dependency_resolution/dataclasses.py b/lib/ansible/galaxy/dependency_resolution/dataclasses.py
+index 002578d96c..a5e41c8f81 100644
+--- a/lib/ansible/galaxy/dependency_resolution/dataclasses.py
++++ b/lib/ansible/galaxy/dependency_resolution/dataclasses.py
+@@ -11,23 +11,6 @@ import json
+ import os
+ from collections import namedtuple
+ from glob import iglob
+-from keyword import iskeyword  # used in _is_fqcn
+-
+-try:
+-    from typing import TYPE_CHECKING
+-except ImportError:
+-    TYPE_CHECKING = False
+-
+-if TYPE_CHECKING:
+-    from typing import Tuple, Type, TypeVar
+-    from ansible.galaxy.collection.concrete_artifact_manager import (
+-        ConcreteArtifactsManager,
+-    )

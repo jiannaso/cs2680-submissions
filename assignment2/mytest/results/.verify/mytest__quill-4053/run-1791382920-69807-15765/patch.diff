@@ -1,0 +1,150 @@
+diff --git a/packages/quill/src/core/quill.ts b/packages/quill/src/core/quill.ts
+index 140d5b2..9f177d5 100644
+--- a/packages/quill/src/core/quill.ts
++++ b/packages/quill/src/core/quill.ts
+@@ -23,6 +23,7 @@ import Theme from './theme.js';
+ import type { ThemeConstructor } from './theme.js';
+ import scrollRectIntoView from './utils/scrollRectIntoView.js';
+ import type { Rect } from './utils/scrollRectIntoView.js';
++import createRegistryWithFormats from './utils/createRegistryWithFormats.js';
+ 
+ const debug = logger('quill');
+ 
+@@ -33,6 +34,7 @@ interface Options {
+   theme?: string;
+   debug?: DebugLevel | boolean;
+   registry?: Parchment.Registry;
++  formats?: string[] | null;
+   readOnly?: boolean;
+   placeholder?: string;
+   bounds?: HTMLElement | string | null;
+@@ -785,10 +787,24 @@ function expandConfig(
+ 
+   const config = { ...quillDefaults, ...themeDefaults, ...options };
+ 
++  // Determine the registry:
++  // - explicitly passed registry takes precedence over formats
++  // - if formats is an array, create a filtered registry
++  // - otherwise use the global registry
++  let registry: Parchment.Registry;
++  if ('registry' in options && options.registry != null) {
++    registry = options.registry;
++  } else if (Array.isArray(options.formats)) {
++    registry = createRegistryWithFormats(options.formats, globalRegistry, debug);
++  } else {
++    registry = globalRegistry;
++  }
++
+   return {
+     ...config,
+     container,
+     theme,
++    registry,
+     modules: Object.entries(modules).reduce(
+       (modulesWithDefaults, [name, value]) => {
+         if (!value) return modulesWithDefaults;
+diff --git a/packages/quill/src/core/utils/createRegistryWithFormats.ts b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+new file mode 100644
+index 0000000..fd4ad12
+--- /dev/null
++++ b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+@@ -0,0 +1,99 @@
++import * as Parchment from 'parchment';
++import type { BlotConstructor } from 'parchment';
++
++const CORE_BLOT_NAMES = new Set([
++  'block',
++  'break',
++  'cursor',
++  'inline',
++  'scroll',
++  'text',
++]);
++
++type DebugLogger = { error(message: string): void };
++
++export default function createRegistryWithFormats(
++  formats: string[] | null | undefined,
++  sourceRegistry: Parchment.Registry,
++  debug: DebugLogger,
++): Parchment.Registry {
++  if (!Array.isArray(formats)) {
++    // When formats is null or not given, return the source registry directly
++    return sourceRegistry;
++  }
++
++  const registry = new Parchment.Registry();
++  const registered = new Set<string>();
++
++  // Always register core blots
++  CORE_BLOT_NAMES.forEach((name) => {
++    const blot = sourceRegistry.query(name, Parchment.Scope.BLOT);
++    if (blot) {
++      registry.register(blot);
++      registered.add(name);
++    }
++  });
++
++  // Helper to resolve the blot name from a registry key
++  // Format names can be just the name (e.g., 'bold') or with prefix (e.g., 'formats/bold')
++  function resolveBlotName(formatName: string): string | null {
++    // Try direct name first
++    const blot = sourceRegistry.query(formatName, Parchment.Scope.BLOT);
++    if (blot) {
++      return formatName;
++    }
++    // Try with formats/ prefix
++    const prefixed = `formats/${formatName}`;
++    if (sourceRegistry.query(prefixed, Parchment.Scope.BLOT)) {
++      return formatName;
++    }
++    return null;
++  }
++
++  // Track which format names we are currently resolving (for cycle detection)
++  const resolving = new Set<string>();
++
++  function registerFormat(formatName: string): void {
++    if (resolving.has(formatName)) {
++      debug.error(`Cycle detected in required containers for format "${formatName}"`);
++      return;
++    }
++
++    const resolved = resolveBlotName(formatName);
++    if (resolved == null) {
++      // Unknown format name - skip but report
++      debug.error(`Format "${formatName}" not found in source registry`);
++      return;
++    }
++
++    // Already registered
++    if (registered.has(formatName)) {
++      return;
++    }
++
++    resolving.add(formatName);
++
++    // Register the format itself
++    const blot = sourceRegistry.query(resolved, Parchment.Scope.BLOT);
++    if (blot && 'blotName' in blot) {
++      registry.register(blot);
++      registered.add(formatName);
++    }
++
++    // Check for required container
++    const blotConstructor = blot as BlotConstructor | undefined;
++    if (blotConstructor && blotConstructor.requiredContainer) {
++      const containerName = blotConstructor.requiredContainer.blotName;
++      registerFormat(containerName);
++    }
++
++    resolving.delete(formatName);
++  }
++
++  // Register all requested formats
++  for (const formatName of formats) {
++    registerFormat(formatName);
++  }
++
++  return registry;
++}

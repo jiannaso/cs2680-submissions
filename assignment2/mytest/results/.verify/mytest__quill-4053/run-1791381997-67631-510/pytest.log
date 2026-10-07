@@ -1,0 +1,111 @@
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill imports
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill construction empty
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill construction text
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill construction newlines
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill construction formatted ending
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api deleteText()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api format()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api formatLine()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api formatText()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api insertEmbed()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api insertText()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api enable/disable
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api getBounds() index
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api getBounds() range
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api getFormat()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api getSelection()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api removeFormat()
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api updateContents() delta
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill api updateContents() ops array
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events api text insert
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events user text insert
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert a in aaaa at index 0
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert a in aaaa at index 1
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert a in aaaa at index 2
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert a in aaaa at index 3
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert a in xaa at index 1
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert a in xaa at index 2
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert a in xaa at index 3
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert aa in ax at index 0
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events insert aa in ax at index 1
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events delete a in xaa at index 1
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events delete a in xaa at index 2
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events forward-delete a in xaa at index 1
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events forward-delete a in xaa at index 2
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill events replace yay with y
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() empty
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() single line
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() multiple lines
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() basic formats
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() array of operations
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() json
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() no trailing newline
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() inline formatting
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setContents() block embed
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getText() return all text by default
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getText() works when only provide index
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getText() works when provide index and length
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getText() works with range
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getSemanticHTML() return all html by default
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getSemanticHTML() works when only provide index
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getSemanticHTML() works when provide index and length
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill getSemanticHTML() works with range
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setText() overwrite
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setText() set to newline
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setText() multiple newlines
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setText() content with trailing newline
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setText() return carriage
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill setText() return carriage newline
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig user overwrite quill
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig convert css selectors
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig convert module true to {}
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig theme defaults for Snow
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig theme defaults for false
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig theme defaults for undefined
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig theme defaults for null
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig quill < module < theme < user
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig toolbar default
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig toolbar disabled
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig toolbar selector
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig toolbar container shorthand
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig toolbar format array
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig toolbar custom handler, default container
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig registry defaults to globalRegistry
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig formats null value allows all formats
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig formats always allows core formats
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig formats limits allowed formats
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig formats ignores unknown formats
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig formats registers list container when there is a list
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill expandConfig formats provides both registry and formats
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, length:number)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, length:number, format:string, value:boolean, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, length:number, format:string, value:string, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, length:number, format:string, value:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, length:number, format:object)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, length:number, format:object, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, length:number, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (index:number, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, format:string, value:boolean, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, format:string, value:string, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, format:string, value:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, format:object)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, format:object, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, dummy:number)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, dummy:number, format:string, value:boolean)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill overload (range:range, dummy:number, format:object, source:string)
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill placeholder blank editor
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill placeholder with text
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill placeholder formatted line
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill scrollSelectionIntoView scroll upward
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill scrollSelectionIntoView scroll downward
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill scrollSelectionIntoView scroll-padding
+PASSED packages/quill/test/unit/core/quill.spec.ts |  Quill scrollSelectionIntoView inline scroll
+PASSED packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts |  createRegistryWithFormats register core formats
+PASSED packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts |  createRegistryWithFormats register specified formats
+PASSED packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts |  createRegistryWithFormats register required container
+FAILED packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts |  createRegistryWithFormats infinite loop
+PASSED packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts |  createRegistryWithFormats report missing formats
+===== 1 failed, 109 passed =====

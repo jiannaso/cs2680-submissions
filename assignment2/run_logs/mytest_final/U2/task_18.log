@@ -1,0 +1,28 @@
+== task 18: mytest__schedule-623
+== image: madsloop-mytest:schedule-623
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:schedule-623
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__schedule-623.diff
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index 3f7267d..9ce463b 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -48,6 +48,31 @@ from typing import Set, List, Optional, Callable, Union
+ 
+ logger = logging.getLogger("schedule")
+ 
++WEEKDAYS = (
++    "monday",
++    "tuesday",
++    "wednesday",
++    "thursday",
++    "friday",
++    "saturday",
++    "sunday",
++)
++
++
++def _move_to_next_weekday(moment: datetime.datetime, weekday: str) -> datetime.datetime:

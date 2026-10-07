@@ -1,0 +1,30 @@
+== task 7: instance_qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d
+== image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366
+qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366: Pulling from jefzda/sweap-images
+Digest: sha256:e3cf12bea66940ccc3c62684a75d1124c4d1d06b4696bb302db3b9ae68a8d990
+Status: Image is up to date for jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366
+docker.io/jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.11 (Python 3.11.13)
+madsLoop finished: done
+== patch written to model_patch_instance_qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d.diff
+diff --git a/qutebrowser/config/configutils.py b/qutebrowser/config/configutils.py
+index 48d699d8b..1f2339186 100644
+--- a/qutebrowser/config/configutils.py
++++ b/qutebrowser/config/configutils.py
+@@ -21,6 +21,7 @@
+ """Utilities and data structures used by various config code."""
+ 
+ 
++import collections
+ import typing
+ 
+ import attr
+@@ -83,10 +84,13 @@ class Values:
+                  opt: 'configdata.Option',
+                  values: typing.MutableSequence = None) -> None:
+         self.opt = opt
+-        self._values = values or []
++        self._vmap = collections.OrderedDict()
++        if values is not None:
++            for scoped in values:

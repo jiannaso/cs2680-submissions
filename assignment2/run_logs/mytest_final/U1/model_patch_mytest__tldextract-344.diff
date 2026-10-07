@@ -1,0 +1,121 @@
+diff --git a/tldextract/cli.py b/tldextract/cli.py
+index e9aa6ce..d65d101 100644
+--- a/tldextract/cli.py
++++ b/tldextract/cli.py
+@@ -98,7 +98,9 @@ def main() -> None:
+     for i in args.input:
+         ext = tld_extract(i)
+         if args.json:
+-            properties = ("fqdn", "ipv4", "ipv6", "registered_domain")
++            properties = ("fqdn", "ipv4", "ipv6", "registered_domain",
++                          "top_domain_under_public_suffix",
++                          "top_domain_under_registry_suffix")
+             print(
+                 json.dumps(
+                     {
+diff --git a/tldextract/tldextract.py b/tldextract/tldextract.py
+index d346c03..845c9cb 100644
+--- a/tldextract/tldextract.py
++++ b/tldextract/tldextract.py
+@@ -96,6 +96,63 @@ class ExtractResult:
+     `False`.
+     """
+ 
++    registry_suffix: str = ""
++    """The ICANN registry suffix of the input URL, i.e. the suffix the name would
++    have if private rules were ignored.
++
++    This is the public, non-private portion of the suffix, under which domains
++    can be registered. For ``foo.blogspot.com`` with private domains enabled,
++    this would be ``com`` rather than ``blogspot.com``.
++    """
++
++    @property
++    def top_domain_under_public_suffix(self) -> str:
++        """The domain and suffix joined with a dot, if both are set, or else the empty string.
++
++        This is equivalent to ``registered_domain``, but uses the suffix that
++        applies under the current settings (including or excluding private domains).
++
++        >>> extract("http://forums.bbc.co.uk").top_domain_under_public_suffix
++        'bbc.co.uk'
++        >>> extract("http://localhost:8080").top_domain_under_public_suffix
++        ''
++        """
++        if self.suffix and self.domain:
++            return f"{self.domain}.{self.suffix}"
++        return ""
++
++    @property
++    def top_domain_under_registry_suffix(self) -> str:
++        """The single label directly under the registry suffix, plus the registry suffix.
++
++        For ``www.example.auth.us-east-1.amazoncognito.com``, this is
++        ``amazoncognito.com`` whether or not private domains are included.
++
++        >>> extract("http://forums.bbc.co.uk").top_domain_under_registry_suffix
++        'bbc.co.uk'
++        >>> extract("http://localhost:8080").top_domain_under_registry_suffix
++        ''
++        """
++        if self.registry_suffix and self.domain:
++            labels = self.suffix.split(".") if self.suffix else []
++            # If the public suffix matches the registry suffix, use domain + registry_suffix
++            if self.suffix == self.registry_suffix:
++                return f"{self.domain}.{self.registry_suffix}"
++            # Otherwise, the registry suffix covers everything from the registry label down
++            # Find where the registry suffix starts in the suffix
++            reg_labels = self.registry_suffix.split(".")
++            suffix_labels = self.suffix.split(".")
++            # Find the matching prefix
++            for i in range(len(suffix_labels), 0, -1):
++                if suffix_labels[-i:] == reg_labels[-i:]:
++                    # The label just before the registry suffix part is the domain under registry
++                    domain_under_reg = suffix_labels[-(i + 1)] if i + 1 <= len(suffix_labels) else ""
++                    if domain_under_reg:
++                        return f"{domain_under_reg}.{self.registry_suffix}"
++                    return ""
++            return ""
++        return ""
++
+     @property
+     def registered_domain(self) -> str:
+         """The `domain` and `suffix` fields joined with a dot, if they're both set, or else the empty string.
+@@ -357,7 +414,7 @@ class TLDExtract:
+             and netloc_with_ascii_dots[-1] == "]"
+             and looks_like_ipv6(netloc_with_ascii_dots[1:-1])
+         ):
+-            return ExtractResult("", netloc_with_ascii_dots, "", is_private=False)
++            return ExtractResult("", netloc_with_ascii_dots, "", False, "")
+ 
+         labels = netloc_with_ascii_dots.split(".")
+ 
+@@ -369,12 +426,26 @@ class TLDExtract:
+         if suffix_index == len(labels) == num_ipv4_labels and looks_like_ip(
+             netloc_with_ascii_dots
+         ):
+-            return ExtractResult("", netloc_with_ascii_dots, "", is_private)
++            return ExtractResult("", netloc_with_ascii_dots, "", is_private, "")
+ 
+         suffix = ".".join(labels[suffix_index:]) if suffix_index != len(labels) else ""
+         subdomain = ".".join(labels[: suffix_index - 1]) if suffix_index >= 2 else ""
+         domain = labels[suffix_index - 1] if suffix_index else ""
+-        return ExtractResult(subdomain, domain, suffix, is_private)
++
++        # Also compute the registry suffix (without private domain rules)
++        tld_extractor = self._get_tld_extractor(session=session)
++        registry_suffix_index, _ = tld_extractor.suffix_index(
++            labels, include_psl_private_domains=False
++        )
++        registry_suffix = (
++            ".".join(labels[registry_suffix_index:])
++            if registry_suffix_index != len(labels)
++            else ""
++        )
++
++        return ExtractResult(
++            subdomain, domain, suffix, is_private, registry_suffix
++        )
+ 
+     def update(
+         self, fetch_now: bool = False, session: requests.Session | None = None

@@ -1,0 +1,12 @@
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/raw_samples.csv (10 instances)
+Running local-docker evaluation for instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+Running local-docker evaluation for instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+Using Docker Hub image: jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf81299
+Using Docker Hub image: jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+  0%|          | 0/2 [00:00<?, ?it/s]Accuracy: 100.00%:   0%|          | 0/2 [00:03<?, ?it/s]Accuracy: 100.00%:  50%|█████     | 1/2 [00:03<00:03,  3.68s/it]Accuracy: 50.00%:  50%|█████     | 1/2 [04:53<00:03,  3.68s/it] Accuracy: 50.00%: 100%|██████████| 2/2 [04:53<00:00, 172.07s/it]Accuracy: 50.00%: 100%|██████████| 2/2 [04:53<00:00, 146.81s/it]
+Overall accuracy:  0.5
+
+== results (/Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/eval_results.json):
+RESOLVED   instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+unresolved instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+1/2 resolved

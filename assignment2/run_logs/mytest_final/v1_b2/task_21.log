@@ -1,0 +1,28 @@
+== task 21: mytest__click-3228
+== image: madsloop-mytest:click-3228
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:click-3228
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__click-3228.diff
+diff --git a/src/click/__init__.py b/src/click/__init__.py
+index 5da5a39..64be7e0 100644
+--- a/src/click/__init__.py
++++ b/src/click/__init__.py
+@@ -33,6 +33,7 @@ from .exceptions import BadParameter as BadParameter
+ from .exceptions import ClickException as ClickException
+ from .exceptions import FileError as FileError
+ from .exceptions import MissingParameter as MissingParameter
++from .exceptions import NoSuchCommand as NoSuchCommand
+ from .exceptions import NoSuchOption as NoSuchOption
+ from .exceptions import UsageError as UsageError
+ from .formatting import HelpFormatter as HelpFormatter
+diff --git a/src/click/core.py b/src/click/core.py
+index 583b745..e78c417 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -29,6 +29,7 @@ from .exceptions import ClickException
+ from .exceptions import Exit
+ from .exceptions import MissingParameter
+ from .exceptions import NoArgsIsHelpError

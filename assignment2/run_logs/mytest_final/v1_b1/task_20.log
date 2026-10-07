@@ -1,0 +1,28 @@
+== task 20: mytest__starlette-3471
+== image: madsloop-mytest:starlette-3471
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:starlette-3471
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__starlette-3471.diff
+diff --git a/starlette/middleware/trustedhost.py b/starlette/middleware/trustedhost.py
+index 98451e2..3844a41 100644
+--- a/starlette/middleware/trustedhost.py
++++ b/starlette/middleware/trustedhost.py
+@@ -37,7 +37,32 @@ class TrustedHostMiddleware:
+             return
+ 
+         headers = Headers(scope=scope)
+-        host = headers.get("host", "").split(":")[0]
++        host = headers.get("host", "")
++        # Strip port from host header
++        if host.startswith("["):
++            # Bracketed IPv6 address like [::1] or [::1]:8000
++            bracket_end = host.find("]")
++            if bracket_end == -1:
++                # No closing bracket - malformed
++                host = ""
++            else:
++                rest = host[bracket_end + 1:] if bracket_end + 1 <= len(host) else ""
++                if rest == "":

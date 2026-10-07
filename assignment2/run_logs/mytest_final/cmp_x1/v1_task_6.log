@@ -1,0 +1,31 @@
+== task 6: mytest__schedule-604
+== image: madsloop-mytest:schedule-604
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:schedule-604
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+[madsLoop] prompt at 81298 tokens; elided 72880 chars of old tool output
+[madsLoop] prompt at 80398 tokens; elided 26325 chars of old tool output
+[madsLoop] prompt at 80320 tokens; elided 10878 chars of old tool output
+madsLoop finished: done
+== patch written to model_patch_mytest__schedule-604.diff
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index de082c1..87c7845 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -739,51 +739,231 @@ class Job:
+             if days_ahead <= 0:  # Target day already happened this week
+                 days_ahead += 7
+             self.next_run += datetime.timedelta(days_ahead) - self.period
++
+         if self.at_time is not None:
+             if self.unit not in ("days", "hours", "minutes") and self.start_day is None:
+                 raise ScheduleValueError("Invalid unit without specifying start day")
+-            kwargs = {"second": self.at_time.second, "microsecond": 0}
+-            if self.unit == "days" or self.start_day is not None:
+-                kwargs["hour"] = self.at_time.hour
+-            if self.unit in ["days", "hours"] or self.start_day is not None:
+-                kwargs["minute"] = self.at_time.minute
+-            self.next_run = self.next_run.replace(**kwargs)  # type: ignore
+ 
+             if self.at_time_zone is not None:

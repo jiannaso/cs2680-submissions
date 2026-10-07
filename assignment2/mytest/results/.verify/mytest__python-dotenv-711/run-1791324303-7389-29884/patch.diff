@@ -1,0 +1,111 @@
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index c78231c..44495e9 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -124,7 +124,11 @@ def set_value(ctx: click.Context, key: Any, value: Any) -> None:
+     file = ctx.obj["FILE"]
+     quote = ctx.obj["QUOTE"]
+     export = ctx.obj["EXPORT"]
+-    success, key, value = set_key(file, key, value, quote, export)
++    try:
++        success, key, value = set_key(file, key, value, quote, export)
++    except OSError as exc:
++        print(f"Error writing env file: {exc}", file=sys.stderr)
++        sys.exit(2)
+     if success:
+         click.echo(f"{key}={value}")
+     else:
+@@ -159,7 +163,11 @@ def unset(ctx: click.Context, key: Any) -> None:
+     """
+     file = ctx.obj["FILE"]
+     quote = ctx.obj["QUOTE"]
+-    success, key = unset_key(file, key, quote)
++    try:
++        success, key = unset_key(file, key, quote)
++    except OSError as exc:
++        print(f"Error writing env file: {exc}", file=sys.stderr)
++        sys.exit(2)
+     if success:
+         click.echo(f"Successfully removed {key}")
+     else:
+diff --git a/src/dotenv/main.py b/src/dotenv/main.py
+index 3123690..982c0d3 100644
+--- a/src/dotenv/main.py
++++ b/src/dotenv/main.py
+@@ -160,34 +160,52 @@ def rewrite(
+         source = io.StringIO("")
+         original_mode = None
+ 
+-    with tempfile.NamedTemporaryFile(
+-        mode="w",
+-        encoding=encoding,
+-        delete=False,
+-        prefix=".tmp_",
+-        dir=os.path.dirname(os.path.abspath(path)),
+-    ) as dest:
+-        dest_path = pathlib.Path(dest.name)
+-        error = None
+-
+-        try:
+-            with source:
+-                yield (source, dest)
+-        except BaseException as err:
+-            error = err
+-
+-    if error is None:
++    tmp_path = None
++    try:
++        with tempfile.NamedTemporaryFile(
++            mode="w",
++            encoding=encoding,
++            delete=False,
++            prefix=".tmp_",
++            dir=os.path.dirname(os.path.abspath(path)),
++        ) as dest:
++            tmp_path = dest.name
++            try:
++                with source:
++                    yield (source, dest)
++            except BaseException:
++                raise
++    except BaseException as err:
++        # Clean up partial temp file if creation partially succeeded
++        if tmp_path is not None:
++            try:
++                os.unlink(tmp_path)
++            except OSError:
++                pass
++        # Re-raise with filename set to the .env path
++        if hasattr(err, "filename") and err.filename is not None:
++            # Replace the filename with the .env path so the error message
++            # refers to the user-facing file, not the internal temp file.
++            raise type(err)(err.errno, err.strerror, path) from err.__cause__
++        raise
++    else:
++        # No error during yield — do the replace
+         try:
+             if original_mode is not None:
+-                os.chmod(dest_path, original_mode)
++                os.chmod(tmp_path, original_mode)
+ 
+-            os.replace(dest_path, path)
+-        except BaseException:
+-            dest_path.unlink(missing_ok=True)
++            os.replace(tmp_path, path)
++        except BaseException as err:
++            try:
++                os.unlink(tmp_path)
++            except OSError:
++                pass
++            # Re-raise with filename set to the .env path
++            if hasattr(err, "filename") and err.filename is not None:
++                raise type(err)(err.errno, err.strerror, path) from err.__cause__
+             raise
+-    else:
+-        dest_path.unlink(missing_ok=True)
+-        raise error from None
++        finally:
++            tmp_path = None  # mark as moved
+ 
+ 
+ def set_key(

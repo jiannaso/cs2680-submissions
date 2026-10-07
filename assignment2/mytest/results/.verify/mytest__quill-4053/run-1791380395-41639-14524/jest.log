@@ -1,0 +1,20 @@
+[2m1:40:07 PM[22m [31m[1m[vite][22m[39m [31mInternal server error: Failed to resolve import "../../../../src/core/utils/createRegistryWithFormats.js" from "test/unit/core/utils/createRegistryWithFormats.spec.ts". Does the file exist?[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36m/app/packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts[39m:3:38
+[33m  1  |  import "../../../../src/quill.js";
+  2  |  import { describe, expect, test, vitest } from "vitest";
+  3  |  import createRegistryWithFormats from "../../../../src/core/utils/createRegistryWithFormats.js";
+     |                                         ^
+  4  |  import { globalRegistry } from "../../../../src/core/quill.js";
+  5  |  import logger from "../../../../src/core/logger.js";[39m
+      at formatError (file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:50647:46)
+      at TransformContext.error (file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:50641:19)
+      at normalizeUrl (file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:65705:33)
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:65860:47
+      at async Promise.all (index 2)
+      at async TransformContext.transform (file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:65781:13)
+      at async Object.transform (file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:50956:30)
+      at async loadAndTransform (file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:53746:29)
+      at async viteTransformMiddleware (file:///app/node_modules/vite/dist/node/chunks/dep-jvB8WLp9.js:63522:32)
+JSON report written to /out/jest.json

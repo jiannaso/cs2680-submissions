@@ -1,0 +1,33 @@
+== task 5: instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+== image: jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf81299
+internetarchive.openlibrary-internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf81299: Pulling from jefzda/sweap-images
+Digest: sha256:580f9ff4a940397196502069987e7311b5f00a95ffd9c5c7b44aa3974a844544
+Status: Image is up to date for jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf81299
+docker.io/jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf81299
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.2)
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+httpcore 0.17.3 requires h11<0.15,>=0.13, but you have h11 0.16.0 which is incompatible.
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
+madsLoop finished: done
+== patch written to model_patch_instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26.diff
+diff --git a/openlibrary/core/wikidata.py b/openlibrary/core/wikidata.py
+index c20e101b7..519bd89ce 100644
+--- a/openlibrary/core/wikidata.py
++++ b/openlibrary/core/wikidata.py
+@@ -36,6 +36,26 @@ class WikidataEntity:
+     sitelinks: dict[str, dict]
+     _updated: datetime  # This is when we fetched the data, not when the entity was changed in Wikidata
+ 
++    def get_statement_values(self, property_id: str) -> list[str]:
++        """
++        Retrieve all string values associated with a given property from the
++        entity's statements. Skips malformed entries and returns an empty list
++        if the property is missing or no valid values are found.
++        """
++        statements = self.statements.get(property_id, [])
++        values: list[str] = []
++        for stmt in statements:
++            try:
++                mainsnak = stmt.get("mainsnak", {})
++                datavalue = mainsnak.get("datavalue", {})

@@ -1,0 +1,410 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+collected 282 items
+
+tests/test_termui.py ................................................... [ 18%]
+.....sssssssssssssssssssss..F...............ss.......................... [ 43%]
+........................................................................ [ 69%]
+........................................................................ [ 94%]
+...............                                                          [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_edit_pathlib[single] ___________________________
+
+runner = <click.testing.CliRunner object at 0x7ffffddbca10>
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_edit_pathlib_single_0')
+use_iterable = False
+
+    @pytest.mark.skipif(WIN, reason="No sed on Windows.")
+    @pytest.mark.parametrize("use_iterable", [False, True], ids=["single", "iterable"])
+    def test_edit_pathlib(runner, tmp_path, use_iterable):
+        """Issue #2869: ``filename`` accepts ``os.PathLike`` values."""
+        file_path = tmp_path / "file.txt"
+        file_path.write_text("a\nb\n", encoding="UTF-8")
+        filename = [file_path] if use_iterable else file_path
+    
+>       result = click.edit(filename=filename, editor="sed -i~ 's/$/Test/'")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_termui.py:459: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/click/termui.py:898: in edit
+    ed.edit_files(filenames=filename)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <click._termui_impl.Editor object at 0x7ffffdc2a0c0>
+filenames = PosixPath('/tmp/pytest-of-root/pytest-0/test_edit_pathlib_single_0/file.txt')
+
+    def edit_files(self, filenames: cabc.Iterable[str]) -> None:
+        """Open files in the user's editor."""
+        import shlex
+        import subprocess
+    
+        editor = self.get_editor()
+        environ: dict[str, str] | None = None
+    
+        if self.env:
+            environ = os.environ.copy()
+            environ.update(self.env)
+    
+        try:
+            # Split in POSIX mode (the default) for the same reasons as
+            # in pager(): strips quotes from tokens and preserves quoted
+            # Windows paths.
+            c = subprocess.Popen(
+>               args=shlex.split(editor) + list(filenames),
+                                           ^^^^^^^^^^^^^^^
+                env=environ,
+            )
+E           TypeError: 'PosixPath' object is not iterable
+
+src/click/_termui_impl.py:730: TypeError
+==================================== PASSES ====================================
+________________ test_progressbar_time_per_iteration[avg0-0.0] _________________
+----------------------------- Captured stdout call -----------------------------
+
+________________ test_progressbar_time_per_iteration[avg1-2.5] _________________
+----------------------------- Captured stdout call -----------------------------
+
+________________________ test_progressbar_eta[False-5] _________________________
+----------------------------- Captured stdout call -----------------------------
+
+_________________________ test_progressbar_eta[True-0] _________________________
+----------------------------- Captured stdout call -----------------------------
+
+___________________ test_progressbar_format_eta[0-00:00:00] ____________________
+----------------------------- Captured stdout call -----------------------------
+
+___________________ test_progressbar_format_eta[30-00:00:30] ___________________
+----------------------------- Captured stdout call -----------------------------
+
+___________________ test_progressbar_format_eta[90-00:01:30] ___________________
+----------------------------- Captured stdout call -----------------------------
+
+__________________ test_progressbar_format_eta[900-00:15:00] ___________________
+----------------------------- Captured stdout call -----------------------------
+
+__________________ test_progressbar_format_eta[9000-02:30:00] __________________
+----------------------------- Captured stdout call -----------------------------
+
+__________ test_progressbar_format_eta[99999999999-1157407d 09:46:39] __________
+----------------------------- Captured stdout call -----------------------------
+
+______________________ test_progressbar_format_eta[None-] ______________________
+----------------------------- Captured stdout call -----------------------------
+
+_______________________ test_progressbar_format_pos[0-5] _______________________
+----------------------------- Captured stdout call -----------------------------
+
+______________________ test_progressbar_format_pos[-1-1] _______________________
+----------------------------- Captured stdout call -----------------------------
+
+_______________________ test_progressbar_format_pos[5-5] _______________________
+----------------------------- Captured stdout call -----------------------------
+
+_______________________ test_progressbar_format_pos[6-5] _______________________
+----------------------------- Captured stdout call -----------------------------
+
+_______________________ test_progressbar_format_pos[4-0] _______________________
+----------------------------- Captured stdout call -----------------------------
+
+______________ test_progressbar_format_bar[8-False-7-0-#######-] _______________
+----------------------------- Captured stdout call -----------------------------
+
+_______________ test_progressbar_format_bar[0-True-8-0-########] _______________
+----------------------------- Captured stdout call -----------------------------
+
+_ test_progressbar_format_progress_line[0-True-True-0-  [--------]  0/0    0%] _
+----------------------------- Captured stdout call -----------------------------
+
+___ test_progressbar_format_progress_line[0-False-True-0-  [--------]  0/0] ____
+----------------------------- Captured stdout call -----------------------------
+
+_____ test_progressbar_format_progress_line[0-False-False-0-  [--------]0] _____
+----------------------------- Captured stdout call -----------------------------
+
+_____ test_progressbar_format_progress_line[0-False-False-0-  [--------]1] _____
+----------------------------- Captured stdout call -----------------------------
+
+_ test_progressbar_format_progress_line[8-True-True-8-  [########]  8/8  100%] _
+----------------------------- Captured stdout call -----------------------------
+
+__________ test_progressbar_format_progress_line_with_show_func[test] __________
+----------------------------- Captured stdout call -----------------------------
+
+__________ test_progressbar_format_progress_line_with_show_func[None] __________
+----------------------------- Captured stdout call -----------------------------
+
+______________________ test_progressbar_yields_all_items _______________________
+----------------------------- Captured stdout call -----------------------------
+
+______________________ test_progress_bar_update_min_steps ______________________
+----------------------------- Captured stdout call -----------------------------
+
+=========================== short test summary info ============================
+PASSED tests/test_termui.py::test_progressbar_strip_regression
+PASSED tests/test_termui.py::test_progressbar_length_hint
+PASSED tests/test_termui.py::test_progressbar_no_tty
+PASSED tests/test_termui.py::test_progressbar_hidden_manual
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[iterate-1]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[iterate-2]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[iterate-3]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[iterate-7]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[iterate-20]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[iterate-25]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[update-1]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[update-2]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[update-3]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[update-7]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[update-20]
+PASSED tests/test_termui.py::test_progressbar_lands_on_final_position[update-25]
+PASSED tests/test_termui.py::test_progressbar_time_per_iteration[avg0-0.0]
+PASSED tests/test_termui.py::test_progressbar_time_per_iteration[avg1-2.5]
+PASSED tests/test_termui.py::test_progressbar_eta[False-5]
+PASSED tests/test_termui.py::test_progressbar_eta[True-0]
+PASSED tests/test_termui.py::test_progressbar_format_eta[0-00:00:00]
+PASSED tests/test_termui.py::test_progressbar_format_eta[30-00:00:30]
+PASSED tests/test_termui.py::test_progressbar_format_eta[90-00:01:30]
+PASSED tests/test_termui.py::test_progressbar_format_eta[900-00:15:00]
+PASSED tests/test_termui.py::test_progressbar_format_eta[9000-02:30:00]
+PASSED tests/test_termui.py::test_progressbar_format_eta[99999999999-1157407d 09:46:39]
+PASSED tests/test_termui.py::test_progressbar_format_eta[None-]
+PASSED tests/test_termui.py::test_progressbar_format_pos[0-5]
+PASSED tests/test_termui.py::test_progressbar_format_pos[-1-1]
+PASSED tests/test_termui.py::test_progressbar_format_pos[5-5]
+PASSED tests/test_termui.py::test_progressbar_format_pos[6-5]
+PASSED tests/test_termui.py::test_progressbar_format_pos[4-0]
+PASSED tests/test_termui.py::test_progressbar_format_bar[8-False-7-0-#######-]
+PASSED tests/test_termui.py::test_progressbar_format_bar[0-True-8-0-########]
+PASSED tests/test_termui.py::test_progressbar_format_progress_line[0-True-True-0-  [--------]  0/0    0%]
+PASSED tests/test_termui.py::test_progressbar_format_progress_line[0-False-True-0-  [--------]  0/0]
+PASSED tests/test_termui.py::test_progressbar_format_progress_line[0-False-False-0-  [--------]0]
+PASSED tests/test_termui.py::test_progressbar_format_progress_line[0-False-False-0-  [--------]1]
+PASSED tests/test_termui.py::test_progressbar_format_progress_line[8-True-True-8-  [########]  8/8  100%]
+PASSED tests/test_termui.py::test_progressbar_format_progress_line_with_show_func[test]
+PASSED tests/test_termui.py::test_progressbar_format_progress_line_with_show_func[None]
+PASSED tests/test_termui.py::test_progressbar_init_exceptions
+PASSED tests/test_termui.py::test_progressbar_iter_outside_with_exceptions
+PASSED tests/test_termui.py::test_progressbar_is_iterator
+PASSED tests/test_termui.py::test_choices_list_in_prompt
+PASSED tests/test_termui.py::test_file_prompt_default_format[file_kwargs0]
+PASSED tests/test_termui.py::test_file_prompt_default_format[file_kwargs1]
+PASSED tests/test_termui.py::test_file_prompt_default_format[file_kwargs2]
+PASSED tests/test_termui.py::test_secho
+PASSED tests/test_termui.py::test_secho_non_text[123-\x1b[45m123\x1b[0m]
+PASSED tests/test_termui.py::test_secho_non_text[test-test]
+PASSED tests/test_termui.py::test_progressbar_yields_all_items
+PASSED tests/test_termui.py::test_progressbar_update
+PASSED tests/test_termui.py::test_progressbar_item_show_func
+PASSED tests/test_termui.py::test_progressbar_update_with_item_show_func
+PASSED tests/test_termui.py::test_progress_bar_update_min_steps
+PASSED tests/test_termui.py::test_fast_edit
+PASSED tests/test_termui.py::test_edit
+PASSED tests/test_termui.py::test_edit_pathlib[iterable]
+PASSED tests/test_termui.py::test_editor_path_normalization[editor with args]
+PASSED tests/test_termui.py::test_editor_path_normalization[shell metacharacters in filename]
+PASSED tests/test_termui.py::test_editor_path_normalization[quoted windows path with spaces]
+PASSED tests/test_termui.py::test_editor_path_normalization[command with flags]
+PASSED tests/test_termui.py::test_editor_path_normalization[quoted command with args]
+PASSED tests/test_termui.py::test_editor_path_normalization[unix absolute path]
+PASSED tests/test_termui.py::test_editor_path_normalization[escaped space in unix path]
+PASSED tests/test_termui.py::test_editor_path_normalization[leading and trailing whitespace]
+PASSED tests/test_termui.py::test_editor_path_normalization[tab-separated tokens]
+PASSED tests/test_termui.py::test_editor_path_normalization[single-quoted path with spaces]
+PASSED tests/test_termui.py::test_editor_path_normalization[quoted editor with multiple flags and filenames with spaces]
+PASSED tests/test_termui.py::test_editor_path_normalization[multiple short flags]
+PASSED tests/test_termui.py::test_editor_path_normalization[filename with double quote]
+PASSED tests/test_termui.py::test_editor_path_normalization[filename with single quote]
+PASSED tests/test_termui.py::test_editor_env_passed_through
+PASSED tests/test_termui.py::test_editor_failure_exception
+PASSED tests/test_termui.py::test_editor_nonexistent_exception
+PASSED tests/test_termui.py::test_pager_shlex_split[simple command]
+PASSED tests/test_termui.py::test_pager_shlex_split[less]
+PASSED tests/test_termui.py::test_pager_shlex_split[command with flags]
+PASSED tests/test_termui.py::test_pager_shlex_split[empty string]
+PASSED tests/test_termui.py::test_pager_shlex_split[whitespace only]
+PASSED tests/test_termui.py::test_pager_shlex_split[leading and trailing spaces]
+PASSED tests/test_termui.py::test_pager_shlex_split[tab as separator]
+PASSED tests/test_termui.py::test_pager_shlex_split[quoted windows path with spaces]
+PASSED tests/test_termui.py::test_pager_shlex_split[quoted windows path with flag]
+PASSED tests/test_termui.py::test_pager_shlex_split[single-quoted path with spaces]
+PASSED tests/test_termui.py::test_pager_shlex_split[unix absolute path]
+PASSED tests/test_termui.py::test_pager_shlex_split[escaped space in unix path]
+PASSED tests/test_termui.py::test_pager_shlex_split[unquoted backslashes eaten in POSIX mode]
+PASSED tests/test_termui.py::test_get_pager_file_with_real_pager_binary_stream[multiple write sites]
+PASSED tests/test_termui.py::test_get_pager_file_with_real_pager_binary_stream[plain text]
+PASSED tests/test_termui.py::test_get_pager_file_with_real_pager_binary_stream[strip ansi]
+PASSED tests/test_termui.py::test_get_pager_file_with_real_pager_binary_stream[preserve ansi]
+PASSED tests/test_termui.py::test_get_pager_file_with_real_pager_binary_stream[empty string]
+PASSED tests/test_termui.py::test_echo_via_pager_real_pager_handles_ansi[strip ansi]
+PASSED tests/test_termui.py::test_echo_via_pager_real_pager_handles_ansi[preserve ansi]
+PASSED tests/test_termui.py::test_pipepager_less_detection_matches_stem[less]
+PASSED tests/test_termui.py::test_pipepager_less_detection_matches_stem[less.exe]
+PASSED tests/test_termui.py::test_pipepager_less_detection_matches_stem[upper case stays unmatched on POSIX]
+PASSED tests/test_termui.py::test_pipepager_less_detection_matches_stem[not less]
+PASSED tests/test_termui.py::test_pipepager_less_detection_case_insensitive_on_windows
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[no flags: inject LESS=-R]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[explicit -R]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[bundled short flags]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[LESS env var]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[long option]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[unrelated flag]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[long option with r substring]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[filename with R]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[filename with r]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[option terminator shields filenames]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[long option with value]
+PASSED tests/test_termui.py::test_pipepager_less_raw_mode_detection[unparsable LESS]
+PASSED tests/test_termui.py::test_echo_via_pager_streams_each_write
+PASSED tests/test_termui.py::test_get_pager_file_pager_missing_binary_falls_back
+PASSED tests/test_termui.py::test_get_pager_file_pager_unset_falls_back_when_no_default
+PASSED tests/test_termui.py::test_get_pager_file_missing_pager_keeps_borrowed_stream_open
+PASSED tests/test_termui.py::test_echo_via_pager_tty_pager_missing
+PASSED tests/test_termui.py::test_get_pager_file_nullpager_wraps_textio_stream[strip ansi]
+PASSED tests/test_termui.py::test_get_pager_file_nullpager_wraps_textio_stream[preserve ansi]
+PASSED tests/test_termui.py::test_get_pager_file_nullpager_keeps_stringio_stream
+PASSED tests/test_termui.py::test_get_pager_file_flushes_stream_on_exception
+PASSED tests/test_termui.py::test_get_pager_file_close_does_not_close_borrowed_stream
+PASSED tests/test_termui.py::test_tempfile_pager_accepts_text[get_pager_file]
+PASSED tests/test_termui.py::test_tempfile_pager_accepts_text[echo_via_pager]
+PASSED tests/test_termui.py::test_tempfile_pager_handles_ansi[strip ansi]
+PASSED tests/test_termui.py::test_tempfile_pager_handles_ansi[preserve ansi]
+PASSED tests/test_termui.py::test_tempfile_pager_passes_pager_params
+PASSED tests/test_termui.py::test_tempfile_pager_closes_file_before_unlink
+PASSED tests/test_termui.py::test_editor_unclosed_quote
+PASSED tests/test_termui.py::test_prompt_required_with_required[True-False-None-prompt]
+PASSED tests/test_termui.py::test_prompt_required_with_required[True-False-args1-Option '-v' requires an argument.]
+PASSED tests/test_termui.py::test_prompt_required_with_required[False-True-None-prompt]
+PASSED tests/test_termui.py::test_prompt_required_with_required[False-True-args3-prompt]
+PASSED tests/test_termui.py::test_prompt_required_false[no flag]
+PASSED tests/test_termui.py::test_prompt_required_false[short sep value]
+PASSED tests/test_termui.py::test_prompt_required_false[long sep value]
+PASSED tests/test_termui.py::test_prompt_required_false[short join value]
+PASSED tests/test_termui.py::test_prompt_required_false[long join value]
+PASSED tests/test_termui.py::test_prompt_required_false[short no value]
+PASSED tests/test_termui.py::test_prompt_required_false[long no value]
+PASSED tests/test_termui.py::test_prompt_required_false[no value opt]
+PASSED tests/test_termui.py::test_confirmation_prompt[True-password\npassword-None-password]
+PASSED tests/test_termui.py::test_confirmation_prompt[Confirm Password-password\npassword\n-None-password]
+PASSED tests/test_termui.py::test_confirmation_prompt[True-\n\n--]
+PASSED tests/test_termui.py::test_confirmation_prompt[False-None-None-None]
+PASSED tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[confirm-no-color]
+PASSED tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[confirm-color]
+PASSED tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[prompt-no-color]
+PASSED tests/test_termui.py::test_prompt_and_confirm_ansi_respects_color[prompt-color]
+PASSED tests/test_termui.py::test_false_show_default_cause_no_default_display_in_prompt
+PASSED tests/test_termui.py::test_string_show_default_in_prompt[simple-string]
+PASSED tests/test_termui.py::test_string_show_default_in_prompt[string-with-spaces]
+PASSED tests/test_termui.py::test_string_show_default_in_prompt[unicode]
+PASSED tests/test_termui.py::test_string_show_default_in_prompt[numeric-default]
+PASSED tests/test_termui.py::test_string_show_default_in_prompt[default-is-none]
+PASSED tests/test_termui.py::test_string_show_default_in_prompt[default-is-unset]
+PASSED tests/test_termui.py::test_string_show_default_in_prompt[empty-string-is-falsy]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params0-args0-[y/N]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params1-args1-[y/N]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params2-args2-[y/N]--False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params3-args3-[Y/n]--True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params4-args4-[Y/n]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params5-args5-[Y/n]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params6-args6-[y/N]--False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params7-args7-[y/N]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params8-args8-[y/N]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params9-args9-[y/n]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params10-args10-[y/n]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params11-args11-[Y/n]--True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params12-args12-[Y/n]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params13-args13-[Y/n]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params14-args14-None-None-MissingParameter]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params15-args15-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params16-args16-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params17-args17-None-None-None]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params18-args18-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params19-args19-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params20-args20-None-None-BadParameter]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params21-args21-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params22-args22-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params23-args23-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params24-args24-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params25-args25-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params26-args26-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params27-args27-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params28-args28-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params29-args29-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params30-args30-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params31-args31-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params32-args32-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params33-args33-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params34-args34-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params35-args35-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params36-args36-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params37-args37-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params38-args38-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params39-args39-None-None-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag/--no-flag-opt_params40-args40-None-None-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params41-args41---expected41]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params42-args42--y-y]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params43-args43--n-n]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params44-args44--foo-foo]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params45-args45-[y/N]--False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params46-args46-[y/N]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params47-args47-[y/N]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params48-args48-[y/N]--False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params49-args49-[y/N]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params50-args50-[y/N]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params51-args51---expected51]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params52-args52--y-y]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params53-args53--n-n]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params54-args54---expected54]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params55-args55--y-y]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params56-args56--n-n]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params57-args57-[Y/n]--True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params58-args58-[Y/n]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params59-args59-[Y/n]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params60-args60-[Y/n]--True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params61-args61-[Y/n]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params62-args62-[Y/n]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params63-args63-[y/N]--False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params64-args64-[y/N]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params65-args65-[y/N]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params66-args66-[y/N]--False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params67-args67-[y/N]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params68-args68-[y/N]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params69-args69-[y/n]--expected69]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params70-args70-[y/n]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params71-args71-[y/n]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params72-args72-[y/n]--expected72]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params73-args73-[y/n]-y-True]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params74-args74-[y/n]-n-False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params75-args75---expected75]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params76-args76--y-y]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params77-args77--n-n]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params78-args78-[False]--False]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params79-args79-[False]-y-y]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params80-args80-[False]-n-n]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params81-args81---expected81]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params82-args82--y-y]
+PASSED tests/test_termui.py::test_flag_value_prompt[--flag-opt_params83-args83--n-n]
+PASSED tests/test_termui.py::test_hide_input_error_message[builtin-int-masks-repr-value]
+PASSED tests/test_termui.py::test_hide_input_error_message[custom-no-value-shows-message]
+PASSED tests/test_termui.py::test_hide_input_error_message[custom-raw-value-masked]
+PASSED tests/test_termui.py::test_hide_input_error_message[unquoted-custom-message-should-mask-not-fallback]
+PASSED tests/test_termui.py::test_hide_input_error_message[mixed-quoted-and-raw-both-masked-at-source]
+PASSED tests/test_termui.py::test_hide_input_error_message[intrange-numeric-substring-falls-back-to-generic]
+PASSED tests/test_termui.py::test_hide_input_error_message[partial-word-match-falls-back-to-generic]
+PASSED tests/test_termui.py::test_hide_input_error_message[raw-value-should-be-masked-not-fallback]
+PASSED tests/test_termui.py::test_hide_input_error_message[multi-occurrence-raw-mask-all]
+PASSED tests/test_termui.py::test_hide_input_error_message[multi-occurrence-repr-mask-all]
+PASSED tests/test_termui.py::test_hide_input_error_message[regex-special-chars-must-be-escaped]
+PASSED tests/test_termui.py::test_hide_input_error_message[unicode-value-masked]
+PASSED tests/test_termui.py::test_hide_input_error_message[apostrophe-in-value-uses-double-quote-repr]
+PASSED tests/test_termui.py::test_hide_input_error_message[mixed-quoted-and-raw-mask-both]
+PASSED tests/test_termui.py::test_hide_input_confirmation_prompt_mismatch_unaffected
+PASSED tests/test_termui.py::test_hide_input_value_never_leaks_when_err_true
+SKIPPED [16] tests/test_termui.py:387: Tests user-input using the msvcrt module.
+SKIPPED [3] tests/test_termui.py:397: Tests special character inputs using the msvcrt module.
+SKIPPED [2] tests/test_termui.py:412: Tests user-input using the msvcrt module.
+SKIPPED [2] tests/test_termui.py:569: Windows-specific editor paths
+FAILED tests/test_termui.py::test_edit_pathlib[single] - TypeError: 'PosixPat...
+================== 1 failed, 258 passed, 23 skipped in 1.09s ===================

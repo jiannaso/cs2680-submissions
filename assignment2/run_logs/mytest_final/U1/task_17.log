@@ -1,0 +1,28 @@
+== task 17: mytest__tldextract-344
+== image: madsloop-mytest:tldextract-344
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:tldextract-344
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__tldextract-344.diff
+diff --git a/tldextract/cli.py b/tldextract/cli.py
+index e9aa6ce..d65d101 100644
+--- a/tldextract/cli.py
++++ b/tldextract/cli.py
+@@ -98,7 +98,9 @@ def main() -> None:
+     for i in args.input:
+         ext = tld_extract(i)
+         if args.json:
+-            properties = ("fqdn", "ipv4", "ipv6", "registered_domain")
++            properties = ("fqdn", "ipv4", "ipv6", "registered_domain",
++                          "top_domain_under_public_suffix",
++                          "top_domain_under_registry_suffix")
+             print(
+                 json.dumps(
+                     {
+diff --git a/tldextract/tldextract.py b/tldextract/tldextract.py
+index d346c03..845c9cb 100644
+--- a/tldextract/tldextract.py
++++ b/tldextract/tldextract.py
+@@ -96,6 +96,63 @@ class ExtractResult:

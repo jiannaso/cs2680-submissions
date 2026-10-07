@@ -1,0 +1,80 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c52d6ba..6eaffd1 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -217,7 +217,10 @@ class AttemptManager:
+     ) -> bool | None:
+         if exc_type is not None and exc_value is not None:
+             self.retry_state.set_exception((exc_type, exc_value, traceback))
+-            return True  # Swallow exception.
++            if self.retry_state.retry_object.enabled:
++                return True  # Swallow exception.
++            # When disabled, re-raise the original exception
++            raise exc_value.with_traceback(traceback)
+         # We don't have the result, actually.
+         self.retry_state.set_result(None)
+         return None
+@@ -475,6 +478,12 @@ class BaseRetrying(ABC):
+         self._add_action_func(lambda rs: DoSleep(rs.upcoming_sleep))
+ 
+     def __iter__(self) -> t.Generator[AttemptManager, None, None]:
++        if not self.enabled:
++            self.begin()
++            retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
++            yield AttemptManager(retry_state=retry_state)
++            return
++
+         self.begin()
+ 
+         retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
+@@ -507,6 +516,9 @@ class Retrying(BaseRetrying):
+         *args: t.Any,
+         **kwargs: t.Any,
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            return fn(*args, **kwargs)
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 214a7ae..f4eee47 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -111,6 +111,12 @@ class AsyncRetrying(BaseRetrying):
+     async def __call__(  # type: ignore[override]
+         self, fn: WrappedFn, *args: t.Any, **kwargs: t.Any
+     ) -> WrappedFnReturnT:
++        if not self.enabled:
++            if _utils.is_coroutine_callable(fn):
++                return await fn(*args, **kwargs)  # type: ignore[misc]
++            else:
++                return fn(*args, **kwargs)  # type: ignore[misc]
++
+         self.begin()
+ 
+         retry_state = RetryCallState(retry_object=self, fn=fn, args=args, kwargs=kwargs)
+@@ -166,11 +172,23 @@ class AsyncRetrying(BaseRetrying):
+         raise TypeError("AsyncRetrying object is not iterable")
+ 
+     def __aiter__(self) -> "AsyncRetrying":
++        if not self.enabled:
++            self.begin()
++            self._retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
++            self._enabled_yielded = False
++            return self
++
+         self.begin()
+         self._retry_state = RetryCallState(self, fn=None, args=(), kwargs={})
++        self._enabled_yielded = False
+         return self
+ 
+     async def __anext__(self) -> AttemptManager:
++        if not self.enabled:
++            if getattr(self, "_enabled_yielded", False):
++                raise StopAsyncIteration
++            self._enabled_yielded = True
++            return AttemptManager(retry_state=self._retry_state)
+         while True:
+             do = await self.iter(retry_state=self._retry_state)
+             if do is None:

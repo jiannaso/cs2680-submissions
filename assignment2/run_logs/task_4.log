@@ -1,0 +1,30 @@
+== task 4: instance_qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+== image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c
+qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c: Pulling from jefzda/sweap-images
+Digest: sha256:6a08dff104ff4864f91b0d3c6f32d67237f4b3aa469066be0fd92d85898b80aa
+Status: Image is up to date for jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c
+docker.io/jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c
+== workdir in container: /app
+== harness interpreter: /usr/bin/python3.11 (Python 3.11.2)
+madsLoop finished: done
+== patch written to model_patch_instance_qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c171.diff
+diff --git a/core b/core
+new file mode 100644
+index 000000000..cd22b21d1
+Binary files /dev/null and b/core differ
+diff --git a/qutebrowser/app.py b/qutebrowser/app.py
+index 3d82ff9d4..6676764a9 100644
+--- a/qutebrowser/app.py
++++ b/qutebrowser/app.py
+@@ -51,7 +51,7 @@ from PyQt5.QtCore import pyqtSlot, QUrl, QObject, QEvent, pyqtSignal, Qt
+ import qutebrowser
+ import qutebrowser.resources
+ from qutebrowser.commands import runners
+-from qutebrowser.config import config, websettings, configfiles, configinit
++from qutebrowser.config import config, websettings, configfiles, configinit, qtargs
+ from qutebrowser.browser import (urlmarks, history, browsertab,
+                                  qtnetworkdownloads, downloads, greasemonkey)
+ from qutebrowser.browser.network import proxy
+@@ -491,7 +491,7 @@ class Application(QApplication):
+         """
+         self._last_focus_object = None

@@ -1,0 +1,64 @@
+diff --git a/starlette/endpoints.py b/starlette/endpoints.py
+index bdd51dc..21481f6 100644
+--- a/starlette/endpoints.py
++++ b/starlette/endpoints.py
+@@ -22,7 +22,7 @@ class HTTPEndpoint:
+         self.send = send
+         self._allowed_methods = [
+             method
+-            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
++            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "QUERY")
+             if getattr(self, method.lower(), None) is not None
+         ]
+ 
+diff --git a/starlette/middleware/cors.py b/starlette/middleware/cors.py
+index b65fc15..b10cc11 100644
+--- a/starlette/middleware/cors.py
++++ b/starlette/middleware/cors.py
+@@ -8,7 +8,7 @@ from starlette.datastructures import Headers, MutableHeaders
+ from starlette.responses import PlainTextResponse, Response
+ from starlette.types import ASGIApp, Message, Receive, Scope, Send
+ 
+-ALL_METHODS = ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT")
++ALL_METHODS = ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "QUERY")
+ SAFELISTED_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-Type"}
+ 
+ 
+diff --git a/starlette/schemas.py b/starlette/schemas.py
+index cf7d439..1895a50 100644
+--- a/starlette/schemas.py
++++ b/starlette/schemas.py
+@@ -78,7 +78,7 @@ class BaseSchemaGenerator:
+                     endpoints_info.append(EndpointInfo(path, method.lower(), route.endpoint))
+             else:
+                 path = self._remove_converter(route.path)
+-                for method in ["get", "post", "put", "patch", "delete", "options"]:
++                for method in ["get", "post", "put", "patch", "delete", "options", "query"]:
+                     if not hasattr(route.endpoint, method):
+                         continue
+                     func = getattr(route.endpoint, method)
+@@ -129,12 +129,24 @@ class SchemaGenerator(BaseSchemaGenerator):
+     def __init__(self, base_schema: dict[str, Any]) -> None:
+         self.base_schema = base_schema
+ 
++    def _is_openapi_32_or_later(self) -> bool:
++        """Check if the openapi version is 3.2 or later."""
++        version = self.base_schema.get("openapi", "0.0.0")
++        parts = version.split(".")
++        major, minor = int(parts[0]), int(parts[1])
++        return (major, minor) >= (3, 2)
++
+     def get_schema(self, routes: list[BaseRoute]) -> dict[str, Any]:
+         schema = dict(self.base_schema)
+         schema.setdefault("paths", {})
+         endpoints_info = self.get_endpoints(routes)
++        include_query = self._is_openapi_32_or_later()
+ 
+         for endpoint in endpoints_info:
++            # Only include 'query' operations for openapi 3.2+
++            if endpoint.http_method == "query" and not include_query:
++                continue
++
+             parsed = self.parse_docstring(endpoint.func)
+ 
+             if not parsed:

@@ -1,0 +1,210 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+collected 42 items
+
+test_schedule.py ...F............FF.F......................              [100%]
+
+=================================== FAILURES ===================================
+_______________________ SchedulerTests.test_at_timezone ________________________
+
+self = <test_schedule.SchedulerTests testMethod=test_at_timezone>
+
+    def test_at_timezone(self):
+        mock_job = make_mock_job()
+        try:
+            import pytz
+        except ModuleNotFoundError:
+            self.skipTest("pytz unavailable")
+            return
+    
+        with mock_datetime(2022, 2, 1, 23, 15):
+            # Current Berlin time: feb-1 23:15 (local)
+            # Current India time: feb-2 03:45
+            # Expected to run India time: feb-2 06:30
+            # Next run Berlin time: feb-2 02:00
+            next = every().day.at("06:30", "Asia/Kolkata").do(mock_job).next_run
+            assert next.day == 2
+            assert next.hour == 2
+            assert next.minute == 0
+    
+        with mock_datetime(2023, 4, 14, 4, 50):
+            # Current Berlin time: april-14 04:50 (local) (during daylight saving)
+            # Current US/Central time: april-13 21:50
+            # Expected to run US/Central time: april-14 00:00
+            # Next run Berlin time: april-14 07:00
+            next = every().day.at("00:00", "US/Central").do(mock_job).next_run
+            assert next.day == 14
+            assert next.hour == 7
+            assert next.minute == 0
+    
+        with mock_datetime(2022, 4, 8, 10, 0):
+            # Current Berlin time: 10:00 (local) (during daylight saving)
+            # Current NY time: 04:00
+            # Expected to run NY time: 10:30
+            # Next run Berlin time: 16:30
+            next = every().day.at("10:30", "America/New_York").do(mock_job).next_run
+            assert next.hour == 16
+            assert next.minute == 30
+    
+        with mock_datetime(2022, 3, 20, 10, 0):
+            # Current Berlin time: 10:00 (local) (NOT during daylight saving)
+            # Current NY time: 04:00 (during daylight saving)
+            # Expected to run NY time: 10:30
+            # Next run Berlin time: 15:30
+            tz = pytz.timezone("America/New_York")
+            next = every().day.at("10:30", tz).do(mock_job).next_run
+            assert next.hour == 15
+            assert next.minute == 30
+    
+        # Test the DST-case that is described in the documentation
+        with mock_datetime(2023, 3, 26, 1, 30):
+            # Current Berlin time: 01:30 (NOT during daylight saving)
+            # Expected to run: 02:30 - this time doesn't exist
+            #  because clock moves from 02:00 to 03:00
+            # Next run: 03:30
+            job = every().day.at("02:30", "Europe/Berlin").do(mock_job)
+            assert job.next_run.day == 26
+>           assert job.next_run.hour == 3
+E           assert 2 == 3
+E            +  where 2 = MockDate(2023, 3, 26, 2, 30).hour
+E            +    where MockDate(2023, 3, 26, 2, 30) = Every 1 day at 02:30:00 do job() (last run: [never], next run: 2023-03-26 02:30:00).next_run
+
+test_schedule.py:648: AssertionError
+_____________ SchedulerTests.test_next_run_time_hour_end_katmandu ______________
+
+self = <test_schedule.SchedulerTests testMethod=test_next_run_time_hour_end_katmandu>
+
+    def test_next_run_time_hour_end_katmandu(self):
+        try:
+            import pytz
+        except ModuleNotFoundError:
+            self.skipTest("pytz unavailable")
+    
+        # 12:00 in Berlin is 15:45 in Kathmandu
+        # this test schedules runs at :10 minutes, so job runs at
+        # 16:10 in Kathmandu, which is 13:25 in Berlin
+        # in local time we don't run at :10, but at :25, offset of 15 minutes
+>       self.tst_next_run_time_hour_end("Asia/Kathmandu", 15)
+
+test_schedule.py:531: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_schedule.SchedulerTests testMethod=test_next_run_time_hour_end_katmandu>
+tz = 'Asia/Kathmandu', offsetMinutes = 15
+
+    def tst_next_run_time_hour_end(self, tz, offsetMinutes):
+        mock_job = make_mock_job()
+    
+        # So a job scheduled to run at :10 in Kathmandu, runs always 25 minutes
+        with mock_datetime(2010, 10, 10, 12, 0, 0):
+            job = every().hour.at(":10", tz).do(mock_job)
+>           assert job.next_run.hour == 12
+E           assert 8 == 12
+E            +  where 8 = MockDate(2010, 10, 10, 8, 25).hour
+E            +    where MockDate(2010, 10, 10, 8, 25) = Every 1 hour at 00:10:00 do job() (last run: [never], next run: 2010-10-10 08:25:00).next_run
+
+test_schedule.py:539: AssertionError
+______________ SchedulerTests.test_next_run_time_hour_end_london _______________
+
+self = <test_schedule.SchedulerTests testMethod=test_next_run_time_hour_end_london>
+
+    def test_next_run_time_hour_end_london(self):
+        try:
+            import pytz
+        except ModuleNotFoundError:
+            self.skipTest("pytz unavailable")
+    
+>       self.tst_next_run_time_hour_end("Europe/London", 0)
+
+test_schedule.py:519: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_schedule.SchedulerTests testMethod=test_next_run_time_hour_end_london>
+tz = 'Europe/London', offsetMinutes = 0
+
+    def tst_next_run_time_hour_end(self, tz, offsetMinutes):
+        mock_job = make_mock_job()
+    
+        # So a job scheduled to run at :10 in Kathmandu, runs always 25 minutes
+        with mock_datetime(2010, 10, 10, 12, 0, 0):
+            job = every().hour.at(":10", tz).do(mock_job)
+>           assert job.next_run.hour == 12
+E           assert 13 == 12
+E            +  where 13 = MockDate(2010, 10, 10, 13, 10).hour
+E            +    where MockDate(2010, 10, 10, 13, 10) = Every 1 hour at 00:10:00 do job() (last run: [never], next run: 2010-10-10 13:10:00).next_run
+
+test_schedule.py:539: AssertionError
+____________ SchedulerTests.test_next_run_time_minute_end_katmhandu ____________
+
+self = <test_schedule.SchedulerTests testMethod=test_next_run_time_minute_end_katmhandu>
+
+    def test_next_run_time_minute_end_katmhandu(self):
+        try:
+            import pytz
+        except ModuleNotFoundError:
+            self.skipTest("pytz unavailable")
+    
+>       self.tst_next_run_time_minute_end("Asia/Kathmandu")
+
+test_schedule.py:569: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <test_schedule.SchedulerTests testMethod=test_next_run_time_minute_end_katmhandu>
+tz = 'Asia/Kathmandu'
+
+    def tst_next_run_time_minute_end(self, tz):
+        mock_job = make_mock_job()
+        with mock_datetime(2010, 10, 10, 10, 10, 0):
+            job = every().minute.at(":15", tz).do(mock_job)
+>           assert job.next_run.minute == 10
+E           assert 25 == 10
+E            +  where 25 = MockDate(2010, 10, 10, 6, 25, 15).minute
+E            +    where MockDate(2010, 10, 10, 6, 25, 15) = Every 1 minute at 00:00:15 do job() (last run: [never], next run: 2010-10-10 06:25:15).next_run
+
+test_schedule.py:575: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test_schedule.py::SchedulerTests::test_at_time
+PASSED test_schedule.py::SchedulerTests::test_at_time_hour
+PASSED test_schedule.py::SchedulerTests::test_at_time_minute
+PASSED test_schedule.py::SchedulerTests::test_cancel_job
+PASSED test_schedule.py::SchedulerTests::test_cancel_jobs
+PASSED test_schedule.py::SchedulerTests::test_clear_by_tag
+PASSED test_schedule.py::SchedulerTests::test_daylight_saving_time
+PASSED test_schedule.py::SchedulerTests::test_get_by_tag
+PASSED test_schedule.py::SchedulerTests::test_idle_seconds
+PASSED test_schedule.py::SchedulerTests::test_job_func_args_are_passed_on
+PASSED test_schedule.py::SchedulerTests::test_misconfigured_job_wont_break_scheduler
+PASSED test_schedule.py::SchedulerTests::test_next_run_property
+PASSED test_schedule.py::SchedulerTests::test_next_run_time
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_day_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_with_tag
+PASSED test_schedule.py::SchedulerTests::test_repr_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_run_all
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_args
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_defaultargs
+PASSED test_schedule.py::SchedulerTests::test_run_every_n_days_at_specific_time
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_past_today
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_today
+PASSED test_schedule.py::SchedulerTests::test_run_pending
+PASSED test_schedule.py::SchedulerTests::test_singular_time_units_match_plural_units
+PASSED test_schedule.py::SchedulerTests::test_tag_type_enforcement
+PASSED test_schedule.py::SchedulerTests::test_time_range
+PASSED test_schedule.py::SchedulerTests::test_time_range_repr
+PASSED test_schedule.py::SchedulerTests::test_time_units
+PASSED test_schedule.py::SchedulerTests::test_to_repr
+PASSED test_schedule.py::SchedulerTests::test_to_string
+PASSED test_schedule.py::SchedulerTests::test_to_string_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_to_string_lambda_job_func
+PASSED test_schedule.py::SchedulerTests::test_until_time
+PASSED test_schedule.py::SchedulerTests::test_weekday_at_todady
+FAILED test_schedule.py::SchedulerTests::test_at_timezone - assert 2 == 3
+FAILED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_katmandu
+FAILED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_london
+FAILED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_katmhandu
+========================= 4 failed, 38 passed in 0.48s =========================

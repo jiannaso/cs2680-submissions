@@ -1,0 +1,60 @@
+diff --git a/boltons/ioutils.py b/boltons/ioutils.py
+index bfcaf3f..03f28bb 100644
+--- a/boltons/ioutils.py
++++ b/boltons/ioutils.py
+@@ -301,14 +301,16 @@ class SpooledBytesIO(SpooledIOBase):
+ 
+     def write(self, s):
+         self._checkClosed()
+-        if not isinstance(s, bytes):
++        if not isinstance(s, (bytes, bytearray, memoryview)):
+             raise TypeError("bytes expected, got {}".format(
+                 type(s).__name__
+             ))
+ 
+-        if self.tell() + len(s) >= self._max_size:
++        n = len(memoryview(s))
++        if self.tell() + n >= self._max_size:
+             self.rollover()
+         self.buffer.write(s)
++        return n
+ 
+     def seek(self, pos, mode=0):
+         self._checkClosed()
+@@ -403,6 +405,7 @@ class SpooledStringIO(SpooledIOBase):
+             self.rollover()
+         self.buffer.write(s.encode('utf-8'))
+         self._tell = current_pos + len(s)
++        return len(s)
+ 
+     def _traverse_codepoints(self, current_position, n):
+         """Traverse from current position to the right n codepoints"""
+@@ -435,14 +438,26 @@ class SpooledStringIO(SpooledIOBase):
+         self._checkClosed()
+         # Seek to position from the start of the file
+         if mode == os.SEEK_SET:
++            if pos < 0:
++                raise ValueError(
++                    "Negative absolute position not allowed"
++                )
+             self.buffer.seek(0)
+             self._traverse_codepoints(0, pos)
+             self._tell = pos
+         # Seek to new position relative to current position
+         elif mode == os.SEEK_CUR:
+             start_pos = self.tell()
+-            self._traverse_codepoints(self.tell(), pos)
+-            self._tell = start_pos + pos
++            new_pos = start_pos + pos
++            if pos < 0:
++                # Backward seek: reset to start and forward to target
++                self.buffer.seek(0)
++                self._tell = 0
++                self._traverse_codepoints(0, new_pos)
++                self._tell = max(0, new_pos)
++            else:
++                self._traverse_codepoints(self.tell(), pos)
++                self._tell = start_pos + pos
+         elif mode == os.SEEK_END:
+             self.buffer.seek(0)
+             dest_position = self.len - pos

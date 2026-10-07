@@ -1,0 +1,277 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+collected 81 items
+
+test_schedule.py FFFFFFF...........FFF.................................. [ 67%]
+...............F....F.....                                               [100%]
+
+=================================== FAILURES ===================================
+____________ SchedulerTests.test_align_utc_offset_after_fold_fixate ____________
+
+self = <test_schedule.SchedulerTests testMethod=test_align_utc_offset_after_fold_fixate>
+
+    def test_align_utc_offset_after_fold_fixate(self):
+        (job, tz) = self.setup_utc_offset_test()
+        # This time is 30 minutes after a folded hour.
+        duplicate_time = tz.localize(datetime.datetime(2024, 10, 27, 2, 30))
+        duplicate_time += datetime.timedelta(hours=1)
+    
+>       aligned_time = job._correct_utc_offset(duplicate_time, fixate_time=False)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Job' object has no attribute '_correct_utc_offset'
+
+test_schedule.py:1235: AttributeError
+________________ SchedulerTests.test_align_utc_offset_no_change ________________
+
+self = <test_schedule.SchedulerTests testMethod=test_align_utc_offset_no_change>
+
+    def test_align_utc_offset_no_change(self):
+        (job, tz) = self.setup_utc_offset_test()
+        now = tz.localize(datetime.datetime(2023, 3, 26, 1, 30))
+>       aligned_time = job._correct_utc_offset(now, fixate_time=False)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Job' object has no attribute '_correct_utc_offset'
+
+test_schedule.py:1178: AttributeError
+_______________ SchedulerTests.test_align_utc_offset_no_timezone _______________
+
+self = <test_schedule.SchedulerTests testMethod=test_align_utc_offset_no_timezone>
+
+    def test_align_utc_offset_no_timezone(self):
+        job = schedule.every().day.at("10:00").do(make_mock_job())
+        now = datetime.datetime(2024, 5, 11, 10, 30, 55, 0)
+>       aligned_time = job._correct_utc_offset(now, fixate_time=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Job' object has no attribute '_correct_utc_offset'
+
+test_schedule.py:1159: AttributeError
+______________ SchedulerTests.test_align_utc_offset_with_dst_fold ______________
+
+self = <test_schedule.SchedulerTests testMethod=test_align_utc_offset_with_dst_fold>
+
+    def test_align_utc_offset_with_dst_fold(self):
+        (job, tz) = self.setup_utc_offset_test()
+        # This time exists twice, this is the first occurance
+        overlap_time = tz.localize(datetime.datetime(2024, 10, 27, 2, 30))
+>       aligned_time = job._correct_utc_offset(overlap_time, fixate_time=False)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Job' object has no attribute '_correct_utc_offset'
+
+test_schedule.py:1196: AttributeError
+_________ SchedulerTests.test_align_utc_offset_with_dst_fold_fixate_1 __________
+
+self = <test_schedule.SchedulerTests testMethod=test_align_utc_offset_with_dst_fold_fixate_1>
+
+    def test_align_utc_offset_with_dst_fold_fixate_1(self):
+        (job, tz) = self.setup_utc_offset_test()
+        # This time exists twice, this is the 1st occurance
+        overlap_time = tz.localize(datetime.datetime(2024, 10, 27, 1, 30), is_dst=True)
+        overlap_time += datetime.timedelta(
+            hours=1
+        )  # puts it at 02:30+02:00 (Which exists once)
+    
+>       aligned_time = job._correct_utc_offset(overlap_time, fixate_time=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Job' object has no attribute '_correct_utc_offset'
+
+test_schedule.py:1209: AttributeError
+_________ SchedulerTests.test_align_utc_offset_with_dst_fold_fixate_2 __________
+
+self = <test_schedule.SchedulerTests testMethod=test_align_utc_offset_with_dst_fold_fixate_2>
+
+    def test_align_utc_offset_with_dst_fold_fixate_2(self):
+        (job, tz) = self.setup_utc_offset_test()
+        # 02:30 exists twice, this is the 2nd occurance
+        overlap_time = tz.localize(datetime.datetime(2024, 10, 27, 2, 30), is_dst=False)
+        # The time 2024-10-27 02:30:00+01:00 exists once
+    
+>       aligned_time = job._correct_utc_offset(overlap_time, fixate_time=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Job' object has no attribute '_correct_utc_offset'
+
+test_schedule.py:1222: AttributeError
+______________ SchedulerTests.test_align_utc_offset_with_dst_gap _______________
+
+self = <test_schedule.SchedulerTests testMethod=test_align_utc_offset_with_dst_gap>
+
+    def test_align_utc_offset_with_dst_gap(self):
+        (job, tz) = self.setup_utc_offset_test()
+        # Non-existent time in Berlin timezone
+        gap_time = tz.localize(datetime.datetime(2024, 3, 31, 2, 30, 0))
+>       aligned_time = job._correct_utc_offset(gap_time, fixate_time=True)
+                       ^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Job' object has no attribute '_correct_utc_offset'
+
+test_schedule.py:1185: AttributeError
+______________ SchedulerTests.test_move_to_next_weekday_nextweek _______________
+
+self = <test_schedule.SchedulerTests testMethod=test_move_to_next_weekday_nextweek>
+
+    def test_move_to_next_weekday_nextweek(self):
+        wednesday = datetime.datetime(2024, 5, 15, 10, 27, 54)
+>       tuesday = schedule._move_to_next_weekday(wednesday, "tuesday")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'schedule' has no attribute '_move_to_next_weekday'
+
+test_schedule.py:1268: AttributeError
+________________ SchedulerTests.test_move_to_next_weekday_today ________________
+
+self = <test_schedule.SchedulerTests testMethod=test_move_to_next_weekday_today>
+
+    def test_move_to_next_weekday_today(self):
+        monday = datetime.datetime(2024, 5, 13, 10, 27, 54)
+>       tuesday = schedule._move_to_next_weekday(monday, "monday")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'schedule' has no attribute '_move_to_next_weekday'
+
+test_schedule.py:1254: AttributeError
+______________ SchedulerTests.test_move_to_next_weekday_tommorrow ______________
+
+self = <test_schedule.SchedulerTests testMethod=test_move_to_next_weekday_tommorrow>
+
+    def test_move_to_next_weekday_tommorrow(self):
+        monday = datetime.datetime(2024, 5, 13, 10, 27, 54)
+>       tuesday = schedule._move_to_next_weekday(monday, "tuesday")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'schedule' has no attribute '_move_to_next_weekday'
+
+test_schedule.py:1261: AttributeError
+_______________ SchedulerTests.test_tz_daily_opposite_dst_change _______________
+
+self = <test_schedule.SchedulerTests testMethod=test_tz_daily_opposite_dst_change>
+
+    def test_tz_daily_opposite_dst_change(self):
+        mock_job = self.make_tz_mock_job()
+    
+        # TZ_BERLIN_INVERTED changes in the opposite direction of Berlin
+        # This is a fictional timezone
+        TZ_BERLIN_INVERTED = "CET-1CEST,M10.5.0/3,M3.5.0"
+        with mock_datetime(2024, 3, 31, 0, 0, 0, TZ_BERLIN_INVERTED):
+            # In Berlin at March 31 2024, 02:00:00 clocks were turned forward 1 hour
+            # In Berlin Inverted, the clocks move back 1 hour at the same time
+            # Current time Berlin Inverted:  31 Mar, 00:00 (UTC+02:00)
+            # Current time Berlin:           31 Mar, 00:00 (UTC+01:00)
+            # Expected time Berlin:          31 Mar, 10:00 (UTC+02:00) +9 hour
+            # Expected time Berlin Inverted: 31 Mar, 09:00 (UTC+01:00)
+            schedule.clear()
+            next = (
+                schedule.every().day.at("10:00", "Europe/Berlin").do(mock_job).next_run
+            )
+>           assert next.day == 31
+E           assert 1 == 31
+E            +  where 1 = MockDate(2024, 4, 1, 9, 0).day
+
+test_schedule.py:1142: AssertionError
+__________________ SchedulerTests.test_tz_minutes_year_round ___________________
+
+self = <test_schedule.SchedulerTests testMethod=test_tz_minutes_year_round>
+
+    def test_tz_minutes_year_round(self):
+        mock_job = self.make_tz_mock_job()
+        # Test a full year of scheduling across timezones, where one timezone
+        # is in the northern hemisphere and the other in the southern hemisphere
+        # These two timezones are also a bit exotic (not the usual UTC+1, UTC-1)
+        # Local timezone: Newfoundland, Canada: UTC-2:30 / DST UTC-3:30
+        # Remote timezone: Chatham Islands, New Zealand: UTC+12:45 / DST UTC+13:45
+        schedule.clear()
+        job = schedule.every(20).minutes.at(":13", "Canada/Newfoundland").do(mock_job)
+        with mock_datetime(2024, 9, 29, 2, 20, 0, TZ_CHATHAM):
+            # First run, nothing special, no utc-offset change
+            # Current time: 29 sept, 02:20:00  Chatham
+            # Current time: 28 sept, 11:05:00  Newfoundland
+            # Expected time: 28 sept, 11:20:13 Newfoundland
+            # Expected time: 29 sept, 02:40:13 Chatham
+            job.run()
+            assert job.next_run.day == 29
+            assert job.next_run.hour == 2
+>           assert job.next_run.minute == 40
+E           assert 39 == 40
+E            +  where 39 = MockDate(2024, 9, 29, 2, 39, 13).minute
+E            +    where MockDate(2024, 9, 29, 2, 39, 13) = Every 20 minutes at 00:00:13 do job() (last run: 2024-09-29 02:20:00, next run: 2024-09-29 02:39:13).next_run
+
+test_schedule.py:954: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test_schedule.py::SchedulerTests::test_at_time
+PASSED test_schedule.py::SchedulerTests::test_at_time_hour
+PASSED test_schedule.py::SchedulerTests::test_at_time_minute
+PASSED test_schedule.py::SchedulerTests::test_cancel_job
+PASSED test_schedule.py::SchedulerTests::test_cancel_jobs
+PASSED test_schedule.py::SchedulerTests::test_clear_by_tag
+PASSED test_schedule.py::SchedulerTests::test_daylight_saving_time
+PASSED test_schedule.py::SchedulerTests::test_get_by_tag
+PASSED test_schedule.py::SchedulerTests::test_idle_seconds
+PASSED test_schedule.py::SchedulerTests::test_job_func_args_are_passed_on
+PASSED test_schedule.py::SchedulerTests::test_misconfigured_job_wont_break_scheduler
+PASSED test_schedule.py::SchedulerTests::test_next_run_property
+PASSED test_schedule.py::SchedulerTests::test_next_run_time
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_day_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_katmandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_katmhandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_with_tag
+PASSED test_schedule.py::SchedulerTests::test_repr_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_run_all
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_args
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_defaultargs
+PASSED test_schedule.py::SchedulerTests::test_run_every_n_days_at_specific_time
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_past_today
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_today
+PASSED test_schedule.py::SchedulerTests::test_run_pending
+PASSED test_schedule.py::SchedulerTests::test_singular_time_units_match_plural_units
+PASSED test_schedule.py::SchedulerTests::test_tag_type_enforcement
+PASSED test_schedule.py::SchedulerTests::test_time_range
+PASSED test_schedule.py::SchedulerTests::test_time_range_repr
+PASSED test_schedule.py::SchedulerTests::test_time_units
+PASSED test_schedule.py::SchedulerTests::test_to_repr
+PASSED test_schedule.py::SchedulerTests::test_to_string
+PASSED test_schedule.py::SchedulerTests::test_to_string_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_to_string_lambda_job_func
+PASSED test_schedule.py::SchedulerTests::test_tz
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_different_simultaneous_dst_change
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_ending_point
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_overlap_hour
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_skip_hour
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_starting_point
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_end_month_offset
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_end_year_cross_continent
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_exact_future_scheduling
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_exact_seconds_precision
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_half_hour_offset
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_592
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_605
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_before_dst_end
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_mid_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_post_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_pre_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_leap_year
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_midnight
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_new_year_offset
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_skip_dst_change
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_utc
+PASSED test_schedule.py::SchedulerTests::test_tz_hourly_intermediate_conversion
+PASSED test_schedule.py::SchedulerTests::test_tz_invalid_timezone_exceptions
+PASSED test_schedule.py::SchedulerTests::test_tz_weekly_large_interval_backward
+PASSED test_schedule.py::SchedulerTests::test_tz_weekly_large_interval_forward
+PASSED test_schedule.py::SchedulerTests::test_tz_weekly_sunday_conversion
+PASSED test_schedule.py::SchedulerTests::test_until_time
+PASSED test_schedule.py::SchedulerTests::test_weekday_at_todady
+FAILED test_schedule.py::SchedulerTests::test_align_utc_offset_after_fold_fixate
+FAILED test_schedule.py::SchedulerTests::test_align_utc_offset_no_change - At...
+FAILED test_schedule.py::SchedulerTests::test_align_utc_offset_no_timezone - ...
+FAILED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold
+FAILED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_1
+FAILED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_2
+FAILED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_gap
+FAILED test_schedule.py::SchedulerTests::test_move_to_next_weekday_nextweek
+FAILED test_schedule.py::SchedulerTests::test_move_to_next_weekday_today - At...
+FAILED test_schedule.py::SchedulerTests::test_move_to_next_weekday_tommorrow
+FAILED test_schedule.py::SchedulerTests::test_tz_daily_opposite_dst_change - ...
+FAILED test_schedule.py::SchedulerTests::test_tz_minutes_year_round - assert ...
+======================== 12 failed, 69 passed in 0.74s =========================

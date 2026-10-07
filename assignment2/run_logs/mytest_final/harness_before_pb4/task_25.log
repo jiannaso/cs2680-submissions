@@ -1,0 +1,29 @@
+== task 25: mytest__quill-paste-formats
+== image: madsloop-mytest:quill-paste-formats
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:quill-paste-formats
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+[madsLoop] prompt at 80284 tokens; elided 130950 chars of old tool output
+madsLoop finished: max_iterations
+== patch written to model_patch_mytest__quill-paste-formats.diff
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..c866d09 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -14,13 +14,7 @@ import logger from '../core/logger';
+ import Module from '../core/module';
+ import Quill from '../core/quill';
+ import type { Range } from '../core/selection';
+-import { AlignAttribute, AlignStyle } from '../formats/align';
+-import { BackgroundStyle } from '../formats/background';
+ import CodeBlock from '../formats/code';
+-import { ColorStyle } from '../formats/color';
+-import { DirectionAttribute, DirectionStyle } from '../formats/direction';
+-import { FontStyle } from '../formats/font';
+-import { SizeStyle } from '../formats/size';
+ import { deleteRange } from './keyboard';
+ 
+ const debug = logger('quill:clipboard');
+@@ -46,26 +40,6 @@ const CLIPBOARD_CONFIG: [Selector, Matcher][] = [
+   ['style', matchIgnore],

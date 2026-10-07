@@ -1,0 +1,346 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+collected 50 items
+
+tests/test_domain.py ...............FFFFFFFFFF.........................  [100%]
+
+=================================== FAILURES ===================================
+__ test_returns_true_on_valid_top_level_domain[example.com-True-False-False] ___
+
+value = 'example.com', consider_tld = True, rfc_1034 = False, rfc_2782 = False
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'example.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'example.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False}) = domain('example.com', consider_tld=True, rfc_1034=False, rfc_2782=False)
+
+tests/test_domain.py:54: AssertionError
+__ test_returns_true_on_valid_top_level_domain[exa_mple.com-True-False-True] ___
+
+value = 'exa_mple.com', consider_tld = True, rfc_1034 = False, rfc_2782 = True
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'exa_mple.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'exa_mple.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True}) = domain('exa_mple.com', consider_tld=True, rfc_1034=False, rfc_2782=True)
+
+tests/test_domain.py:54: AssertionError
+_ test_returns_true_on_valid_top_level_domain[xn----gtbspbbmkef.xn--p1ai-True-False-False] _
+
+value = 'xn----gtbspbbmkef.xn--p1ai', consider_tld = True, rfc_1034 = False
+rfc_2782 = False
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'xn----gtbspbbmkef.xn--p1ai', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'xn----gtbspbbmkef.xn--p1ai', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False}) = domain('xn----gtbspbbmkef.xn--p1ai', consider_tld=True, rfc_1034=False, rfc_2782=False)
+
+tests/test_domain.py:54: AssertionError
+_ test_returns_true_on_valid_top_level_domain[underscore_subdomain.example.com-True-False-True] _
+
+value = 'underscore_subdomain.example.com', consider_tld = True
+rfc_1034 = False, rfc_2782 = True
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'underscore_subdomain.example.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'underscore_subdomain.example.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True}) = domain('underscore_subdomain.example.com', consider_tld=True, rfc_1034=False, rfc_2782=True)
+
+tests/test_domain.py:54: AssertionError
+_ test_returns_true_on_valid_top_level_domain[someThing.versicherung.-True-True-False] _
+
+value = 'someThing.versicherung.', consider_tld = True, rfc_1034 = True
+rfc_2782 = False
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'someThing.versicherung.', 'consider_tld': True, 'rfc_1034': True, 'rfc_2782': False})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'someThing.versicherung.', 'consider_tld': True, 'rfc_1034': True, 'rfc_2782': False}) = domain('someThing.versicherung.', consider_tld=True, rfc_1034=True, rfc_2782=False)
+
+tests/test_domain.py:54: AssertionError
+_____ test_returns_true_on_valid_top_level_domain[11.com-True-False-False] _____
+
+value = '11.com', consider_tld = True, rfc_1034 = False, rfc_2782 = False
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': '11.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': '11.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False}) = domain('11.com', consider_tld=True, rfc_1034=False, rfc_2782=False)
+
+tests/test_domain.py:54: AssertionError
+______ test_returns_true_on_valid_top_level_domain[3.cn.-True-True-False] ______
+
+value = '3.cn.', consider_tld = True, rfc_1034 = True, rfc_2782 = False
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': '3.cn.', 'consider_tld': True, 'rfc_1034': True, 'rfc_2782': False})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': '3.cn.', 'consider_tld': True, 'rfc_1034': True, 'rfc_2782': False}) = domain('3.cn.', consider_tld=True, rfc_1034=True, rfc_2782=False)
+
+tests/test_domain.py:54: AssertionError
+__ test_returns_true_on_valid_top_level_domain[_example.com-True-False-True] ___
+
+value = '_example.com', consider_tld = True, rfc_1034 = False, rfc_2782 = True
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': '_example.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': '_example.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True}) = domain('_example.com', consider_tld=True, rfc_1034=False, rfc_2782=True)
+
+tests/test_domain.py:54: AssertionError
+__ test_returns_true_on_valid_top_level_domain[example_.com-True-False-True] ___
+
+value = 'example_.com', consider_tld = True, rfc_1034 = False, rfc_2782 = True
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'example_.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'example_.com', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': True}) = domain('example_.com', consider_tld=True, rfc_1034=False, rfc_2782=True)
+
+tests/test_domain.py:54: AssertionError
+_ test_returns_true_on_valid_top_level_domain[somerandomexample.xn--fiqs8s-True-False-False] _
+
+value = 'somerandomexample.xn--fiqs8s', consider_tld = True, rfc_1034 = False
+rfc_2782 = False
+
+    @pytest.mark.parametrize(
+        ("value", "consider_tld", "rfc_1034", "rfc_2782"),
+        [
+            ("example.com", True, False, False),
+            ("exa_mple.com", True, False, True),
+            ("xn----gtbspbbmkef.xn--p1ai", True, False, False),
+            ("underscore_subdomain.example.com", True, False, True),
+            ("someThing.versicherung.", True, True, False),
+            ("11.com", True, False, False),
+            ("3.cn.", True, True, False),
+            ("_example.com", True, False, True),
+            ("example_.com", True, False, True),
+            ("somerandomexample.xn--fiqs8s", True, False, False),
+        ],
+    )
+    def test_returns_true_on_valid_top_level_domain(
+        value: str, consider_tld: bool, rfc_1034: bool, rfc_2782: bool
+    ):
+        """Test returns true on valid top level domain."""
+>       assert domain(value, consider_tld=consider_tld, rfc_1034=rfc_1034, rfc_2782=rfc_2782)
+E       assert ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'somerandomexample.xn--fiqs8s', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False})
+E        +  where ValidationError(func=domain, args={'reason': "domain() got an unexpected keyword argument 'consider_tld'", 'value': 'somerandomexample.xn--fiqs8s', 'consider_tld': True, 'rfc_1034': False, 'rfc_2782': False}) = domain('somerandomexample.xn--fiqs8s', consider_tld=True, rfc_1034=False, rfc_2782=False)
+
+tests/test_domain.py:54: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[example.com-False-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[exa_mple.com-False-True]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[xn----gtbspbbmkef.xn--p1ai-False-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[underscore_subdomain.example.com-False-True]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[something.versicherung-False-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[someThing.versicherung.-True-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[11.com-False-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[3.cn.-True-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[_example.com-False-True]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[example_.com-False-True]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[a.cn-False-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[sub1.sub2.sample.co.uk-False-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[somerandomexample.xn--fiqs8s-False-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[kr\xe4uter.com.-True-False]
+PASSED tests/test_domain.py::test_returns_true_on_valid_domain[\xfcber.com-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[example.com/.-True-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[example.com:4444-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[example.-com-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[example.-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[-example.com-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[example-.com.-True-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[_example.com-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[_example._com-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[example_.com-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[example-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[a......b.com-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[a.123-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[123.123-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[123.123.123.-True-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_on_invalid_domain[123.123.123.123-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[example.266-True-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[exa_mple.org_-True-False-True]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[xn----gtbspbbmkef.xn-p1ai-True-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[underscore_subdomain.example.flat-True-False-True]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[someThing.versicherung.reddit.-True-True-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[11.twitter-True-False-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[3.cnx.-True-True-False]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[_example.#13-True-False-True]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[example_.fo-ul-True-False-True]
+PASSED tests/test_domain.py::test_returns_failed_validation_invalid_top_level_domain[somerandomexample.xn-n-fiqs8s-True-False-False]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[example.com-True-False-False]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[exa_mple.com-True-False-True]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[xn----gtbspbbmkef.xn--p1ai-True-False-False]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[underscore_subdomain.example.com-True-False-True]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[someThing.versicherung.-True-True-False]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[11.com-True-False-False]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[3.cn.-True-True-False]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[_example.com-True-False-True]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[example_.com-True-False-True]
+FAILED tests/test_domain.py::test_returns_true_on_valid_top_level_domain[somerandomexample.xn--fiqs8s-True-False-False]
+======================== 10 failed, 40 passed in 0.15s =========================

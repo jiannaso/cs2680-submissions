@@ -1,0 +1,12 @@
+== cloning scaleapi/SWE-bench_Pro-os into /Users/jiannaso/Documents/github/cs2680-submissions/a2/SWE-bench_Pro-os
+Cloning into '/Users/jiannaso/Documents/github/cs2680-submissions/a2/SWE-bench_Pro-os'...
+Updating files:  63% (7023/11025)Updating files:  64% (7056/11025)Updating files:  65% (7167/11025)Updating files:  66% (7277/11025)Updating files:  67% (7387/11025)Updating files:  68% (7497/11025)Updating files:  69% (7608/11025)Updating files:  70% (7718/11025)Updating files:  71% (7828/11025)Updating files:  72% (7938/11025)Updating files:  73% (8049/11025)Updating files:  74% (8159/11025)Updating files:  75% (8269/11025)Updating files:  76% (8379/11025)Updating files:  77% (8490/11025)Updating files:  78% (8600/11025)Updating files:  79% (8710/11025)Updating files:  80% (8820/11025)Updating files:  81% (8931/11025)Updating files:  82% (9041/11025)Updating files:  83% (9151/11025)Updating files:  84% (9261/11025)Updating files:  85% (9372/11025)Updating files:  86% (9482/11025)Updating files:  87% (9592/11025)Updating files:  88% (9702/11025)Updating files:  89% (9813/11025)Updating files:  90% (9923/11025)Updating files:  91% (10033/11025)Updating files:  92% (10143/11025)Updating files:  93% (10254/11025)Updating files:  94% (10364/11025)Updating files:  95% (10474/11025)Updating files:  96% (10584/11025)Updating files:  97% (10695/11025)Updating files:  98% (10805/11025)Updating files:  99% (10915/11025)Updating files: 100% (11025/11025)Updating files: 100% (11025/11025), done.
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/raw_samples.csv (10 instances)
+Running local-docker evaluation for instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+Using Docker Hub image: jefzda/sweap-images:ansible.ansible-ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+  0%|          | 0/1 [00:00<?, ?it/s]Accuracy: 100.00%:   0%|          | 0/1 [00:19<?, ?it/s]Accuracy: 100.00%: 100%|██████████| 1/1 [00:19<00:00, 19.66s/it]Accuracy: 100.00%: 100%|██████████| 1/1 [00:19<00:00, 19.66s/it]
+Overall accuracy:  1.0
+
+== results (/Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/eval_results.json):
+RESOLVED   instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+1/1 resolved

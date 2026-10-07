@@ -1,0 +1,32 @@
+== task 3: instance_flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a
+== image: jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a
+flipt-io.flipt-flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a: Pulling from jefzda/sweap-images
+Digest: sha256:5e1f0ce1691acb1097ebc15c31b1d397b712cf3152019084c1fc5430900937bd
+Status: Image is up to date for jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a
+docker.io/jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a
+== workdir in container: /app
+== note: baseline checkout is dirty; committing image state so the diff is only your changes
+== harness interpreter: /usr/bin/python3.11 (Python 3.11.2)
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+madsLoop finished: done
+== patch written to model_patch_instance_flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a.diff
+diff --git a/internal/config/analytics.go b/internal/config/analytics.go
+index baba99fc..e46eb3c4 100644
+--- a/internal/config/analytics.go
++++ b/internal/config/analytics.go
+@@ -30,6 +30,15 @@ func (a *AnalyticsConfig) Enabled() bool {
+ 	return a.Storage.Clickhouse.Enabled
+ }
+ 
++// String returns a string representation of the analytics storage configuration.
++// It returns "clickhouse" if Clickhouse storage is enabled, and an empty string otherwise.
++func (a *AnalyticsStorageConfig) String() string {
++	if a.Clickhouse.Enabled {
++		return "clickhouse"
++	}
++	return ""
++}
++
+ // Options returns the connection option details for Clickhouse.
+ func (c *ClickhouseConfig) Options() (*clickhouse.Options, error) {
+ 	options, err := clickhouse.ParseDSN(c.URL)

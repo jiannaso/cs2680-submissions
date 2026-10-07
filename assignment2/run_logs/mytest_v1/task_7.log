@@ -1,0 +1,25 @@
+== task 7: mytest__cachetools-405
+== image: madsloop-mytest:cachetools-405
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:cachetools-405
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__cachetools-405.diff
+diff --git a/src/cachetools/__init__.py b/src/cachetools/__init__.py
+index 2031731..5a47cf4 100644
+--- a/src/cachetools/__init__.py
++++ b/src/cachetools/__init__.py
+@@ -80,8 +80,11 @@ class Cache(collections.abc.MutableMapping):
+         if size > maxsize:
+             raise ValueError("value too large")
+         if key not in self.__data or self.__size[key] < size:
+-            while self.__currsize + size > maxsize:
++            oldsize = self.__size[key] if key in self.__data else 0
++            while self.__currsize + size - oldsize > maxsize:
+                 self.popitem()
++                if key not in self.__data:
++                    oldsize = 0
+         if key in self.__data:
+             diffsize = size - self.__size[key]
+         else:

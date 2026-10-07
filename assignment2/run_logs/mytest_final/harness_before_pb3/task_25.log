@@ -1,0 +1,28 @@
+== task 25: mytest__quill-paste-formats
+== image: madsloop-mytest:quill-paste-formats
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:quill-paste-formats
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__quill-paste-formats.diff
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..86b118d 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -392,8 +392,11 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
+-  return applyFormat(delta, format, true);
++function matchAlias(format: string, node: Element, delta: Delta, scroll: ScrollBlot) {
++  if (scroll.query(format, Scope.BLOT) != null) {
++    return applyFormat(delta, format, true);
++  }
++  return delta;
+ }
+ 
+ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+@@ -420,8 +423,15 @@ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+         formats[attr.attrName] = attr.value(node) || undefined;

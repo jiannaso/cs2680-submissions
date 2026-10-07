@@ -1,0 +1,675 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 95 items
+
+tests/middleware/test_trusted_host.py .FF................FF............. [ 35%]
+...                                                                      [ 38%]
+tests/test_testclient.py ........................FFF.................... [ 88%]
+.....FFF...                                                              [100%]
+
+=================================== FAILURES ===================================
+_____________ test_trusted_host_middleware_ipv6[asyncio-[::1]-200] _____________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+host = '[::1]', status_code = 200
+
+    @pytest.mark.parametrize(
+        ("host", "status_code"),
+        [
+            ("[::1]", 200),
+            ("[::1]:8000", 200),
+            ("[2001:db8::1]", 400),
+            ("[::1", 400),
+            ("[::1]evil.example.com", 400),
+            ("[::1]@attacker", 400),
+            ("[::1].", 400),
+            ("[::1]:evil", 400),
+            ("[::1]:", 400),
+            ("api_service", 200),
+            ("api_service:8000", 200),
+            ("api_service/evil", 400),
+            ("api_service?evil", 400),
+            ("api_service#evil", 400),
+            ("api_service@attacker", 400),
+            ("api service", 400),
+        ],
+    )
+    def test_trusted_host_middleware_ipv6(test_client_factory: TestClientFactory, host: str, status_code: int) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK")
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=["[::1]", "api_service", "*.example.com"])],
+        )
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": host})
+>       assert response.status_code == status_code
+E       assert 400 == 200
+E        +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_trusted_host.py:68: AssertionError
+__________ test_trusted_host_middleware_ipv6[asyncio-[::1]:8000-200] ___________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+host = '[::1]:8000', status_code = 200
+
+    @pytest.mark.parametrize(
+        ("host", "status_code"),
+        [
+            ("[::1]", 200),
+            ("[::1]:8000", 200),
+            ("[2001:db8::1]", 400),
+            ("[::1", 400),
+            ("[::1]evil.example.com", 400),
+            ("[::1]@attacker", 400),
+            ("[::1].", 400),
+            ("[::1]:evil", 400),
+            ("[::1]:", 400),
+            ("api_service", 200),
+            ("api_service:8000", 200),
+            ("api_service/evil", 400),
+            ("api_service?evil", 400),
+            ("api_service#evil", 400),
+            ("api_service@attacker", 400),
+            ("api service", 400),
+        ],
+    )
+    def test_trusted_host_middleware_ipv6(test_client_factory: TestClientFactory, host: str, status_code: int) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK")
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=["[::1]", "api_service", "*.example.com"])],
+        )
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": host})
+>       assert response.status_code == status_code
+E       assert 400 == 200
+E        +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_trusted_host.py:68: AssertionError
+______________ test_trusted_host_middleware_ipv6[trio-[::1]-200] _______________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+host = '[::1]', status_code = 200
+
+    @pytest.mark.parametrize(
+        ("host", "status_code"),
+        [
+            ("[::1]", 200),
+            ("[::1]:8000", 200),
+            ("[2001:db8::1]", 400),
+            ("[::1", 400),
+            ("[::1]evil.example.com", 400),
+            ("[::1]@attacker", 400),
+            ("[::1].", 400),
+            ("[::1]:evil", 400),
+            ("[::1]:", 400),
+            ("api_service", 200),
+            ("api_service:8000", 200),
+            ("api_service/evil", 400),
+            ("api_service?evil", 400),
+            ("api_service#evil", 400),
+            ("api_service@attacker", 400),
+            ("api service", 400),
+        ],
+    )
+    def test_trusted_host_middleware_ipv6(test_client_factory: TestClientFactory, host: str, status_code: int) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK")
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=["[::1]", "api_service", "*.example.com"])],
+        )
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": host})
+>       assert response.status_code == status_code
+E       assert 400 == 200
+E        +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_trusted_host.py:68: AssertionError
+____________ test_trusted_host_middleware_ipv6[trio-[::1]:8000-200] ____________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+host = '[::1]:8000', status_code = 200
+
+    @pytest.mark.parametrize(
+        ("host", "status_code"),
+        [
+            ("[::1]", 200),
+            ("[::1]:8000", 200),
+            ("[2001:db8::1]", 400),
+            ("[::1", 400),
+            ("[::1]evil.example.com", 400),
+            ("[::1]@attacker", 400),
+            ("[::1].", 400),
+            ("[::1]:evil", 400),
+            ("[::1]:", 400),
+            ("api_service", 200),
+            ("api_service:8000", 200),
+            ("api_service/evil", 400),
+            ("api_service?evil", 400),
+            ("api_service#evil", 400),
+            ("api_service@attacker", 400),
+            ("api service", 400),
+        ],
+    )
+    def test_trusted_host_middleware_ipv6(test_client_factory: TestClientFactory, host: str, status_code: int) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK")
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=["[::1]", "api_service", "*.example.com"])],
+        )
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": host})
+>       assert response.status_code == status_code
+E       assert 400 == 200
+E        +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_trusted_host.py:68: AssertionError
+____________ test_ipv6_base_url[asyncio-http://[::1]-server0-[::1]] ____________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+base_url = 'http://[::1]', server = ['::1', 80], host = '[::1]'
+
+    @pytest.mark.parametrize(
+        ("base_url", "server", "host"),
+        [
+            ("http://[::1]", ["::1", 80], "[::1]"),
+            ("http://[::1]:8000", ["::1", 8000], "[::1]:8000"),
+            ("http://[::1]:0", ["::1", 0], "[::1]:0"),
+        ],
+    )
+    def test_ipv6_base_url(
+        test_client_factory: TestClientFactory, base_url: str, server: list[str | int], host: str
+    ) -> None:
+        def homepage(request: Request) -> JSONResponse:
+            return JSONResponse({"server": request.scope["server"], "host": request.headers["host"]})
+    
+        app = Starlette(routes=[Route("/", endpoint=homepage)])
+        client = test_client_factory(app, base_url=base_url)
+>       response = client.get("/")
+                   ^^^^^^^^^^^^^^^
+
+tests/test_testclient.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:483: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:455: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x7ffffcb62b70>
+request = <Request('GET', 'http://[::1]/')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+>           port = int(port_string)
+                   ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: ':1]'
+
+starlette/testclient.py:236: ValueError
+_______ test_ipv6_base_url[asyncio-http://[::1]:8000-server1-[::1]:8000] _______
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+base_url = 'http://[::1]:8000', server = ['::1', 8000], host = '[::1]:8000'
+
+    @pytest.mark.parametrize(
+        ("base_url", "server", "host"),
+        [
+            ("http://[::1]", ["::1", 80], "[::1]"),
+            ("http://[::1]:8000", ["::1", 8000], "[::1]:8000"),
+            ("http://[::1]:0", ["::1", 0], "[::1]:0"),
+        ],
+    )
+    def test_ipv6_base_url(
+        test_client_factory: TestClientFactory, base_url: str, server: list[str | int], host: str
+    ) -> None:
+        def homepage(request: Request) -> JSONResponse:
+            return JSONResponse({"server": request.scope["server"], "host": request.headers["host"]})
+    
+        app = Starlette(routes=[Route("/", endpoint=homepage)])
+        client = test_client_factory(app, base_url=base_url)
+>       response = client.get("/")
+                   ^^^^^^^^^^^^^^^
+
+tests/test_testclient.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:483: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:455: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x7ffffc9eaae0>
+request = <Request('GET', 'http://[::1]:8000/')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+>           port = int(port_string)
+                   ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: ':1]:8000'
+
+starlette/testclient.py:236: ValueError
+__________ test_ipv6_base_url[asyncio-http://[::1]:0-server2-[::1]:0] __________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+base_url = 'http://[::1]:0', server = ['::1', 0], host = '[::1]:0'
+
+    @pytest.mark.parametrize(
+        ("base_url", "server", "host"),
+        [
+            ("http://[::1]", ["::1", 80], "[::1]"),
+            ("http://[::1]:8000", ["::1", 8000], "[::1]:8000"),
+            ("http://[::1]:0", ["::1", 0], "[::1]:0"),
+        ],
+    )
+    def test_ipv6_base_url(
+        test_client_factory: TestClientFactory, base_url: str, server: list[str | int], host: str
+    ) -> None:
+        def homepage(request: Request) -> JSONResponse:
+            return JSONResponse({"server": request.scope["server"], "host": request.headers["host"]})
+    
+        app = Starlette(routes=[Route("/", endpoint=homepage)])
+        client = test_client_factory(app, base_url=base_url)
+>       response = client.get("/")
+                   ^^^^^^^^^^^^^^^
+
+tests/test_testclient.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:483: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:455: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x7ffffcb59e20>
+request = <Request('GET', 'http://[::1]:0/')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+>           port = int(port_string)
+                   ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: ':1]:0'
+
+starlette/testclient.py:236: ValueError
+_____________ test_ipv6_base_url[trio-http://[::1]-server0-[::1]] ______________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+base_url = 'http://[::1]', server = ['::1', 80], host = '[::1]'
+
+    @pytest.mark.parametrize(
+        ("base_url", "server", "host"),
+        [
+            ("http://[::1]", ["::1", 80], "[::1]"),
+            ("http://[::1]:8000", ["::1", 8000], "[::1]:8000"),
+            ("http://[::1]:0", ["::1", 0], "[::1]:0"),
+        ],
+    )
+    def test_ipv6_base_url(
+        test_client_factory: TestClientFactory, base_url: str, server: list[str | int], host: str
+    ) -> None:
+        def homepage(request: Request) -> JSONResponse:
+            return JSONResponse({"server": request.scope["server"], "host": request.headers["host"]})
+    
+        app = Starlette(routes=[Route("/", endpoint=homepage)])
+        client = test_client_factory(app, base_url=base_url)
+>       response = client.get("/")
+                   ^^^^^^^^^^^^^^^
+
+tests/test_testclient.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:483: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:455: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x7ffffc9ed8b0>
+request = <Request('GET', 'http://[::1]/')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+>           port = int(port_string)
+                   ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: ':1]'
+
+starlette/testclient.py:236: ValueError
+________ test_ipv6_base_url[trio-http://[::1]:8000-server1-[::1]:8000] _________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+base_url = 'http://[::1]:8000', server = ['::1', 8000], host = '[::1]:8000'
+
+    @pytest.mark.parametrize(
+        ("base_url", "server", "host"),
+        [
+            ("http://[::1]", ["::1", 80], "[::1]"),
+            ("http://[::1]:8000", ["::1", 8000], "[::1]:8000"),
+            ("http://[::1]:0", ["::1", 0], "[::1]:0"),
+        ],
+    )
+    def test_ipv6_base_url(
+        test_client_factory: TestClientFactory, base_url: str, server: list[str | int], host: str
+    ) -> None:
+        def homepage(request: Request) -> JSONResponse:
+            return JSONResponse({"server": request.scope["server"], "host": request.headers["host"]})
+    
+        app = Starlette(routes=[Route("/", endpoint=homepage)])
+        client = test_client_factory(app, base_url=base_url)
+>       response = client.get("/")
+                   ^^^^^^^^^^^^^^^
+
+tests/test_testclient.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:483: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:455: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x7ffffc9efb00>
+request = <Request('GET', 'http://[::1]:8000/')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+>           port = int(port_string)
+                   ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: ':1]:8000'
+
+starlette/testclient.py:236: ValueError
+___________ test_ipv6_base_url[trio-http://[::1]:0-server2-[::1]:0] ____________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+base_url = 'http://[::1]:0', server = ['::1', 0], host = '[::1]:0'
+
+    @pytest.mark.parametrize(
+        ("base_url", "server", "host"),
+        [
+            ("http://[::1]", ["::1", 80], "[::1]"),
+            ("http://[::1]:8000", ["::1", 8000], "[::1]:8000"),
+            ("http://[::1]:0", ["::1", 0], "[::1]:0"),
+        ],
+    )
+    def test_ipv6_base_url(
+        test_client_factory: TestClientFactory, base_url: str, server: list[str | int], host: str
+    ) -> None:
+        def homepage(request: Request) -> JSONResponse:
+            return JSONResponse({"server": request.scope["server"], "host": request.headers["host"]})
+    
+        app = Starlette(routes=[Route("/", endpoint=homepage)])
+        client = test_client_factory(app, base_url=base_url)
+>       response = client.get("/")
+                   ^^^^^^^^^^^^^^^
+
+tests/test_testclient.py:469: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:483: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:455: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <starlette.testclient._TestClientTransport object at 0x7ffffcb557f0>
+request = <Request('GET', 'http://[::1]:0/')>
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        scheme = request.url.scheme
+        netloc = request.url.netloc.decode(encoding="ascii")
+        path = request.url.path
+        raw_path = request.url.raw_path
+        query = request.url.query.decode(encoding="ascii")
+    
+        default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+    
+        if ":" in netloc:
+            host, port_string = netloc.split(":", 1)
+>           port = int(port_string)
+                   ^^^^^^^^^^^^^^^^
+E           ValueError: invalid literal for int() with base 10: ':1]:0'
+
+starlette/testclient.py:236: ValueError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware[asyncio]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[2001:db8::1]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]evil.example.com-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1].-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]:evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]:-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service:8000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service/evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service?evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service#evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api service-400]
+PASSED tests/middleware/test_trusted_host.py::test_www_redirect[asyncio]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware[trio]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[2001:db8::1]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]evil.example.com-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1].-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]:evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]:-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service:8000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service/evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service?evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service#evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api service-400]
+PASSED tests/middleware/test_trusted_host.py::test_www_redirect[trio]
+PASSED tests/middleware/test_trusted_host.py::test_default_allowed_hosts
+PASSED tests/test_testclient.py::test_use_testclient_in_endpoint[asyncio]
+PASSED tests/test_testclient.py::test_use_testclient_as_contextmanager[asyncio]
+PASSED tests/test_testclient.py::test_error_on_startup[asyncio]
+PASSED tests/test_testclient.py::test_exception_in_middleware[asyncio]
+PASSED tests/test_testclient.py::test_testclient_asgi2[asyncio]
+PASSED tests/test_testclient.py::test_testclient_asgi3[asyncio]
+PASSED tests/test_testclient.py::test_debug_info_in_response_extensions[asyncio]
+PASSED tests/test_testclient.py::test_debug_info_in_response_extensions_with_template[asyncio]
+PASSED tests/test_testclient.py::test_websocket_blocking_receive[asyncio]
+PASSED tests/test_testclient.py::test_websocket_not_block_on_close[asyncio]
+PASSED tests/test_testclient.py::test_client[asyncio]
+PASSED tests/test_testclient.py::test_client_custom_client[asyncio]
+PASSED tests/test_testclient.py::test_query_params[asyncio-2020-07-14T00:00:00+00:00]
+PASSED tests/test_testclient.py::test_query_params[asyncio-Espa\xf1a]
+PASSED tests/test_testclient.py::test_query_params[asyncio-voil\xe0]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[asyncio-testserver-True]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[asyncio-testserver.local-True]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[asyncio-localhost-False]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[asyncio-example.com-False]
+PASSED tests/test_testclient.py::test_forward_follow_redirects[asyncio]
+PASSED tests/test_testclient.py::test_forward_nofollow_redirects[asyncio]
+PASSED tests/test_testclient.py::test_with_duplicate_headers[asyncio]
+PASSED tests/test_testclient.py::test_merge_url[asyncio]
+PASSED tests/test_testclient.py::test_raw_path_with_querystring[asyncio]
+PASSED tests/test_testclient.py::test_websocket_raw_path_without_params[asyncio]
+PASSED tests/test_testclient.py::test_use_testclient_in_endpoint[trio]
+PASSED tests/test_testclient.py::test_use_testclient_as_contextmanager[trio]
+PASSED tests/test_testclient.py::test_error_on_startup[trio]
+PASSED tests/test_testclient.py::test_exception_in_middleware[trio]
+PASSED tests/test_testclient.py::test_testclient_asgi2[trio]
+PASSED tests/test_testclient.py::test_testclient_asgi3[trio]
+PASSED tests/test_testclient.py::test_debug_info_in_response_extensions[trio]
+PASSED tests/test_testclient.py::test_debug_info_in_response_extensions_with_template[trio]
+PASSED tests/test_testclient.py::test_websocket_blocking_receive[trio]
+PASSED tests/test_testclient.py::test_websocket_not_block_on_close[trio]
+PASSED tests/test_testclient.py::test_client[trio]
+PASSED tests/test_testclient.py::test_client_custom_client[trio]
+PASSED tests/test_testclient.py::test_query_params[trio-2020-07-14T00:00:00+00:00]
+PASSED tests/test_testclient.py::test_query_params[trio-Espa\xf1a]
+PASSED tests/test_testclient.py::test_query_params[trio-voil\xe0]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[trio-testserver-True]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[trio-testserver.local-True]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[trio-localhost-False]
+PASSED tests/test_testclient.py::test_domain_restricted_cookies[trio-example.com-False]
+PASSED tests/test_testclient.py::test_forward_follow_redirects[trio]
+PASSED tests/test_testclient.py::test_forward_nofollow_redirects[trio]
+PASSED tests/test_testclient.py::test_with_duplicate_headers[trio]
+PASSED tests/test_testclient.py::test_merge_url[trio]
+PASSED tests/test_testclient.py::test_raw_path_with_querystring[trio]
+PASSED tests/test_testclient.py::test_websocket_raw_path_without_params[trio]
+PASSED tests/test_testclient.py::test_testclient_headers_behavior
+PASSED tests/test_testclient.py::test_timeout_deprecation
+FAILED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]-200]
+FAILED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]:8000-200]
+FAILED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]-200]
+FAILED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]:8000-200]
+FAILED tests/test_testclient.py::test_ipv6_base_url[asyncio-http://[::1]-server0-[::1]]
+FAILED tests/test_testclient.py::test_ipv6_base_url[asyncio-http://[::1]:8000-server1-[::1]:8000]
+FAILED tests/test_testclient.py::test_ipv6_base_url[asyncio-http://[::1]:0-server2-[::1]:0]
+FAILED tests/test_testclient.py::test_ipv6_base_url[trio-http://[::1]-server0-[::1]]
+FAILED tests/test_testclient.py::test_ipv6_base_url[trio-http://[::1]:8000-server1-[::1]:8000]
+FAILED tests/test_testclient.py::test_ipv6_base_url[trio-http://[::1]:0-server2-[::1]:0]
+======================== 10 failed, 85 passed in 1.01s =========================

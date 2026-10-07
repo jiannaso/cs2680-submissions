@@ -1,0 +1,131 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index aa1c29e..65e2ad6 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -228,6 +228,7 @@ class BaseRetrying(ABC):
+         reraise: bool = False,
+         retry_error_cls: type[RetryError] = RetryError,
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any] | None = None,
++        name: str | None = None,
+     ):
+         self.sleep = sleep
+         self.stop = stop
+@@ -240,6 +241,7 @@ class BaseRetrying(ABC):
+         self._local = threading.local()
+         self.retry_error_cls = retry_error_cls
+         self.retry_error_callback = retry_error_callback
++        self._name = name
+ 
+     def copy(
+         self,
+@@ -255,6 +257,7 @@ class BaseRetrying(ABC):
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any]
+         | None
+         | object = _unset,
++        name: str | object = _unset,
+     ) -> "Self":
+         """Copy this object with some parameters changed if needed."""
+         return self.__class__(
+@@ -270,6 +273,7 @@ class BaseRetrying(ABC):
+             retry_error_callback=_first_set(
+                 retry_error_callback, self.retry_error_callback
+             ),
++            name=_first_set(name, self._name),
+         )
+ 
+     def __repr__(self) -> str:
+@@ -283,6 +287,9 @@ class BaseRetrying(ABC):
+             f"after={self.after})>"
+         )
+ 
++    def __str__(self) -> str:
++        return self._name if self._name is not None else "<unknown>"
++
+     @property
+     def statistics(self) -> dict[str, t.Any]:
+         """Return a dictionary of runtime statistics.
+@@ -554,6 +561,13 @@ class RetryCallState:
+         self.attempt_number += 1
+         self.next_action = None
+ 
++    def get_fn_name(self) -> str:
++        if self.fn is not None:
++            return _utils.get_callback_name(self.fn)
++        if self.retry_object is not None:
++            return str(self.retry_object)
++        return "<unknown>"
++
+     def set_result(self, val: t.Any) -> None:
+         ts = time.monotonic()
+         fut = Future(self.attempt_number)
+diff --git a/tenacity/after.py b/tenacity/after.py
+index 707f743..8e38068 100644
+--- a/tenacity/after.py
++++ b/tenacity/after.py
+@@ -34,11 +34,7 @@ def after_log(
+     """After call strategy that logs to some logger the finished attempt."""
+ 
+     def log_it(retry_state: "RetryCallState") -> None:
+-        if retry_state.fn is None:
+-            # NOTE(sileht): can't really happen, but we must please mypy
+-            fn_name = "<unknown>"
+-        else:
+-            fn_name = _utils.get_callback_name(retry_state.fn)
++        fn_name = retry_state.get_fn_name()
+         secs = retry_state.seconds_since_start
+         logger.log(
+             log_level,
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index bb3eab3..6d882c4 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -87,6 +87,7 @@ class AsyncRetrying(BaseRetrying):
+         retry_error_cls: type["RetryError"] = RetryError,
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+         | None = None,
++        name: str | None = None,
+     ) -> None:
+         super().__init__(
+             sleep=sleep,  # type: ignore[arg-type]
+@@ -99,6 +100,7 @@ class AsyncRetrying(BaseRetrying):
+             reraise=reraise,
+             retry_error_cls=retry_error_cls,
+             retry_error_callback=retry_error_callback,
++            name=name,
+         )
+ 
+     async def __call__(  # type: ignore[override]
+diff --git a/tenacity/before.py b/tenacity/before.py
+index 5d9aa24..89b867e 100644
+--- a/tenacity/before.py
++++ b/tenacity/before.py
+@@ -32,11 +32,7 @@ def before_log(
+     """Before call strategy that logs to some logger the attempt."""
+ 
+     def log_it(retry_state: "RetryCallState") -> None:
+-        if retry_state.fn is None:
+-            # NOTE(sileht): can't really happen, but we must please mypy
+-            fn_name = "<unknown>"
+-        else:
+-            fn_name = _utils.get_callback_name(retry_state.fn)
++        fn_name = retry_state.get_fn_name()
+         logger.log(
+             log_level,
+             f"Starting call to '{fn_name}', "
+diff --git a/tenacity/before_sleep.py b/tenacity/before_sleep.py
+index a822cb8..6b69121 100644
+--- a/tenacity/before_sleep.py
++++ b/tenacity/before_sleep.py
+@@ -55,11 +55,7 @@ def before_sleep_log(
+             verb, value = "returned", retry_state.outcome.result()
+             local_exc_info = False  # exc_info does not apply when no exception
+ 
+-        if retry_state.fn is None:
+-            # NOTE(sileht): can't really happen, but we must please mypy
+-            fn_name = "<unknown>"
+-        else:
+-            fn_name = _utils.get_callback_name(retry_state.fn)
++        fn_name = retry_state.get_fn_name()
+ 
+         logger.log(
+             log_level,

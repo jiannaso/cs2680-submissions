@@ -1,0 +1,28 @@
+== task 16: mytest__react-use-uselatest
+== image: madsloop-mytest:react-use-uselatest
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:react-use-uselatest
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__react-use-uselatest.diff
+diff --git a/src/index.ts b/src/index.ts
+index 6d01816..390c63f 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -43,6 +43,7 @@ export { default as createBreakpoint } from './createBreakpoint';
+ export { default as useKeyPress } from './useKeyPress';
+ export { default as useKeyPressEvent } from './useKeyPressEvent';
+ export { default as useLifecycles } from './useLifecycles';
++export { default as useLatest } from './useLatest';
+ export { default as useList } from './useList';
+ export { default as useLocalStorage } from './useLocalStorage';
+ export { default as useLocation } from './useLocation';
+diff --git a/src/useLatest.ts b/src/useLatest.ts
+new file mode 100644
+index 0000000..afd4104
+--- /dev/null
++++ b/src/useLatest.ts
+@@ -0,0 +1,13 @@
++import { useRef, useEffect } from 'react';
++

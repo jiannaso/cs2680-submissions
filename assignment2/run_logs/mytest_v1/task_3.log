@@ -1,0 +1,28 @@
+== task 3: mytest__tenacity-643
+== image: madsloop-mytest:tenacity-643
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:tenacity-643
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__tenacity-643.diff
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index c52d6ba..6eaffd1 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -217,7 +217,10 @@ class AttemptManager:
+     ) -> bool | None:
+         if exc_type is not None and exc_value is not None:
+             self.retry_state.set_exception((exc_type, exc_value, traceback))
+-            return True  # Swallow exception.
++            if self.retry_state.retry_object.enabled:
++                return True  # Swallow exception.
++            # When disabled, re-raise the original exception
++            raise exc_value.with_traceback(traceback)
+         # We don't have the result, actually.
+         self.retry_state.set_result(None)
+         return None
+@@ -475,6 +478,12 @@ class BaseRetrying(ABC):
+         self._add_action_func(lambda rs: DoSleep(rs.upcoming_sleep))
+ 
+     def __iter__(self) -> t.Generator[AttemptManager, None, None]:

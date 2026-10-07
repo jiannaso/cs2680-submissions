@@ -1,0 +1,849 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+collected 178 items
+
+tests/test_main.py .................................s................... [ 29%]
+........................................................................ [ 70%]
+...                                                                      [ 71%]
+tests/test_parser.py ..............................F...................  [100%]
+
+=================================== FAILURES ===================================
+________________ test_parse_stream[a="b\\\\"\nc="d"-expected30] ________________
+
+test_input = 'a="b\\\\"\nc="d"'
+expected = [Binding(key='a', value='b\\', original=Original(string='a="b\\\\"\n', line=1), error=False), Binding(key='c', value='d', original=Original(string='c="d"', line=2), error=False)]
+
+    @pytest.mark.parametrize(
+        "test_input,expected",
+        [
+            ("", []),
+            (
+                "a=b",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "'a'=b",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="'a'=b", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "[=b",
+                [
+                    Binding(
+                        key="[",
+                        value="b",
+                        original=Original(string="[=b", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                " a = b ",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string=" a = b ", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "export a=b",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="export a=b", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                " export 'a'=b",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string=" export 'a'=b", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "# a=b",
+                [
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="# a=b", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b#c",
+                [
+                    Binding(
+                        key="a",
+                        value="b#c",
+                        original=Original(string="a=b#c", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b #c",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b #c", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b\t#c",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\t#c", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b c",
+                [
+                    Binding(
+                        key="a",
+                        value="b c",
+                        original=Original(string="a=b c", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b\tc",
+                [
+                    Binding(
+                        key="a",
+                        value="b\tc",
+                        original=Original(string="a=b\tc", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b  c",
+                [
+                    Binding(
+                        key="a",
+                        value="b  c",
+                        original=Original(string="a=b  c", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b\u00a0 c",
+                [
+                    Binding(
+                        key="a",
+                        value="b\u00a0 c",
+                        original=Original(string="a=b\u00a0 c", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=b c ",
+                [
+                    Binding(
+                        key="a",
+                        value="b c",
+                        original=Original(string="a=b c ", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a='b c '",
+                [
+                    Binding(
+                        key="a",
+                        value="b c ",
+                        original=Original(string="a='b c '", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                'a="b c "',
+                [
+                    Binding(
+                        key="a",
+                        value="b c ",
+                        original=Original(string='a="b c "', line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "export export_a=1",
+                [
+                    Binding(
+                        key="export_a",
+                        value="1",
+                        original=Original(string="export export_a=1", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "export port=8000",
+                [
+                    Binding(
+                        key="port",
+                        value="8000",
+                        original=Original(string="export port=8000", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                'a="b\nc"',
+                [
+                    Binding(
+                        key="a",
+                        value="b\nc",
+                        original=Original(string='a="b\nc"', line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a='b\nc'",
+                [
+                    Binding(
+                        key="a",
+                        value="b\nc",
+                        original=Original(string="a='b\nc'", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                'a="b\nc"',
+                [
+                    Binding(
+                        key="a",
+                        value="b\nc",
+                        original=Original(string='a="b\nc"', line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                'a="b\\nc"',
+                [
+                    Binding(
+                        key="a",
+                        value="b\nc",
+                        original=Original(string='a="b\\nc"', line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a='b\\nc'",
+                [
+                    Binding(
+                        key="a",
+                        value="b\\nc",
+                        original=Original(string="a='b\\nc'", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                'a="b\\"c"',
+                [
+                    Binding(
+                        key="a",
+                        value='b"c',
+                        original=Original(string='a="b\\"c"', line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a='b\\'c'",
+                [
+                    Binding(
+                        key="a",
+                        value="b'c",
+                        original=Original(string="a='b\\'c'", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a='b\\\\c'",
+                [
+                    Binding(
+                        key="a",
+                        value="b\\c",
+                        original=Original(string="a='b\\\\c'", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                'a="b\\\\c"',
+                [
+                    Binding(
+                        key="a",
+                        value="b\\c",
+                        original=Original(string='a="b\\\\c"', line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            # An escaped backslash at the end of the value must not be read as the
+            # start of an escaped quote, which would swallow the following lines.
+            (
+                "a='b\\\\'\nc='d'",
+                [
+                    Binding(
+                        key="a",
+                        value="b\\",
+                        original=Original(string="a='b\\\\'\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="c",
+                        value="d",
+                        original=Original(string="c='d'", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                'a="b\\\\"\nc="d"',
+                [
+                    Binding(
+                        key="a",
+                        value="b\\",
+                        original=Original(string='a="b\\\\"\n', line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="c",
+                        value="d",
+                        original=Original(string='c="d"', line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "a='b\\\\\\'c'",
+                [
+                    Binding(
+                        key="a",
+                        value="b\\'c",
+                        original=Original(string="a='b\\\\\\'c'", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a=à",
+                [
+                    Binding(
+                        key="a",
+                        value="à",
+                        original=Original(string="a=à", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                'a="à"',
+                [
+                    Binding(
+                        key="a",
+                        value="à",
+                        original=Original(string='a="à"', line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "no_value_var",
+                [
+                    Binding(
+                        key="no_value_var",
+                        value=None,
+                        original=Original(string="no_value_var", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "a: b",
+                [
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="a: b", line=1),
+                        error=True,
+                    )
+                ],
+            ),
+            (
+                "a=b\nc=d",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="c",
+                        value="d",
+                        original=Original(string="c=d", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "a=b\rc=d",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\r", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="c",
+                        value="d",
+                        original=Original(string="c=d", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "a=b\r\nc=d",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\r\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="c",
+                        value="d",
+                        original=Original(string="c=d", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "a=\nb=c",
+                [
+                    Binding(
+                        key="a",
+                        value="",
+                        original=Original(string="a=\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="b",
+                        value="c",
+                        original=Original(string="b=c", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "\n\n",
+                [
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="\n\n", line=1),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "a=b\n\n",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="\n", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "a=b\n\nc=d",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="c",
+                        value="d",
+                        original=Original(string="\nc=d", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                'a="\nb=c',
+                [
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string='a="\n', line=1),
+                        error=True,
+                    ),
+                    Binding(
+                        key="b",
+                        value="c",
+                        original=Original(string="b=c", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                '# comment\na="b\nc"\nd=e\n',
+                [
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="# comment\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="a",
+                        value="b\nc",
+                        original=Original(string='a="b\nc"\n', line=2),
+                        error=False,
+                    ),
+                    Binding(
+                        key="d",
+                        value="e",
+                        original=Original(string="d=e\n", line=4),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "a=b\n# comment 1",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="# comment 1", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                "# comment 1\n# comment 2",
+                [
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="# comment 1\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key=None,
+                        value=None,
+                        original=Original(string="# comment 2", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            (
+                'uglyKey[%$="S3cr3t_P4ssw#rD" #\na=b',
+                [
+                    Binding(
+                        key="uglyKey[%$",
+                        value="S3cr3t_P4ssw#rD",
+                        original=Original(
+                            string='uglyKey[%$="S3cr3t_P4ssw#rD" #\n', line=1
+                        ),
+                        error=False,
+                    ),
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+            # UTF-8 BOM at the start of the file should be stripped
+            (
+                "\ufeffa=b",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b", line=1),
+                        error=False,
+                    )
+                ],
+            ),
+            (
+                "\ufeffa=b\nc=d",
+                [
+                    Binding(
+                        key="a",
+                        value="b",
+                        original=Original(string="a=b\n", line=1),
+                        error=False,
+                    ),
+                    Binding(
+                        key="c",
+                        value="d",
+                        original=Original(string="c=d", line=2),
+                        error=False,
+                    ),
+                ],
+            ),
+        ],
+    )
+    def test_parse_stream(test_input, expected):
+        result = parse_stream(io.StringIO(test_input))
+    
+>       assert list(result) == expected
+E       assert [Binding(key=..., error=True)] == [Binding(key=... error=False)]
+E         
+E         At index 0 diff: Binding(key=None, value=None, original=Original(string='a="b\\\\"\nc="d"', line=1), error=True) != Binding(key='a', value='b\\', original=Original(string='a="b\\\\"\n', line=1), error=False)
+E         Right contains one more item: Binding(key='c', value='d', original=Original(string='c="d"', line=2), error=False)
+E         Use -v to get more diff
+
+/app/tests/test_parser.py:651: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/test_main.py::test_set_key_no_file
+PASSED tests/test_main.py::test_set_key[-a--expected0-a=''\n]
+PASSED tests/test_main.py::test_set_key[-a-b-expected1-a='b'\n]
+PASSED tests/test_main.py::test_set_key[-a-'b'-expected2-a='\\'b\\''\n]
+PASSED tests/test_main.py::test_set_key[-a-"b"-expected3-a='"b"'\n]
+PASSED tests/test_main.py::test_set_key[-a-b'c-expected4-a='b\\'c'\n]
+PASSED tests/test_main.py::test_set_key[-a-b"c-expected5-a='b"c'\n]
+PASSED tests/test_main.py::test_set_key[a=b-a-c-expected6-a='c'\n]
+PASSED tests/test_main.py::test_set_key[a=b\n-a-c-expected7-a='c'\n]
+PASSED tests/test_main.py::test_set_key[a=b\n\n-a-c-expected8-a='c'\n\n]
+PASSED tests/test_main.py::test_set_key[a=b\nc=d-a-e-expected9-a='e'\nc=d]
+PASSED tests/test_main.py::test_set_key[a=b\nc=d\ne=f-c-g-expected10-a=b\nc='g'\ne=f]
+PASSED tests/test_main.py::test_set_key[a=b\n-c-d-expected11-a=b\nc='d'\n]
+PASSED tests/test_main.py::test_set_key[a=b-c-d-expected12-a=b\nc='d'\n]
+PASSED tests/test_main.py::test_set_key[-a-b\\c-expected13-a='b\\\\c'\n]
+PASSED tests/test_main.py::test_set_key[-a-b\\-expected14-a='b\\\\'\n]
+PASSED tests/test_main.py::test_set_key[-a-b\\'c-expected15-a='b\\\\\\'c'\n]
+PASSED tests/test_main.py::test_set_key_round_trips[C:\\Users]
+PASSED tests/test_main.py::test_set_key_round_trips[C:\\Users\\]
+PASSED tests/test_main.py::test_set_key_round_trips[\\d+]
+PASSED tests/test_main.py::test_set_key_round_trips[back\\]
+PASSED tests/test_main.py::test_set_key_round_trips[a\\'b]
+PASSED tests/test_main.py::test_set_key_round_trips[it's]
+PASSED tests/test_main.py::test_set_key_round_trips[say "hi"]
+PASSED tests/test_main.py::test_set_key_round_trips[a\\nb]
+PASSED tests/test_main.py::test_set_key_round_trips[plain]
+PASSED tests/test_main.py::test_set_key_round_trips[]
+PASSED tests/test_main.py::test_set_key_encoding
+PASSED tests/test_main.py::test_set_key_preserves_file_mode
+PASSED tests/test_main.py::test_rewrite_closes_file_handle_on_lstat_failure
+PASSED tests/test_main.py::test_set_key_symlink_to_existing_file
+PASSED tests/test_main.py::test_set_key_symlink_to_missing_file
+PASSED tests/test_main.py::test_set_key_follow_symlinks
+PASSED tests/test_main.py::test_get_key_no_file
+PASSED tests/test_main.py::test_get_key_not_found
+PASSED tests/test_main.py::test_get_key_ok
+PASSED tests/test_main.py::test_get_key_encoding
+PASSED tests/test_main.py::test_get_key_none
+PASSED tests/test_main.py::test_empty_dotenv_dict_is_cached
+PASSED tests/test_main.py::test_unset_with_value
+PASSED tests/test_main.py::test_unset_no_value
+PASSED tests/test_main.py::test_unset_encoding
+PASSED tests/test_main.py::test_unset_non_existent_file
+PASSED tests/test_main.py::test_unset_key_symlink_to_existing_file
+PASSED tests/test_main.py::test_unset_key_symlink_to_missing_file
+PASSED tests/test_main.py::test_unset_key_follow_symlinks
+PASSED tests/test_main.py::test_find_dotenv_no_file_raise
+PASSED tests/test_main.py::test_find_dotenv_no_file_no_raise
+PASSED tests/test_main.py::test_find_dotenv_found
+PASSED tests/test_main.py::test_load_dotenv_existing_file
+PASSED tests/test_main.py::test_load_dotenv_disabled[true]
+PASSED tests/test_main.py::test_load_dotenv_disabled[yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled[1]
+PASSED tests/test_main.py::test_load_dotenv_disabled[t]
+PASSED tests/test_main.py::test_load_dotenv_disabled[y]
+PASSED tests/test_main.py::test_load_dotenv_disabled[True]
+PASSED tests/test_main.py::test_load_dotenv_disabled[Yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled[TRUE]
+PASSED tests/test_main.py::test_load_dotenv_disabled[YES]
+PASSED tests/test_main.py::test_load_dotenv_disabled[T]
+PASSED tests/test_main.py::test_load_dotenv_disabled[Y]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[true]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[1]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[t]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[y]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[True]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[Yes]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[TRUE]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[YES]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[T]
+PASSED tests/test_main.py::test_load_dotenv_disabled_notification[Y]
+PASSED tests/test_main.py::test_load_dotenv_enabled[]
+PASSED tests/test_main.py::test_load_dotenv_enabled[false]
+PASSED tests/test_main.py::test_load_dotenv_enabled[no]
+PASSED tests/test_main.py::test_load_dotenv_enabled[0]
+PASSED tests/test_main.py::test_load_dotenv_enabled[f]
+PASSED tests/test_main.py::test_load_dotenv_enabled[n]
+PASSED tests/test_main.py::test_load_dotenv_enabled[False]
+PASSED tests/test_main.py::test_load_dotenv_enabled[No]
+PASSED tests/test_main.py::test_load_dotenv_enabled[FALSE]
+PASSED tests/test_main.py::test_load_dotenv_enabled[NO]
+PASSED tests/test_main.py::test_load_dotenv_enabled[F]
+PASSED tests/test_main.py::test_load_dotenv_enabled[N]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[false]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[no]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[0]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[f]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[n]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[False]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[No]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[FALSE]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[NO]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[F]
+PASSED tests/test_main.py::test_load_dotenv_enabled_no_notification[N]
+PASSED tests/test_main.py::test_load_dotenv_doesnt_disable_itself
+PASSED tests/test_main.py::test_load_dotenv_no_file_verbose
+PASSED tests/test_main.py::test_load_dotenv_existing_variable_no_override
+PASSED tests/test_main.py::test_load_dotenv_existing_variable_override
+PASSED tests/test_main.py::test_load_dotenv_redefine_var_used_in_file_no_override
+PASSED tests/test_main.py::test_load_dotenv_redefine_var_used_in_file_with_override
+PASSED tests/test_main.py::test_load_dotenv_string_io_utf_8
+PASSED tests/test_main.py::test_load_dotenv_file_stream
+PASSED tests/test_main.py::test_load_dotenv_in_current_dir
+PASSED tests/test_main.py::test_dotenv_values_file
+PASSED tests/test_main.py::test_dotenv_values_string_io[env0-a=$b-False-expected0]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env1-a=$b-True-expected1]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env2-a=${b}-False-expected2]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env3-a=${b}-True-expected3]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env4-a=${b:-d}-False-expected4]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env5-a=${b:-d}-True-expected5]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env6-b=c\na=${b}-True-expected6]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env7-a=${b}-True-expected7]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env8-a=${b:-d}-True-expected8]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env9-a="${b}"-True-expected9]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env10-a='${b}'-True-expected10]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env11-a=x${b}y-True-expected11]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env12-a=${a}-True-expected12]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env13-a=${a}-True-expected13]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env14-a=${a:-c}-True-expected14]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env15-a=${a:-c}-True-expected15]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env16-a=${b}${b}-True-expected16]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env17-b=d\na=${b}-True-expected17]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env18-a=b\na=c\nd=${a}-True-expected18]
+PASSED tests/test_main.py::test_dotenv_values_string_io[env19-a=b\nc=${a}\nd=e\nc=${d}-True-expected19]
+PASSED tests/test_main.py::test_dotenv_values_file_stream
+PASSED tests/test_parser.py::test_parse_stream[-expected0]
+PASSED tests/test_parser.py::test_parse_stream[a=b-expected1]
+PASSED tests/test_parser.py::test_parse_stream['a'=b-expected2]
+PASSED tests/test_parser.py::test_parse_stream[[=b-expected3]
+PASSED tests/test_parser.py::test_parse_stream[ a = b -expected4]
+PASSED tests/test_parser.py::test_parse_stream[export a=b-expected5]
+PASSED tests/test_parser.py::test_parse_stream[ export 'a'=b-expected6]
+PASSED tests/test_parser.py::test_parse_stream[# a=b-expected7]
+PASSED tests/test_parser.py::test_parse_stream[a=b#c-expected8]
+PASSED tests/test_parser.py::test_parse_stream[a=b #c-expected9]
+PASSED tests/test_parser.py::test_parse_stream[a=b\t#c-expected10]
+PASSED tests/test_parser.py::test_parse_stream[a=b c-expected11]
+PASSED tests/test_parser.py::test_parse_stream[a=b\tc-expected12]
+PASSED tests/test_parser.py::test_parse_stream[a=b  c-expected13]
+PASSED tests/test_parser.py::test_parse_stream[a=b\xa0 c-expected14]
+PASSED tests/test_parser.py::test_parse_stream[a=b c -expected15]
+PASSED tests/test_parser.py::test_parse_stream[a='b c '-expected16]
+PASSED tests/test_parser.py::test_parse_stream[a="b c "-expected17]
+PASSED tests/test_parser.py::test_parse_stream[export export_a=1-expected18]
+PASSED tests/test_parser.py::test_parse_stream[export port=8000-expected19]
+PASSED tests/test_parser.py::test_parse_stream[a="b\nc"-expected20]
+PASSED tests/test_parser.py::test_parse_stream[a='b\nc'-expected21]
+PASSED tests/test_parser.py::test_parse_stream[a="b\nc"-expected22]
+PASSED tests/test_parser.py::test_parse_stream[a="b\\nc"-expected23]
+PASSED tests/test_parser.py::test_parse_stream[a='b\\nc'-expected24]
+PASSED tests/test_parser.py::test_parse_stream[a="b\\"c"-expected25]
+PASSED tests/test_parser.py::test_parse_stream[a='b\\'c'-expected26]
+PASSED tests/test_parser.py::test_parse_stream[a='b\\\\c'-expected27]
+PASSED tests/test_parser.py::test_parse_stream[a="b\\\\c"-expected28]
+PASSED tests/test_parser.py::test_parse_stream[a='b\\\\'\nc='d'-expected29]
+PASSED tests/test_parser.py::test_parse_stream[a='b\\\\\\'c'-expected31]
+PASSED tests/test_parser.py::test_parse_stream[a=\xe0-expected32]
+PASSED tests/test_parser.py::test_parse_stream[a="\xe0"-expected33]
+PASSED tests/test_parser.py::test_parse_stream[no_value_var-expected34]
+PASSED tests/test_parser.py::test_parse_stream[a: b-expected35]
+PASSED tests/test_parser.py::test_parse_stream[a=b\nc=d-expected36]
+PASSED tests/test_parser.py::test_parse_stream[a=b\rc=d-expected37]
+PASSED tests/test_parser.py::test_parse_stream[a=b\r\nc=d-expected38]
+PASSED tests/test_parser.py::test_parse_stream[a=\nb=c-expected39]
+PASSED tests/test_parser.py::test_parse_stream[\n\n-expected40]
+PASSED tests/test_parser.py::test_parse_stream[a=b\n\n-expected41]
+PASSED tests/test_parser.py::test_parse_stream[a=b\n\nc=d-expected42]
+PASSED tests/test_parser.py::test_parse_stream[a="\nb=c-expected43]
+PASSED tests/test_parser.py::test_parse_stream[# comment\na="b\nc"\nd=e\n-expected44]
+PASSED tests/test_parser.py::test_parse_stream[a=b\n# comment 1-expected45]
+PASSED tests/test_parser.py::test_parse_stream[# comment 1\n# comment 2-expected46]
+PASSED tests/test_parser.py::test_parse_stream[uglyKey[%$="S3cr3t_P4ssw#rD" #\na=b-expected47]
+PASSED tests/test_parser.py::test_parse_stream[\ufeffa=b-expected48]
+PASSED tests/test_parser.py::test_parse_stream[\ufeffa=b\nc=d-expected49]
+SKIPPED [1] tests/test_main.py:175: Root user can access files even with 000 permissions.
+FAILED tests/test_parser.py::test_parse_stream[a="b\\\\"\nc="d"-expected30]
+=================== 1 failed, 176 passed, 1 skipped in 0.63s ===================

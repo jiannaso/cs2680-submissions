@@ -1,0 +1,38 @@
+== task 8: instance_ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+== image: jefzda/sweap-images:ansible.ansible-ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+ansible.ansible-ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5: Pulling from jefzda/sweap-images
+Digest: sha256:5605c6c41afceea15fac3cf3926436d028b61e6b0f3e8a2ba6150613a92c79dd
+Status: Image is up to date for jefzda/sweap-images:ansible.ansible-ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+docker.io/jefzda/sweap-images:ansible.ansible-ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+== workdir in container: /app
+== no Python >=3.10 in image; bootstrapping one with uv
+WARNING: You are using pip version 20.2.4; however, version 26.0.1 is available.
+You should consider upgrading via the '/usr/bin/python3 -m pip install --upgrade pip' command.
+Downloading cpython-3.12.15-linux-x86_64-gnu (download) (32.7MiB)
+ Downloaded cpython-3.12.15-linux-x86_64-gnu (download)
+Installed Python 3.12.15 in 2.37s
+ + cpython-3.12.15-linux-x86_64-gnu (python3.12)
+warning: `/root/.local/bin` is not on your PATH. To use installed Python executables, run `export PATH="/root/.local/bin:$PATH"` or `uv python update-shell`.
+== harness interpreter: /tmp/uv-pythons/cpython-3.12-linux-x86_64-gnu/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_instance_ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5.diff
+diff --git a/lib/ansible/cli/galaxy.py b/lib/ansible/cli/galaxy.py
+index 9bd5bafbc9..ca72fb67ec 100644
+--- a/lib/ansible/cli/galaxy.py
++++ b/lib/ansible/cli/galaxy.py
+@@ -32,7 +32,7 @@ from ansible.galaxy.collection import (
+     validate_collection_path,
+     verify_collections
+ )
+-from ansible.galaxy.login import GalaxyLogin
++
+ from ansible.galaxy.role import GalaxyRole
+ from ansible.galaxy.token import BasicAuthToken, GalaxyToken, KeycloakToken, NoTokenSentinel
+ from ansible.module_utils.ansible_release import __version__ as ansible_version
+@@ -129,8 +129,9 @@ class GalaxyCLI(CLI):
+         common.add_argument('-s', '--server', dest='api_server', help='The Galaxy API server URL')
+         common.add_argument('--token', '--api-key', dest='api_key',
+                             help='The Ansible Galaxy API key which can be found at '
+-                                 'https://galaxy.ansible.com/me/preferences. You can also use ansible-galaxy login to '
+-                                 'retrieve this key or set the token for the GALAXY_SERVER_LIST entry.')
++                                 'https://galaxy.ansible.com/me/preferences. You can also store the key in a file '

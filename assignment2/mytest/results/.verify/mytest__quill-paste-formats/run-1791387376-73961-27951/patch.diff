@@ -1,0 +1,127 @@
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..c1b1def 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -392,8 +392,16 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
+-  return applyFormat(delta, format, true);
++function matchAlias(
++  format: string,
++  node: Element,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
++  if (scroll.query(format, Scope.INLINE) != null) {
++    return applyFormat(delta, format, true);
++  }
++  return delta;
+ }
+ 
+ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+@@ -405,20 +413,11 @@ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+     .concat(classes)
+     .concat(styles)
+     .forEach((name) => {
+-      let attr = scroll.query(name, Scope.ATTRIBUTE) as Attributor;
++      const attr = scroll.query(name, Scope.ATTRIBUTE) as Attributor;
+       if (attr != null) {
+         formats[attr.attrName] = attr.value(node);
+         if (formats[attr.attrName]) return;
+       }
+-      attr = ATTRIBUTE_ATTRIBUTORS[name];
+-      if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+-        formats[attr.attrName] = attr.value(node) || undefined;
+-      }
+-      attr = STYLE_ATTRIBUTORS[name];
+-      if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+-        attr = STYLE_ATTRIBUTORS[name];
+-        formats[attr.attrName] = attr.value(node) || undefined;
+-      }
+     });
+   if (Object.keys(formats).length > 0) {
+     return applyFormat(delta, formats);
+@@ -465,7 +464,11 @@ function matchCodeBlock(node: Node, delta: Delta, scroll: ScrollBlot) {
+   const match = scroll.query('code-block');
+   // @ts-expect-error
+   const language = match ? match.formats(node, scroll) : true;
+-  return applyFormat(delta, 'code-block', language);
++  // Only apply if the format is registered in the editor's registry
++  if (match) {
++    return applyFormat(delta, 'code-block', language);
++  }
++  return delta;
+ }
+ 
+ function matchIgnore() {
+@@ -482,6 +485,9 @@ function matchIndent(node: Node, delta: Delta, scroll: ScrollBlot) {
+   ) {
+     return delta;
+   }
++  // Only apply indent if the indent blot is registered
++  const indentBlot = scroll.query('indent');
++  if (indentBlot == null) return delta;
+   let indent = -1;
+   let parent = node.parentNode;
+   while (parent != null) {
+@@ -501,7 +507,10 @@ function matchIndent(node: Node, delta: Delta, scroll: ScrollBlot) {
+   }, new Delta());
+ }
+ 
+-function matchList(node: Node, delta: Delta) {
++function matchList(node: Node, delta: Delta, scroll: ScrollBlot) {
++  // Only apply list format if the list blot is registered
++  const listBlot = scroll.query('list');
++  if (listBlot == null) return delta;
+   // @ts-expect-error
+   const list = node.tagName === 'OL' ? 'ordered' : 'bullet';
+   return applyFormat(delta, 'list', list);
+@@ -532,7 +541,11 @@ function matchNewline(node: Node, delta: Delta, scroll: ScrollBlot) {
+   return delta;
+ }
+ 
+-function matchStyles(node: HTMLElement, delta: Delta) {
++function matchStyles(
++  node: HTMLElement,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
+   const formats: Record<string, unknown> = {};
+   const style: Partial<CSSStyleDeclaration> = node.style || {};
+   if (style.fontStyle === 'italic') {
+@@ -551,8 +564,15 @@ function matchStyles(node: HTMLElement, delta: Delta) {
+   ) {
+     formats.bold = true;
+   }
+-  if (Object.keys(formats).length > 0) {
+-    delta = applyFormat(delta, formats);
++  // Only apply formats that are registered in the editor's registry
++  const supportedFormats: Record<string, unknown> = {};
++  Object.keys(formats).forEach((key) => {
++    if (scroll.query(key, Scope.INLINE) != null) {
++      supportedFormats[key] = formats[key];
++    }
++  });
++  if (Object.keys(supportedFormats).length > 0) {
++    delta = applyFormat(delta, supportedFormats);
+   }
+   // @ts-expect-error
+   if (parseFloat(style.textIndent || 0) > 0) {
+@@ -562,7 +582,14 @@ function matchStyles(node: HTMLElement, delta: Delta) {
+   return delta;
+ }
+ 
+-function matchTable(node: HTMLTableRowElement, delta: Delta) {
++function matchTable(
++  node: HTMLTableRowElement,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
++  // Only apply table format if the table blot is registered
++  const tableBlot = scroll.query('table');
++  if (tableBlot == null) return delta;
+   const table =
+     node.parentElement?.tagName === 'TABLE'
+       ? node.parentElement

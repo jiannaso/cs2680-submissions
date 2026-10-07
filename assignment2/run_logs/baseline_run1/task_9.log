@@ -1,0 +1,56 @@
+== task 9: instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+== image: jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547: Pulling from jefzda/sweap-images
+be3babade42a: Pulling fs layer
+d579f0a7063d: Pulling fs layer
+ce37fd13e582: Pulling fs layer
+3586f75738d1: Pulling fs layer
+40a543a555cc: Pulling fs layer
+60a410d05bc7: Pulling fs layer
+2b9558998b36: Pulling fs layer
+400e2cbd3500: Pulling fs layer
+60a410d05bc7: Already exists
+2b9558998b36: Already exists
+400e2cbd3500: Already exists
+d579f0a7063d: Already exists
+ce37fd13e582: Already exists
+3586f75738d1: Already exists
+be3babade42a: Download complete
+40a543a555cc: Download complete
+40a543a555cc: Pull complete
+60a410d05bc7: Pull complete
+ce37fd13e582: Pull complete
+d579f0a7063d: Pull complete
+2b9558998b36: Pull complete
+400e2cbd3500: Pull complete
+3586f75738d1: Pull complete
+be3babade42a: Pull complete
+Digest: sha256:cf8a28ff0ed3dfddd1d60dddae617a94bb5e4b566e60ef9fafabeaa7cc11d424
+Status: Downloaded newer image for jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+docker.io/jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+== workdir in container: /app
+== note: baseline checkout is dirty; committing image state so the diff is only your changes
+→ No staged files match any configured task.
+== harness interpreter: /usr/bin/python3.11 (Python 3.11.12)
+madsLoop finished: done
+== patch written to model_patch_instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547.diff
+diff --git a/packages/metrics/index.ts b/packages/metrics/index.ts
+index 5009ed0b72..91bee7a3ba 100644
+--- a/packages/metrics/index.ts
++++ b/packages/metrics/index.ts
+@@ -6,6 +6,7 @@ import MetricsApi from './lib/MetricsApi';
+ import MetricsBase from './lib/MetricsBase';
+ import MetricsRequestService from './lib/MetricsRequestService';
+ import IMetricsRequestService from './lib/types/IMetricsRequestService';
++import { MetricsApiStatusTypes, observeApiError } from './lib/observeApiError';
+ import { WebCoreSignupAccountStepAccountCreationTotal } from './types/web_core_signup_accountStep_accountCreation_total_v1.schema.d';
+ import { WebCoreSignupBackButtonTotal } from './types/web_core_signup_backButton_total_v1.schema.d';
+ import { WebCoreSignupCongratulationsStepDisplayNameChoiceTotal } from './types/web_core_signup_congratulationsStep_displayNameChoice_total_v1.schema.d';
+@@ -104,4 +105,6 @@ const metricsRequestService = new MetricsRequestService(metricsApi, {
+ });
+ const metrics = new Metrics(metricsRequestService);
+ 
++export { observeApiError, MetricsApiStatusTypes };
++
+ export default metrics;
+diff --git a/packages/metrics/lib/observeApiError.ts b/packages/metrics/lib/observeApiError.ts

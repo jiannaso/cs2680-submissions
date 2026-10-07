@@ -1,0 +1,32 @@
+diff --git a/src/index.ts b/src/index.ts
+index 6d01816..f274916 100644
+--- a/src/index.ts
++++ b/src/index.ts
+@@ -41,6 +41,7 @@ export { default as createBreakpoint } from './createBreakpoint';
+ // not exported because of peer dependency
+ // export { default as useKeyboardJs } from './useKeyboardJs';
+ export { default as useKeyPress } from './useKeyPress';
++export { default as useLatest } from './useLatest';
+ export { default as useKeyPressEvent } from './useKeyPressEvent';
+ export { default as useLifecycles } from './useLifecycles';
+ export { default as useList } from './useList';
+diff --git a/src/useLatest.ts b/src/useLatest.ts
+new file mode 100644
+index 0000000..b717dae
+--- /dev/null
++++ b/src/useLatest.ts
+@@ -0,0 +1,13 @@
++import { useEffect, useRef } from 'react';
++
++const useLatest = <T>(value: T): { current: T } => {
++  const ref = useRef(value);
++
++  useEffect(() => {
++    ref.current = value;
++  });
++
++  return ref;
++};
++
++export default useLatest;
+\ No newline at end of file

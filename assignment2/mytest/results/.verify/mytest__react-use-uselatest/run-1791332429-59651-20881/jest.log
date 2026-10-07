@@ -1,0 +1,19 @@
+FAIL tests/useLatest.test.ts
+  ● Test suite failed to run
+
+    [96mtests/useLatest.test.ts[0m:[93m2[0m:[93m23[0m - [91merror[0m[90m TS2307: [0mCannot find module '../src/useLatest'.
+
+    [7m2[0m import useLatest from '../src/useLatest';
+    [7m [0m [91m                      ~~~~~~~~~~~~~~~~~~[0m
+
+PASS tests/useHash.test.ts
+PASS tests/useEffectOnce.test.ts (5.17s)
+PASS tests/useDebounce.test.ts (5.198s)
+PASS tests/useCookie.test.tsx (5.219s)
+
+Test Suites: 1 failed, 4 passed, 5 total
+Tests:       17 passed, 17 total
+Snapshots:   0 total
+Time:        6.301s
+Ran all test suites matching /tests\/useLatest.test.ts|tests\/useCookie.test.tsx|tests\/useDebounce.test.ts|tests\/useEffectOnce.test.ts|tests\/useHash.test.ts/i.
+Test results written to: ../out/jest.json

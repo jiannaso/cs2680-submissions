@@ -1,0 +1,75 @@
+== task 1: instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+== image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c
+qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c: Pulling from jefzda/sweap-images
+768212657c28: Pulling fs layer
+2d8fb452d40e: Pulling fs layer
+4f4fb700ef54: Pulling fs layer
+ecf2734cfadb: Pulling fs layer
+175c17c628a9: Pulling fs layer
+6a04e5de9374: Pulling fs layer
+76cca74bc764: Pulling fs layer
+39da85d90f01: Pulling fs layer
+15d34d3c7eac: Pulling fs layer
+32cd88c88b60: Pulling fs layer
+710d06b8662f: Pulling fs layer
+8b2488db5034: Pulling fs layer
+b73a592742ab: Pulling fs layer
+3a36dc9f4d24: Pulling fs layer
+4f4fb700ef54: Already exists
+32cd88c88b60: Download complete
+8b2488db5034: Download complete
+76cca74bc764: Download complete
+39da85d90f01: Download complete
+768212657c28: Download complete
+3a36dc9f4d24: Download complete
+6a04e5de9374: Download complete
+b73a592742ab: Download complete
+b73a592742ab: Pull complete
+15d34d3c7eac: Download complete
+710d06b8662f: Download complete
+768212657c28: Pull complete
+3a36dc9f4d24: Pull complete
+710d06b8662f: Pull complete
+4f4fb700ef54: Pull complete
+175c17c628a9: Download complete
+2d8fb452d40e: Download complete
+ecf2734cfadb: Download complete
+ecf2734cfadb: Pull complete
+175c17c628a9: Pull complete
+76cca74bc764: Pull complete
+39da85d90f01: Pull complete
+6a04e5de9374: Pull complete
+32cd88c88b60: Pull complete
+8b2488db5034: Pull complete
+15d34d3c7eac: Pull complete
+2d8fb452d40e: Pull complete
+Digest: sha256:5909cff71973743b14dd7127624a5e527b3c69e33ec18115287ce5c2b6881efd
+Status: Downloaded newer image for jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c
+docker.io/jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c
+== workdir in container: /app
+== harness interpreter: /usr/bin/python3.11 (Python 3.11.2)
+/usr/bin/python3.11: No module named pip
+== WARNING: docker_env.sh failed; continuing (harness deps are ensured separately)
+== bootstrapping pip for /usr/bin/python3.11 via get-pip.py
+madsLoop finished: done
+== patch written to model_patch_instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171.diff
+diff --git a/qutebrowser/components/hostblock.py b/qutebrowser/components/hostblock.py
+index 8a0174584..9e84c833d 100644
+--- a/qutebrowser/components/hostblock.py
++++ b/qutebrowser/components/hostblock.py
+@@ -37,6 +37,7 @@ from qutebrowser.api import (
+     qtutils,
+ )
+ from qutebrowser.components.utils import blockutils
++from qutebrowser.utils import urlmatch, urlutils
+ from qutebrowser.utils import version  # FIXME: Move needed parts into api namespace?
+ 
+ 
+@@ -124,10 +125,26 @@ class HostBlocker:
+         if not config.get("content.blocking.enabled", url=first_party_url):
+             return False
+ 
++        if blockutils.is_whitelisted_url(request_url):
++            return False
++
+         host = request_url.host()

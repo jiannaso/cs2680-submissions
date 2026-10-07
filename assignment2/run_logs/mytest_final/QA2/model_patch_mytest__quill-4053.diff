@@ -1,0 +1,155 @@
+diff --git a/packages/quill/src/core/quill.ts b/packages/quill/src/core/quill.ts
+index 140d5b2..a2c7e73 100644
+--- a/packages/quill/src/core/quill.ts
++++ b/packages/quill/src/core/quill.ts
+@@ -23,6 +23,7 @@ import Theme from './theme.js';
+ import type { ThemeConstructor } from './theme.js';
+ import scrollRectIntoView from './utils/scrollRectIntoView.js';
+ import type { Rect } from './utils/scrollRectIntoView.js';
++import createRegistryWithFormats from './utils/createRegistryWithFormats.js';
+ 
+ const debug = logger('quill');
+ 
+@@ -33,6 +34,7 @@ interface Options {
+   theme?: string;
+   debug?: DebugLevel | boolean;
+   registry?: Parchment.Registry;
++  formats?: string[];
+   readOnly?: boolean;
+   placeholder?: string;
+   bounds?: HTMLElement | string | null;
+@@ -785,10 +787,29 @@ function expandConfig(
+ 
+   const config = { ...quillDefaults, ...themeDefaults, ...options };
+ 
++  // Compute the registry to use:
++  // 1. Explicit registry option takes precedence over formats
++  // 2. If formats is an array, create a restricted registry
++  // 3. Otherwise fall back to the global registry
++  let registry: Parchment.Registry;
++  if (options.registry) {
++    registry = options.registry;
++  } else if (config.formats && Array.isArray(config.formats)) {
++    const custom = createRegistryWithFormats(
++      config.formats,
++      globalRegistry,
++      debug,
++    );
++    registry = custom != null ? custom : globalRegistry;
++  } else {
++    registry = globalRegistry;
++  }
++
+   return {
+     ...config,
+     container,
+     theme,
++    registry,
+     modules: Object.entries(modules).reduce(
+       (modulesWithDefaults, [name, value]) => {
+         if (!value) return modulesWithDefaults;
+diff --git a/packages/quill/src/core/utils/createRegistryWithFormats.ts b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+new file mode 100644
+index 0000000..639bafe
+--- /dev/null
++++ b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+@@ -0,0 +1,99 @@
++import * as Parchment from 'parchment';
++
++// Core blots that must always be present
++const CORE_BLOT_NAMES = [
++  'block',
++  'break',
++  'cursor',
++  'inline',
++  'scroll',
++  'text',
++];
++
++interface DebugLogger {
++  error(message: string): void;
++}
++
++/**
++ * Create a new Parchment Registry containing only the specified formats
++ * plus Quill's core blots and their required containers.
++ *
++ * @param formats - Array of format names to include, or null/undefined to
++ *   use the global registry as-is.
++ * @param sourceRegistry - The registry to query for format definitions.
++ * @param debug - Debug logger that reports problems via error().
++ * @returns A new Parchment Registry, or null to signal that the caller
++ *   should fall back to the global registry.
++ */
++function createRegistryWithFormats(
++  formats: string[] | null | undefined,
++  sourceRegistry: Parchment.Registry,
++  debug: DebugLogger,
++): Parchment.Registry | null {
++  // When formats is null or not given, the caller should use the global
++  // registry; signal that by returning null.
++  if (formats == null) {
++    return null;
++  }
++
++  const registry = new Parchment.Registry();
++  const registered = new Set<string>();
++
++  /**
++   * Recursively register a format definition and its requiredContainer.
++   * Tracks the call chain in `ancestors` to detect cycles.
++   */
++  function registerDefinition(
++    name: string,
++    ancestors: string[],
++  ): void {
++    // Cycle detection: if this name is already in the ancestry chain
++    if (ancestors.includes(name)) {
++      debug.error(
++        `Cycle detected while resolving requiredContainer for "${name}"`,
++      );
++      return;
++    }
++
++    // If already registered (from another path), skip
++    if (registered.has(name)) return;
++
++    const def = sourceRegistry.query(name);
++    if (def == null) {
++      // Unknown format – report and skip
++      debug.error(`Cannot find format "${name}" in registry`);
++      return;
++    }
++
++    // Register this definition
++    registry.register(def);
++    registered.add(name);
++
++    // Recursively register requiredContainer if present
++    const requiredContainer =
++      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
++      (def as { requiredContainer?: { blotName: string } })
++        .requiredContainer;
++    if (requiredContainer != null) {
++      registerDefinition(requiredContainer.blotName, [...ancestors, name]);
++    }
++  }
++
++  // Register core blots (always present)
++  for (const name of CORE_BLOT_NAMES) {
++    const def = sourceRegistry.query(name);
++    if (def != null) {
++      registry.register(def);
++      registered.add(name);
++    }
++  }
++
++  // Register user-specified formats and their required containers
++  for (const name of formats) {
++    registerDefinition(name, []);
++  }
++
++  return registry;
++}
++
++export default createRegistryWithFormats;

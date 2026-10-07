@@ -1,0 +1,52 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+collected 42 items
+
+test_schedule.py ..........................................              [100%]
+
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test_schedule.py::SchedulerTests::test_at_time
+PASSED test_schedule.py::SchedulerTests::test_at_time_hour
+PASSED test_schedule.py::SchedulerTests::test_at_time_minute
+PASSED test_schedule.py::SchedulerTests::test_at_timezone
+PASSED test_schedule.py::SchedulerTests::test_cancel_job
+PASSED test_schedule.py::SchedulerTests::test_cancel_jobs
+PASSED test_schedule.py::SchedulerTests::test_clear_by_tag
+PASSED test_schedule.py::SchedulerTests::test_daylight_saving_time
+PASSED test_schedule.py::SchedulerTests::test_get_by_tag
+PASSED test_schedule.py::SchedulerTests::test_idle_seconds
+PASSED test_schedule.py::SchedulerTests::test_job_func_args_are_passed_on
+PASSED test_schedule.py::SchedulerTests::test_misconfigured_job_wont_break_scheduler
+PASSED test_schedule.py::SchedulerTests::test_next_run_property
+PASSED test_schedule.py::SchedulerTests::test_next_run_time
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_day_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_katmandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_katmhandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_with_tag
+PASSED test_schedule.py::SchedulerTests::test_repr_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_run_all
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_args
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_defaultargs
+PASSED test_schedule.py::SchedulerTests::test_run_every_n_days_at_specific_time
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_past_today
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_today
+PASSED test_schedule.py::SchedulerTests::test_run_pending
+PASSED test_schedule.py::SchedulerTests::test_singular_time_units_match_plural_units
+PASSED test_schedule.py::SchedulerTests::test_tag_type_enforcement
+PASSED test_schedule.py::SchedulerTests::test_time_range
+PASSED test_schedule.py::SchedulerTests::test_time_range_repr
+PASSED test_schedule.py::SchedulerTests::test_time_units
+PASSED test_schedule.py::SchedulerTests::test_to_repr
+PASSED test_schedule.py::SchedulerTests::test_to_string
+PASSED test_schedule.py::SchedulerTests::test_to_string_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_to_string_lambda_job_func
+PASSED test_schedule.py::SchedulerTests::test_until_time
+PASSED test_schedule.py::SchedulerTests::test_weekday_at_todady
+============================== 42 passed in 0.38s ==============================

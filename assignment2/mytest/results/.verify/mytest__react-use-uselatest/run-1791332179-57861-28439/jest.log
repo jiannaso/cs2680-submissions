@@ -1,0 +1,10 @@
+PASS tests/useLatest.test.ts
+  ✓ should return a ref with the latest value on initial render (11ms)
+  ✓ should always return a ref with the latest value after each update (6ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       2 passed, 2 total
+Snapshots:   0 total
+Time:        2.94s
+Ran all test suites matching /tests\/useLatest.test.ts/i.
+Test results written to: ../out/jest.json

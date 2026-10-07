@@ -1,0 +1,9 @@
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/raw_samples.csv (10 instances)
+Running local-docker evaluation for instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+Using Docker Hub image: jefzda/sweap-images:ansible.ansible-ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+  0%|          | 0/1 [00:00<?, ?it/s]Accuracy: 100.00%:   0%|          | 0/1 [00:03<?, ?it/s]Accuracy: 100.00%: 100%|██████████| 1/1 [00:03<00:00,  3.50s/it]Accuracy: 100.00%: 100%|██████████| 1/1 [00:03<00:00,  3.50s/it]
+Overall accuracy:  1.0
+
+== results (/Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/eval_results.json):
+RESOLVED   instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+1/1 resolved

@@ -1,0 +1,1358 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+plugins: anyio-4.14.2
+collected 205 items
+
+tests/middleware/test_https_redirect.py FFFFFF                           [  2%]
+tests/middleware/test_trusted_host.py ...F........................F..... [ 19%]
+.................                                                        [ 27%]
+tests/test_datastructures.py ...........FFFF.FFF........................ [ 48%]
+.........                                                                [ 53%]
+tests/test_routing.py ..........F....................................F.. [ 77%]
+..............................................                           [100%]
+
+=================================== FAILURES ===================================
+___________________ test_https_redirect_middleware[asyncio] ____________________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+
+    def test_https_redirect_middleware(test_client_factory: TestClientFactory) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK", status_code=200)
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(HTTPSRedirectMiddleware)],
+        )
+    
+        client = test_client_factory(app, base_url="https://testserver")
+        response = client.get("/")
+        assert response.status_code == 200
+    
+        client = test_client_factory(app)
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+        client = test_client_factory(app, base_url="http://testserver:80")
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+        client = test_client_factory(app, base_url="http://testserver:443")
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+        client = test_client_factory(app, base_url="http://testserver:123")
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver:123/"
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": "testserver:000080"}, follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+>       response = client.get("/", headers={"host": "testserver:65536"}, follow_redirects=False)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/middleware/test_https_redirect.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:477: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:449: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/testclient.py:348: in handle_request
+    raise exc
+starlette/testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+starlette/middleware/errors.py:186: in __call__
+    raise exc
+starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+starlette/middleware/httpsredirect.py:14: in __call__
+    netloc = url.hostname if url.port in (80, 443) else url.netloc
+                             ^^^^^^^^
+starlette/datastructures.py:106: in port
+    return self.components.port
+           ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SplitResult(scheme='http', netloc='testserver:65536', path='/', query='', fragment='')
+
+    @property
+    def port(self):
+        port = self._hostinfo[1]
+        if port is not None:
+            if port.isdigit() and port.isascii():
+                port = int(port)
+            else:
+                raise ValueError(f"Port could not be cast to integer value as {port!r}")
+            if not (0 <= port <= 65535):
+>               raise ValueError("Port out of range 0-65535")
+E               ValueError: Port out of range 0-65535
+
+/usr/local/lib/python3.12/urllib/parse.py:184: ValueError
+___ test_https_redirect_middleware_without_server[asyncio-testserver:65536] ____
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+host = 'testserver:65536'
+
+    @pytest.mark.parametrize("host", ["testserver:65536", "[:::]"])
+    def test_https_redirect_middleware_without_server(test_client_factory: TestClientFactory, host: str) -> None:
+        middleware = HTTPSRedirectMiddleware(PlainTextResponse("OK"))
+    
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            scope.pop("server", None)
+            await middleware(scope, receive, send)
+    
+        client = test_client_factory(app)
+>       response = client.get("/", headers={"host": host}, follow_redirects=False)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/middleware/test_https_redirect.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:477: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:449: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/testclient.py:348: in handle_request
+    raise exc
+starlette/testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/middleware/test_https_redirect.py:73: in app
+    await middleware(scope, receive, send)
+starlette/middleware/httpsredirect.py:14: in __call__
+    netloc = url.hostname if url.port in (80, 443) else url.netloc
+                             ^^^^^^^^
+starlette/datastructures.py:106: in port
+    return self.components.port
+           ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SplitResult(scheme='http', netloc='testserver:65536', path='/', query='', fragment='')
+
+    @property
+    def port(self):
+        port = self._hostinfo[1]
+        if port is not None:
+            if port.isdigit() and port.isascii():
+                port = int(port)
+            else:
+                raise ValueError(f"Port could not be cast to integer value as {port!r}")
+            if not (0 <= port <= 65535):
+>               raise ValueError("Port out of range 0-65535")
+E               ValueError: Port out of range 0-65535
+
+/usr/local/lib/python3.12/urllib/parse.py:184: ValueError
+_________ test_https_redirect_middleware_without_server[asyncio-[:::]] _________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+host = '[:::]'
+
+    @pytest.mark.parametrize("host", ["testserver:65536", "[:::]"])
+    def test_https_redirect_middleware_without_server(test_client_factory: TestClientFactory, host: str) -> None:
+        middleware = HTTPSRedirectMiddleware(PlainTextResponse("OK"))
+    
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            scope.pop("server", None)
+            await middleware(scope, receive, send)
+    
+        client = test_client_factory(app)
+>       response = client.get("/", headers={"host": host}, follow_redirects=False)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/middleware/test_https_redirect.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:477: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:449: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/testclient.py:348: in handle_request
+    raise exc
+starlette/testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/middleware/test_https_redirect.py:73: in app
+    await middleware(scope, receive, send)
+starlette/middleware/httpsredirect.py:13: in __call__
+    redirect_scheme = {"http": "https", "ws": "wss"}[url.scheme]
+                                                     ^^^^^^^^^^
+starlette/datastructures.py:74: in scheme
+    return self.components.scheme
+           ^^^^^^^^^^^^^^^
+starlette/datastructures.py:69: in components
+    self._components = urlsplit(self._url)
+                       ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/urllib/parse.py:516: in urlsplit
+    _check_bracketed_netloc(netloc)
+/usr/local/lib/python3.12/urllib/parse.py:454: in _check_bracketed_netloc
+    _check_bracketed_host(hostname)
+/usr/local/lib/python3.12/urllib/parse.py:463: in _check_bracketed_host
+    ip = ipaddress.ip_address(hostname) # Throws Value Error if not IPv6 or IPv4
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ':::'
+
+    def ip_address(address):
+        """Take an IP string/int and return an object of the correct type.
+    
+        Args:
+            address: A string or integer, the IP address.  Either IPv4 or
+              IPv6 addresses may be supplied; integers less than 2**32 will
+              be considered to be IPv4 by default.
+    
+        Returns:
+            An IPv4Address or IPv6Address object.
+    
+        Raises:
+            ValueError: if the *address* passed isn't either a v4 or a v6
+              address
+    
+        """
+        try:
+            return IPv4Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+        try:
+            return IPv6Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+>       raise ValueError(f'{address!r} does not appear to be an IPv4 or IPv6 address')
+E       ValueError: ':::' does not appear to be an IPv4 or IPv6 address
+
+/usr/local/lib/python3.12/ipaddress.py:54: ValueError
+_____________________ test_https_redirect_middleware[trio] _____________________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+
+    def test_https_redirect_middleware(test_client_factory: TestClientFactory) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK", status_code=200)
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[Middleware(HTTPSRedirectMiddleware)],
+        )
+    
+        client = test_client_factory(app, base_url="https://testserver")
+        response = client.get("/")
+        assert response.status_code == 200
+    
+        client = test_client_factory(app)
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+        client = test_client_factory(app, base_url="http://testserver:80")
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+        client = test_client_factory(app, base_url="http://testserver:443")
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+        client = test_client_factory(app, base_url="http://testserver:123")
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver:123/"
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": "testserver:000080"}, follow_redirects=False)
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://testserver/"
+    
+>       response = client.get("/", headers={"host": "testserver:65536"}, follow_redirects=False)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/middleware/test_https_redirect.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:477: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:449: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/testclient.py:348: in handle_request
+    raise exc
+starlette/testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/applications.py:96: in __call__
+    await self.middleware_stack(scope, receive, send)
+starlette/middleware/errors.py:186: in __call__
+    raise exc
+starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+starlette/middleware/httpsredirect.py:14: in __call__
+    netloc = url.hostname if url.port in (80, 443) else url.netloc
+                             ^^^^^^^^
+starlette/datastructures.py:106: in port
+    return self.components.port
+           ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SplitResult(scheme='http', netloc='testserver:65536', path='/', query='', fragment='')
+
+    @property
+    def port(self):
+        port = self._hostinfo[1]
+        if port is not None:
+            if port.isdigit() and port.isascii():
+                port = int(port)
+            else:
+                raise ValueError(f"Port could not be cast to integer value as {port!r}")
+            if not (0 <= port <= 65535):
+>               raise ValueError("Port out of range 0-65535")
+E               ValueError: Port out of range 0-65535
+
+/usr/local/lib/python3.12/urllib/parse.py:184: ValueError
+_____ test_https_redirect_middleware_without_server[trio-testserver:65536] _____
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+host = 'testserver:65536'
+
+    @pytest.mark.parametrize("host", ["testserver:65536", "[:::]"])
+    def test_https_redirect_middleware_without_server(test_client_factory: TestClientFactory, host: str) -> None:
+        middleware = HTTPSRedirectMiddleware(PlainTextResponse("OK"))
+    
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            scope.pop("server", None)
+            await middleware(scope, receive, send)
+    
+        client = test_client_factory(app)
+>       response = client.get("/", headers={"host": host}, follow_redirects=False)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/middleware/test_https_redirect.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:477: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:449: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/testclient.py:348: in handle_request
+    raise exc
+starlette/testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:449: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/middleware/test_https_redirect.py:73: in app
+    await middleware(scope, receive, send)
+starlette/middleware/httpsredirect.py:14: in __call__
+    netloc = url.hostname if url.port in (80, 443) else url.netloc
+                             ^^^^^^^^
+starlette/datastructures.py:106: in port
+    return self.components.port
+           ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = SplitResult(scheme='http', netloc='testserver:65536', path='/', query='', fragment='')
+
+    @property
+    def port(self):
+        port = self._hostinfo[1]
+        if port is not None:
+            if port.isdigit() and port.isascii():
+                port = int(port)
+            else:
+                raise ValueError(f"Port could not be cast to integer value as {port!r}")
+            if not (0 <= port <= 65535):
+>               raise ValueError("Port out of range 0-65535")
+E               ValueError: Port out of range 0-65535
+
+/usr/local/lib/python3.12/urllib/parse.py:184: ValueError
+__________ test_https_redirect_middleware_without_server[trio-[:::]] ___________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+host = '[:::]'
+
+    @pytest.mark.parametrize("host", ["testserver:65536", "[:::]"])
+    def test_https_redirect_middleware_without_server(test_client_factory: TestClientFactory, host: str) -> None:
+        middleware = HTTPSRedirectMiddleware(PlainTextResponse("OK"))
+    
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            scope.pop("server", None)
+            await middleware(scope, receive, send)
+    
+        client = test_client_factory(app)
+>       response = client.get("/", headers={"host": host}, follow_redirects=False)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/middleware/test_https_redirect.py:76: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/testclient.py:477: in get
+    return super().get(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1113: in get
+    return self.request(
+starlette/testclient.py:449: in request
+    return super().request(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:797: in request
+    return self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:980: in send
+    response = self._send_handling_auth(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1008: in _send_handling_auth
+    response = self._send_handling_redirects(
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1043: in _send_handling_redirects
+    response = self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/site-packages/httpx2/_client.py:1076: in _send_single_request
+    response = transport.handle_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+starlette/testclient.py:348: in handle_request
+    raise exc
+starlette/testclient.py:345: in handle_request
+    portal.call(self.app, scope, receive, send)
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:338: in call
+    return cast(T_Retval, self.start_task_soon(func, *args).result())
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:456: in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/concurrent/futures/_base.py:401: in __get_result
+    raise self._exception
+/usr/local/lib/python3.12/site-packages/anyio/from_thread.py:263: in _call_func
+    retval = await retval_or_awaitable
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/middleware/test_https_redirect.py:73: in app
+    await middleware(scope, receive, send)
+starlette/middleware/httpsredirect.py:13: in __call__
+    redirect_scheme = {"http": "https", "ws": "wss"}[url.scheme]
+                                                     ^^^^^^^^^^
+starlette/datastructures.py:74: in scheme
+    return self.components.scheme
+           ^^^^^^^^^^^^^^^
+starlette/datastructures.py:69: in components
+    self._components = urlsplit(self._url)
+                       ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/urllib/parse.py:516: in urlsplit
+    _check_bracketed_netloc(netloc)
+/usr/local/lib/python3.12/urllib/parse.py:454: in _check_bracketed_netloc
+    _check_bracketed_host(hostname)
+/usr/local/lib/python3.12/urllib/parse.py:463: in _check_bracketed_host
+    ip = ipaddress.ip_address(hostname) # Throws Value Error if not IPv6 or IPv4
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ':::'
+
+    def ip_address(address):
+        """Take an IP string/int and return an object of the correct type.
+    
+        Args:
+            address: A string or integer, the IP address.  Either IPv4 or
+              IPv6 addresses may be supplied; integers less than 2**32 will
+              be considered to be IPv4 by default.
+    
+        Returns:
+            An IPv4Address or IPv6Address object.
+    
+        Raises:
+            ValueError: if the *address* passed isn't either a v4 or a v6
+              address
+    
+        """
+        try:
+            return IPv4Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+        try:
+            return IPv6Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+>       raise ValueError(f'{address!r} does not appear to be an IPv4 or IPv6 address')
+E       ValueError: ':::' does not appear to be an IPv4 or IPv6 address
+
+/usr/local/lib/python3.12/ipaddress.py:54: ValueError
+___________ test_trusted_host_middleware_ipv6[asyncio-[v1.foo]-200] ____________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+host = '[v1.foo]', status_code = 200
+
+    @pytest.mark.parametrize(
+        ("host", "status_code"),
+        [
+            ("[::1]", 200),
+            ("[::1]:8000", 200),
+            ("[v1.foo]", 200),
+            ("[:::]", 400),
+            ("[::ffff:999.999.999.999]", 400),
+            ("[2001:db8::1]", 400),
+            ("[::1", 400),
+            ("[::1]evil.example.com", 400),
+            ("[::1]@attacker", 400),
+            ("[::1].", 400),
+            ("[::1]:evil", 400),
+            ("[::1]:", 400),
+            ("api_service", 200),
+            ("api_service:000080", 200),
+            ("api_service:65535", 200),
+            ("api_service:65536", 200),
+            ("api_service:100000", 200),
+            ("api_service:8000", 200),
+            ("api_service/evil", 400),
+            ("api_service?evil", 400),
+            ("api_service#evil", 400),
+            ("api_service@attacker", 400),
+            ("api service", 400),
+        ],
+    )
+    def test_trusted_host_middleware_ipv6(test_client_factory: TestClientFactory, host: str, status_code: int) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK")
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[
+                Middleware(TrustedHostMiddleware, allowed_hosts=["[::1]", "[v1.foo]", "api_service", "*.example.com"])
+            ],
+        )
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": host})
+>       assert response.status_code == status_code
+E       assert 400 == 200
+E        +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_trusted_host.py:77: AssertionError
+_____________ test_trusted_host_middleware_ipv6[trio-[v1.foo]-200] _____________
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+host = '[v1.foo]', status_code = 200
+
+    @pytest.mark.parametrize(
+        ("host", "status_code"),
+        [
+            ("[::1]", 200),
+            ("[::1]:8000", 200),
+            ("[v1.foo]", 200),
+            ("[:::]", 400),
+            ("[::ffff:999.999.999.999]", 400),
+            ("[2001:db8::1]", 400),
+            ("[::1", 400),
+            ("[::1]evil.example.com", 400),
+            ("[::1]@attacker", 400),
+            ("[::1].", 400),
+            ("[::1]:evil", 400),
+            ("[::1]:", 400),
+            ("api_service", 200),
+            ("api_service:000080", 200),
+            ("api_service:65535", 200),
+            ("api_service:65536", 200),
+            ("api_service:100000", 200),
+            ("api_service:8000", 200),
+            ("api_service/evil", 400),
+            ("api_service?evil", 400),
+            ("api_service#evil", 400),
+            ("api_service@attacker", 400),
+            ("api service", 400),
+        ],
+    )
+    def test_trusted_host_middleware_ipv6(test_client_factory: TestClientFactory, host: str, status_code: int) -> None:
+        def homepage(request: Request) -> PlainTextResponse:
+            return PlainTextResponse("OK")
+    
+        app = Starlette(
+            routes=[Route("/", endpoint=homepage)],
+            middleware=[
+                Middleware(TrustedHostMiddleware, allowed_hosts=["[::1]", "[v1.foo]", "api_service", "*.example.com"])
+            ],
+        )
+    
+        client = test_client_factory(app)
+        response = client.get("/", headers={"host": host})
+>       assert response.status_code == status_code
+E       assert 400 == 200
+E        +  where 400 = <Response [400 Bad Request]>.status_code
+
+tests/middleware/test_trusted_host.py:77: AssertionError
+___________ test_url_from_scope_with_invalid_host[port-out-of-range] ___________
+
+host = b'foo:65536'
+
+    @pytest.mark.parametrize(
+        "host",
+        [
+            pytest.param(b"foo/?x=", id="question-mark"),
+            pytest.param(b"foo/#", id="hash"),
+            pytest.param(b"foo/bar", id="slash"),
+            pytest.param(b"user@foo", id="at-sign"),
+            pytest.param(b"foo\\bar", id="backslash"),
+            pytest.param(b"foo bar", id="space"),
+            pytest.param(b"foo:65536", id="port-out-of-range"),
+            pytest.param(b"foo:100000", id="port-too-long"),
+            pytest.param(b"[:::]", id="invalid-ipv6"),
+            pytest.param(b"[::ffff:999.999.999.999]", id="invalid-ipv4-mapped-ipv6"),
+            pytest.param(b"[V1.foo]", id="uppercase-ipvfuture"),
+        ],
+    )
+    def test_url_from_scope_with_invalid_host(host: bytes) -> None:
+        """An invalid Host header should be ignored, falling back to the server tuple."""
+        u = URL(
+            scope={
+                "scheme": "http",
+                "server": ("example.com", 80),
+                "path": "/admin",
+                "query_string": b"",
+                "headers": [(b"host", host)],
+            }
+        )
+        assert u.path == "/admin"
+>       assert u.netloc == "example.com"
+E       AssertionError: assert 'foo:65536' == 'example.com'
+E         
+E         - example.com
+E         + foo:65536
+
+tests/test_datastructures.py:214: AssertionError
+_____________ test_url_from_scope_with_invalid_host[port-too-long] _____________
+
+host = b'foo:100000'
+
+    @pytest.mark.parametrize(
+        "host",
+        [
+            pytest.param(b"foo/?x=", id="question-mark"),
+            pytest.param(b"foo/#", id="hash"),
+            pytest.param(b"foo/bar", id="slash"),
+            pytest.param(b"user@foo", id="at-sign"),
+            pytest.param(b"foo\\bar", id="backslash"),
+            pytest.param(b"foo bar", id="space"),
+            pytest.param(b"foo:65536", id="port-out-of-range"),
+            pytest.param(b"foo:100000", id="port-too-long"),
+            pytest.param(b"[:::]", id="invalid-ipv6"),
+            pytest.param(b"[::ffff:999.999.999.999]", id="invalid-ipv4-mapped-ipv6"),
+            pytest.param(b"[V1.foo]", id="uppercase-ipvfuture"),
+        ],
+    )
+    def test_url_from_scope_with_invalid_host(host: bytes) -> None:
+        """An invalid Host header should be ignored, falling back to the server tuple."""
+        u = URL(
+            scope={
+                "scheme": "http",
+                "server": ("example.com", 80),
+                "path": "/admin",
+                "query_string": b"",
+                "headers": [(b"host", host)],
+            }
+        )
+        assert u.path == "/admin"
+>       assert u.netloc == "example.com"
+E       AssertionError: assert 'foo:100000' == 'example.com'
+E         
+E         - example.com
+E         + foo:100000
+
+tests/test_datastructures.py:214: AssertionError
+_____________ test_url_from_scope_with_invalid_host[invalid-ipv6] ______________
+
+host = b'[:::]'
+
+    @pytest.mark.parametrize(
+        "host",
+        [
+            pytest.param(b"foo/?x=", id="question-mark"),
+            pytest.param(b"foo/#", id="hash"),
+            pytest.param(b"foo/bar", id="slash"),
+            pytest.param(b"user@foo", id="at-sign"),
+            pytest.param(b"foo\\bar", id="backslash"),
+            pytest.param(b"foo bar", id="space"),
+            pytest.param(b"foo:65536", id="port-out-of-range"),
+            pytest.param(b"foo:100000", id="port-too-long"),
+            pytest.param(b"[:::]", id="invalid-ipv6"),
+            pytest.param(b"[::ffff:999.999.999.999]", id="invalid-ipv4-mapped-ipv6"),
+            pytest.param(b"[V1.foo]", id="uppercase-ipvfuture"),
+        ],
+    )
+    def test_url_from_scope_with_invalid_host(host: bytes) -> None:
+        """An invalid Host header should be ignored, falling back to the server tuple."""
+        u = URL(
+            scope={
+                "scheme": "http",
+                "server": ("example.com", 80),
+                "path": "/admin",
+                "query_string": b"",
+                "headers": [(b"host", host)],
+            }
+        )
+>       assert u.path == "/admin"
+               ^^^^^^
+
+tests/test_datastructures.py:213: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/datastructures.py:82: in path
+    return self.components.path
+           ^^^^^^^^^^^^^^^
+starlette/datastructures.py:69: in components
+    self._components = urlsplit(self._url)
+                       ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/urllib/parse.py:516: in urlsplit
+    _check_bracketed_netloc(netloc)
+/usr/local/lib/python3.12/urllib/parse.py:454: in _check_bracketed_netloc
+    _check_bracketed_host(hostname)
+/usr/local/lib/python3.12/urllib/parse.py:463: in _check_bracketed_host
+    ip = ipaddress.ip_address(hostname) # Throws Value Error if not IPv6 or IPv4
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ':::'
+
+    def ip_address(address):
+        """Take an IP string/int and return an object of the correct type.
+    
+        Args:
+            address: A string or integer, the IP address.  Either IPv4 or
+              IPv6 addresses may be supplied; integers less than 2**32 will
+              be considered to be IPv4 by default.
+    
+        Returns:
+            An IPv4Address or IPv6Address object.
+    
+        Raises:
+            ValueError: if the *address* passed isn't either a v4 or a v6
+              address
+    
+        """
+        try:
+            return IPv4Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+        try:
+            return IPv6Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+>       raise ValueError(f'{address!r} does not appear to be an IPv4 or IPv6 address')
+E       ValueError: ':::' does not appear to be an IPv4 or IPv6 address
+
+/usr/local/lib/python3.12/ipaddress.py:54: ValueError
+_______ test_url_from_scope_with_invalid_host[invalid-ipv4-mapped-ipv6] ________
+
+host = b'[::ffff:999.999.999.999]'
+
+    @pytest.mark.parametrize(
+        "host",
+        [
+            pytest.param(b"foo/?x=", id="question-mark"),
+            pytest.param(b"foo/#", id="hash"),
+            pytest.param(b"foo/bar", id="slash"),
+            pytest.param(b"user@foo", id="at-sign"),
+            pytest.param(b"foo\\bar", id="backslash"),
+            pytest.param(b"foo bar", id="space"),
+            pytest.param(b"foo:65536", id="port-out-of-range"),
+            pytest.param(b"foo:100000", id="port-too-long"),
+            pytest.param(b"[:::]", id="invalid-ipv6"),
+            pytest.param(b"[::ffff:999.999.999.999]", id="invalid-ipv4-mapped-ipv6"),
+            pytest.param(b"[V1.foo]", id="uppercase-ipvfuture"),
+        ],
+    )
+    def test_url_from_scope_with_invalid_host(host: bytes) -> None:
+        """An invalid Host header should be ignored, falling back to the server tuple."""
+        u = URL(
+            scope={
+                "scheme": "http",
+                "server": ("example.com", 80),
+                "path": "/admin",
+                "query_string": b"",
+                "headers": [(b"host", host)],
+            }
+        )
+>       assert u.path == "/admin"
+               ^^^^^^
+
+tests/test_datastructures.py:213: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/datastructures.py:82: in path
+    return self.components.path
+           ^^^^^^^^^^^^^^^
+starlette/datastructures.py:69: in components
+    self._components = urlsplit(self._url)
+                       ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/urllib/parse.py:516: in urlsplit
+    _check_bracketed_netloc(netloc)
+/usr/local/lib/python3.12/urllib/parse.py:454: in _check_bracketed_netloc
+    _check_bracketed_host(hostname)
+/usr/local/lib/python3.12/urllib/parse.py:463: in _check_bracketed_host
+    ip = ipaddress.ip_address(hostname) # Throws Value Error if not IPv6 or IPv4
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = '::ffff:999.999.999.999'
+
+    def ip_address(address):
+        """Take an IP string/int and return an object of the correct type.
+    
+        Args:
+            address: A string or integer, the IP address.  Either IPv4 or
+              IPv6 addresses may be supplied; integers less than 2**32 will
+              be considered to be IPv4 by default.
+    
+        Returns:
+            An IPv4Address or IPv6Address object.
+    
+        Raises:
+            ValueError: if the *address* passed isn't either a v4 or a v6
+              address
+    
+        """
+        try:
+            return IPv4Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+        try:
+            return IPv6Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+>       raise ValueError(f'{address!r} does not appear to be an IPv4 or IPv6 address')
+E       ValueError: '::ffff:999.999.999.999' does not appear to be an IPv4 or IPv6 address
+
+/usr/local/lib/python3.12/ipaddress.py:54: ValueError
+_____________ test_url_from_scope_with_ipv6_server[server0-[::1]] ______________
+
+server = ('::1', 80), expected_netloc = '[::1]'
+
+    @pytest.mark.parametrize(
+        ("server", "expected_netloc"),
+        [
+            (("::1", 80), "[::1]"),
+            (("::1", 8000), "[::1]:8000"),
+        ],
+    )
+    def test_url_from_scope_with_ipv6_server(server: tuple[str, int], expected_netloc: str) -> None:
+        u = URL(
+            scope={
+                "scheme": "http",
+                "server": server,
+                "path": "/admin",
+                "query_string": b"",
+                "headers": [(b"host", b"[:::]")],
+            }
+        )
+>       assert u.hostname == "::1"
+               ^^^^^^^^^^
+
+tests/test_datastructures.py:234: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/datastructures.py:102: in hostname
+    return self.components.hostname
+           ^^^^^^^^^^^^^^^
+starlette/datastructures.py:69: in components
+    self._components = urlsplit(self._url)
+                       ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/urllib/parse.py:516: in urlsplit
+    _check_bracketed_netloc(netloc)
+/usr/local/lib/python3.12/urllib/parse.py:454: in _check_bracketed_netloc
+    _check_bracketed_host(hostname)
+/usr/local/lib/python3.12/urllib/parse.py:463: in _check_bracketed_host
+    ip = ipaddress.ip_address(hostname) # Throws Value Error if not IPv6 or IPv4
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ':::'
+
+    def ip_address(address):
+        """Take an IP string/int and return an object of the correct type.
+    
+        Args:
+            address: A string or integer, the IP address.  Either IPv4 or
+              IPv6 addresses may be supplied; integers less than 2**32 will
+              be considered to be IPv4 by default.
+    
+        Returns:
+            An IPv4Address or IPv6Address object.
+    
+        Raises:
+            ValueError: if the *address* passed isn't either a v4 or a v6
+              address
+    
+        """
+        try:
+            return IPv4Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+        try:
+            return IPv6Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+>       raise ValueError(f'{address!r} does not appear to be an IPv4 or IPv6 address')
+E       ValueError: ':::' does not appear to be an IPv4 or IPv6 address
+
+/usr/local/lib/python3.12/ipaddress.py:54: ValueError
+___________ test_url_from_scope_with_ipv6_server[server1-[::1]:8000] ___________
+
+server = ('::1', 8000), expected_netloc = '[::1]:8000'
+
+    @pytest.mark.parametrize(
+        ("server", "expected_netloc"),
+        [
+            (("::1", 80), "[::1]"),
+            (("::1", 8000), "[::1]:8000"),
+        ],
+    )
+    def test_url_from_scope_with_ipv6_server(server: tuple[str, int], expected_netloc: str) -> None:
+        u = URL(
+            scope={
+                "scheme": "http",
+                "server": server,
+                "path": "/admin",
+                "query_string": b"",
+                "headers": [(b"host", b"[:::]")],
+            }
+        )
+>       assert u.hostname == "::1"
+               ^^^^^^^^^^
+
+tests/test_datastructures.py:234: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+starlette/datastructures.py:102: in hostname
+    return self.components.hostname
+           ^^^^^^^^^^^^^^^
+starlette/datastructures.py:69: in components
+    self._components = urlsplit(self._url)
+                       ^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.12/urllib/parse.py:516: in urlsplit
+    _check_bracketed_netloc(netloc)
+/usr/local/lib/python3.12/urllib/parse.py:454: in _check_bracketed_netloc
+    _check_bracketed_host(hostname)
+/usr/local/lib/python3.12/urllib/parse.py:463: in _check_bracketed_host
+    ip = ipaddress.ip_address(hostname) # Throws Value Error if not IPv6 or IPv4
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+address = ':::'
+
+    def ip_address(address):
+        """Take an IP string/int and return an object of the correct type.
+    
+        Args:
+            address: A string or integer, the IP address.  Either IPv4 or
+              IPv6 addresses may be supplied; integers less than 2**32 will
+              be considered to be IPv4 by default.
+    
+        Returns:
+            An IPv4Address or IPv6Address object.
+    
+        Raises:
+            ValueError: if the *address* passed isn't either a v4 or a v6
+              address
+    
+        """
+        try:
+            return IPv4Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+        try:
+            return IPv6Address(address)
+        except (AddressValueError, NetmaskValueError):
+            pass
+    
+>       raise ValueError(f'{address!r} does not appear to be an IPv4 or IPv6 address')
+E       ValueError: ':::' does not appear to be an IPv4 or IPv6 address
+
+/usr/local/lib/python3.12/ipaddress.py:54: ValueError
+______________________ test_url_from_scope_with_ipvfuture ______________________
+
+    def test_url_from_scope_with_ipvfuture() -> None:
+        u = URL(
+            scope={
+                "scheme": "http",
+                "path": "/admin",
+                "query_string": b"",
+                "headers": [(b"host", b"[v1.foo]")],
+            }
+        )
+>       assert u.hostname == "v1.foo"
+E       AssertionError: assert None == 'v1.foo'
+E        +  where None = URL('/admin').hostname
+
+tests/test_datastructures.py:247: AssertionError
+____ test_host_routing_rejects_invalid_hosts[asyncio-api.example.org:evil] _____
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='asyncio', backend_options={})
+host = 'api.example.org:evil'
+
+    @pytest.mark.parametrize(
+        "host",
+        [
+            "api.example.org:evil",
+            "[:::]",
+        ],
+    )
+    def test_host_routing_rejects_invalid_hosts(test_client_factory: TestClientFactory, host: str) -> None:
+        client = test_client_factory(mixed_hosts_app, base_url="https://api.example.org/")
+        response = client.get("/users", headers={"host": host})
+>       assert response.status_code == 404
+E       assert 200 == 404
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_routing.py:489: AssertionError
+______ test_host_routing_rejects_invalid_hosts[trio-api.example.org:evil] ______
+
+test_client_factory = functools.partial(<class 'starlette.testclient.TestClient'>, backend='trio', backend_options={})
+host = 'api.example.org:evil'
+
+    @pytest.mark.parametrize(
+        "host",
+        [
+            "api.example.org:evil",
+            "[:::]",
+        ],
+    )
+    def test_host_routing_rejects_invalid_hosts(test_client_factory: TestClientFactory, host: str) -> None:
+        client = test_client_factory(mixed_hosts_app, base_url="https://api.example.org/")
+        response = client.get("/users", headers={"host": host})
+>       assert response.status_code == 404
+E       assert 200 == 404
+E        +  where 200 = <Response [200 OK]>.status_code
+
+tests/test_routing.py:489: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware[asyncio]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]:8000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[:::]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::ffff:999.999.999.999]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[2001:db8::1]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]evil.example.com-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1].-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]:evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[::1]:-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service:000080-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service:65535-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service:65536-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service:100000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service:8000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service/evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service?evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service#evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api_service@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-api service-400]
+PASSED tests/middleware/test_trusted_host.py::test_www_redirect[asyncio]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware[trio]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]:8000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[:::]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::ffff:999.999.999.999]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[2001:db8::1]-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]evil.example.com-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1].-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]:evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[::1]:-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service:000080-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service:65535-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service:65536-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service:100000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service:8000-200]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service/evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service?evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service#evil-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api_service@attacker-400]
+PASSED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-api service-400]
+PASSED tests/middleware/test_trusted_host.py::test_www_redirect[trio]
+PASSED tests/middleware/test_trusted_host.py::test_default_allowed_hosts
+PASSED tests/test_datastructures.py::test_url
+PASSED tests/test_datastructures.py::test_url_query_params
+PASSED tests/test_datastructures.py::test_hidden_password
+PASSED tests/test_datastructures.py::test_csv
+PASSED tests/test_datastructures.py::test_url_from_scope
+PASSED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[question-mark]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[hash]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[slash]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[at-sign]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[backslash]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[space]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[uppercase-ipvfuture]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[host-header-at-sign]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[host-header-userinfo]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[host-header-scheme-relative]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[host-header-absolute]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[server-fallback-at-sign]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[server-fallback-userinfo]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[server-fallback-scheme-relative]
+PASSED tests/test_datastructures.py::test_url_from_scope_with_authority_in_path[server-fallback-absolute]
+PASSED tests/test_datastructures.py::test_headers
+PASSED tests/test_datastructures.py::test_mutable_headers
+PASSED tests/test_datastructures.py::test_mutable_headers_merge
+PASSED tests/test_datastructures.py::test_mutable_headers_merge_dict
+PASSED tests/test_datastructures.py::test_mutable_headers_update
+PASSED tests/test_datastructures.py::test_mutable_headers_update_dict
+PASSED tests/test_datastructures.py::test_mutable_headers_merge_not_mapping
+PASSED tests/test_datastructures.py::test_headers_mutablecopy
+PASSED tests/test_datastructures.py::test_mutable_headers_from_scope
+PASSED tests/test_datastructures.py::test_url_blank_params
+PASSED tests/test_datastructures.py::test_queryparams
+PASSED tests/test_datastructures.py::test_upload_file_file_input[asyncio]
+PASSED tests/test_datastructures.py::test_upload_file_without_size[asyncio]
+PASSED tests/test_datastructures.py::test_uploadfile_rolling[asyncio-rolled]
+PASSED tests/test_datastructures.py::test_uploadfile_rolling[asyncio-unrolled]
+PASSED tests/test_datastructures.py::test_upload_file_repr[asyncio]
+PASSED tests/test_datastructures.py::test_upload_file_repr_headers[asyncio]
+PASSED tests/test_datastructures.py::test_upload_file_file_input[trio]
+PASSED tests/test_datastructures.py::test_upload_file_without_size[trio]
+PASSED tests/test_datastructures.py::test_uploadfile_rolling[trio-rolled]
+PASSED tests/test_datastructures.py::test_uploadfile_rolling[trio-unrolled]
+PASSED tests/test_datastructures.py::test_upload_file_repr[trio]
+PASSED tests/test_datastructures.py::test_upload_file_repr_headers[trio]
+PASSED tests/test_datastructures.py::test_formdata
+PASSED tests/test_datastructures.py::test_multidict
+PASSED tests/test_routing.py::test_router[asyncio]
+PASSED tests/test_routing.py::test_route_converters[asyncio]
+PASSED tests/test_routing.py::test_router_add_route[asyncio]
+PASSED tests/test_routing.py::test_router_duplicate_path[asyncio]
+PASSED tests/test_routing.py::test_router_add_websocket_route[asyncio]
+PASSED tests/test_routing.py::test_router_middleware[asyncio]
+PASSED tests/test_routing.py::test_protocol_switch[asyncio]
+PASSED tests/test_routing.py::test_mount_urls[asyncio]
+PASSED tests/test_routing.py::test_mount_at_root[asyncio]
+PASSED tests/test_routing.py::test_host_routing[asyncio]
+PASSED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[asyncio-[:::]]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[asyncio-api.example.org:000080]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[asyncio-api.example.org:65536]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[asyncio-api.example.org:100000]
+PASSED tests/test_routing.py::test_host_routing_ip_literals[asyncio]
+PASSED tests/test_routing.py::test_subdomain_routing[asyncio]
+PASSED tests/test_routing.py::test_url_for_with_root_path[asyncio]
+PASSED tests/test_routing.py::test_url_for_with_root_path_ending_with_slash[asyncio]
+PASSED tests/test_routing.py::test_standalone_route_matches[asyncio]
+PASSED tests/test_routing.py::test_standalone_route_does_not_match[asyncio]
+PASSED tests/test_routing.py::test_standalone_ws_route_matches[asyncio]
+PASSED tests/test_routing.py::test_standalone_ws_route_does_not_match[asyncio]
+PASSED tests/test_routing.py::test_lifespan_state_unsupported[asyncio]
+PASSED tests/test_routing.py::test_lifespan_state_async_cm[asyncio]
+PASSED tests/test_routing.py::test_raise_on_startup[asyncio]
+PASSED tests/test_routing.py::test_raise_on_shutdown[asyncio]
+PASSED tests/test_routing.py::test_partial_async_endpoint[asyncio]
+PASSED tests/test_routing.py::test_partial_async_ws_endpoint[asyncio]
+PASSED tests/test_routing.py::test_base_route_middleware[asyncio-app0]
+PASSED tests/test_routing.py::test_base_route_middleware[asyncio-app1]
+PASSED tests/test_routing.py::test_base_route_middleware[asyncio-app2]
+PASSED tests/test_routing.py::test_add_route_to_app_after_mount[asyncio]
+PASSED tests/test_routing.py::test_exception_on_mounted_apps[asyncio]
+PASSED tests/test_routing.py::test_mounted_middleware_does_not_catch_exception[asyncio]
+PASSED tests/test_routing.py::test_websocket_route_middleware[asyncio]
+PASSED tests/test_routing.py::test_paths_with_root_path[asyncio]
+PASSED tests/test_routing.py::test_router[trio]
+PASSED tests/test_routing.py::test_route_converters[trio]
+PASSED tests/test_routing.py::test_router_add_route[trio]
+PASSED tests/test_routing.py::test_router_duplicate_path[trio]
+PASSED tests/test_routing.py::test_router_add_websocket_route[trio]
+PASSED tests/test_routing.py::test_router_middleware[trio]
+PASSED tests/test_routing.py::test_protocol_switch[trio]
+PASSED tests/test_routing.py::test_mount_urls[trio]
+PASSED tests/test_routing.py::test_mount_at_root[trio]
+PASSED tests/test_routing.py::test_host_routing[trio]
+PASSED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[trio-[:::]]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[trio-api.example.org:000080]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[trio-api.example.org:65536]
+PASSED tests/test_routing.py::test_host_routing_ignores_port[trio-api.example.org:100000]
+PASSED tests/test_routing.py::test_host_routing_ip_literals[trio]
+PASSED tests/test_routing.py::test_subdomain_routing[trio]
+PASSED tests/test_routing.py::test_url_for_with_root_path[trio]
+PASSED tests/test_routing.py::test_url_for_with_root_path_ending_with_slash[trio]
+PASSED tests/test_routing.py::test_standalone_route_matches[trio]
+PASSED tests/test_routing.py::test_standalone_route_does_not_match[trio]
+PASSED tests/test_routing.py::test_standalone_ws_route_matches[trio]
+PASSED tests/test_routing.py::test_standalone_ws_route_does_not_match[trio]
+PASSED tests/test_routing.py::test_lifespan_state_unsupported[trio]
+PASSED tests/test_routing.py::test_lifespan_state_async_cm[trio]
+PASSED tests/test_routing.py::test_raise_on_startup[trio]
+PASSED tests/test_routing.py::test_raise_on_shutdown[trio]
+PASSED tests/test_routing.py::test_partial_async_endpoint[trio]
+PASSED tests/test_routing.py::test_partial_async_ws_endpoint[trio]
+PASSED tests/test_routing.py::test_base_route_middleware[trio-app0]
+PASSED tests/test_routing.py::test_base_route_middleware[trio-app1]
+PASSED tests/test_routing.py::test_base_route_middleware[trio-app2]
+PASSED tests/test_routing.py::test_add_route_to_app_after_mount[trio]
+PASSED tests/test_routing.py::test_exception_on_mounted_apps[trio]
+PASSED tests/test_routing.py::test_mounted_middleware_does_not_catch_exception[trio]
+PASSED tests/test_routing.py::test_websocket_route_middleware[trio]
+PASSED tests/test_routing.py::test_paths_with_root_path[trio]
+PASSED tests/test_routing.py::test_url_path_for
+PASSED tests/test_routing.py::test_url_for
+PASSED tests/test_routing.py::test_reverse_mount_urls
+PASSED tests/test_routing.py::test_host_reverse_urls
+PASSED tests/test_routing.py::test_subdomain_reverse_urls
+PASSED tests/test_routing.py::test_url_for_with_double_mount
+PASSED tests/test_routing.py::test_duplicated_param_names
+PASSED tests/test_routing.py::test_route_name[function]
+PASSED tests/test_routing.py::test_route_name[method]
+PASSED tests/test_routing.py::test_route_name[classmethod]
+PASSED tests/test_routing.py::test_route_name[staticmethod]
+PASSED tests/test_routing.py::test_route_name[object]
+PASSED tests/test_routing.py::test_route_name[lambda]
+PASSED tests/test_routing.py::test_mount_routes_with_middleware_url_path_for
+PASSED tests/test_routing.py::test_mount_asgi_app_with_middleware_url_path_for
+PASSED tests/test_routing.py::test_route_repr
+PASSED tests/test_routing.py::test_route_repr_without_methods
+PASSED tests/test_routing.py::test_websocket_route_repr
+PASSED tests/test_routing.py::test_mount_repr
+PASSED tests/test_routing.py::test_mount_named_repr
+PASSED tests/test_routing.py::test_host_repr
+PASSED tests/test_routing.py::test_host_named_repr
+FAILED tests/middleware/test_https_redirect.py::test_https_redirect_middleware[asyncio]
+FAILED tests/middleware/test_https_redirect.py::test_https_redirect_middleware_without_server[asyncio-testserver:65536]
+FAILED tests/middleware/test_https_redirect.py::test_https_redirect_middleware_without_server[asyncio-[:::]]
+FAILED tests/middleware/test_https_redirect.py::test_https_redirect_middleware[trio]
+FAILED tests/middleware/test_https_redirect.py::test_https_redirect_middleware_without_server[trio-testserver:65536]
+FAILED tests/middleware/test_https_redirect.py::test_https_redirect_middleware_without_server[trio-[:::]]
+FAILED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[asyncio-[v1.foo]-200]
+FAILED tests/middleware/test_trusted_host.py::test_trusted_host_middleware_ipv6[trio-[v1.foo]-200]
+FAILED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[port-out-of-range]
+FAILED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[port-too-long]
+FAILED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[invalid-ipv6]
+FAILED tests/test_datastructures.py::test_url_from_scope_with_invalid_host[invalid-ipv4-mapped-ipv6]
+FAILED tests/test_datastructures.py::test_url_from_scope_with_ipv6_server[server0-[::1]]
+FAILED tests/test_datastructures.py::test_url_from_scope_with_ipv6_server[server1-[::1]:8000]
+FAILED tests/test_datastructures.py::test_url_from_scope_with_ipvfuture - Ass...
+FAILED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[asyncio-api.example.org:evil]
+FAILED tests/test_routing.py::test_host_routing_rejects_invalid_hosts[trio-api.example.org:evil]
+======================== 17 failed, 188 passed in 2.03s ========================

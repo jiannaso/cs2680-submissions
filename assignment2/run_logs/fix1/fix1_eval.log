@@ -1,0 +1,15 @@
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/raw_samples.csv (10 instances)
+Running local-docker evaluation for instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+Running local-docker evaluation for instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+Using Docker Hub image: jefzda/sweap-images:ansible.ansible-ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+Using Docker Hub image: jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf81299
+  0%|          | 0/3 [00:00<?, ?it/s]Accuracy: 0.00%:   0%|          | 0/3 [00:03<?, ?it/s]Accuracy: 0.00%:  33%|███▎      | 1/3 [00:03<00:06,  3.32s/it]Accuracy: 50.00%:  33%|███▎      | 1/3 [00:03<00:06,  3.32s/it]Accuracy: 50.00%:  67%|██████▋   | 2/3 [00:03<00:01,  1.46s/it]Accuracy: 33.33%:  67%|██████▋   | 2/3 [04:30<00:01,  1.46s/it]Accuracy: 33.33%: 100%|██████████| 3/3 [04:30<00:00, 122.80s/it]Accuracy: 33.33%: 100%|██████████| 3/3 [04:30<00:00, 90.22s/it] 
+Running local-docker evaluation for instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+Using Docker Hub image: jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+Overall accuracy:  0.3333333333333333
+
+== results (/Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/eval_results.json):
+unresolved instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+RESOLVED   instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+unresolved instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+1/3 resolved

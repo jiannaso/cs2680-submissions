@@ -1,0 +1,28 @@
+== task 13: mytest__tenacity-597
+== image: madsloop-mytest:tenacity-597
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:tenacity-597
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__tenacity-597.diff
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index aa1c29e..f9f66f8 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -228,6 +228,7 @@ class BaseRetrying(ABC):
+         reraise: bool = False,
+         retry_error_cls: type[RetryError] = RetryError,
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any] | None = None,
++        name: str | None = None,
+     ):
+         self.sleep = sleep
+         self.stop = stop
+@@ -240,6 +241,10 @@ class BaseRetrying(ABC):
+         self._local = threading.local()
+         self.retry_error_cls = retry_error_cls
+         self.retry_error_callback = retry_error_callback
++        self.name = name
++
++    def __str__(self) -> str:
++        return self.name if self.name is not None else "<unknown>"

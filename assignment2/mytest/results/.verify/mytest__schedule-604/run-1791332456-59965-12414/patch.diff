@@ -1,0 +1,161 @@
+diff --git a/schedule/__init__.py b/schedule/__init__.py
+index de082c1..a66572f 100644
+--- a/schedule/__init__.py
++++ b/schedule/__init__.py
+@@ -742,43 +742,122 @@ class Job:
+         if self.at_time is not None:
+             if self.unit not in ("days", "hours", "minutes") and self.start_day is None:
+                 raise ScheduleValueError("Invalid unit without specifying start day")
+-            kwargs = {"second": self.at_time.second, "microsecond": 0}
+-            if self.unit == "days" or self.start_day is not None:
+-                kwargs["hour"] = self.at_time.hour
+-            if self.unit in ["days", "hours"] or self.start_day is not None:
+-                kwargs["minute"] = self.at_time.minute
+-            self.next_run = self.next_run.replace(**kwargs)  # type: ignore
+ 
+             if self.at_time_zone is not None:
+-                # Convert next_run from the expected timezone into the local time
+-                # self.next_run is a naive datetime so after conversion remove tzinfo
+-                self.next_run = (
+-                    self.at_time_zone.localize(self.next_run)
+-                    .astimezone()
+-                    .replace(tzinfo=None)
+-                )
+-
+-            # Make sure we run at the specified time *today* (or *this hour*)
+-            # as well. This accounts for when a job takes so long it finished
+-            # in the next period.
+-            if not self.last_run or (self.next_run - self.last_run) > self.period:
+-                now = datetime.datetime.now()
+-                if (
+-                    self.unit == "days"
+-                    and self.next_run.time() > now.time()
+-                    and self.interval == 1
+-                ):
+-                    self.next_run = self.next_run - datetime.timedelta(days=1)
+-                elif self.unit == "hours" and (
+-                    self.at_time.minute > now.minute
+-                    or (
+-                        self.at_time.minute == now.minute
+-                        and self.at_time.second > now.second
++                # Work entirely in the target timezone for correct DST handling.
++                # 1. Convert current local time to target timezone.
++                # 2. Determine the correct target date (weekday adjustment done in
++                #    target timezone, not local timezone).
++                # 3. Set the target time as naive, then localize (catching DST issues).
++                # 4. If target is in the past, advance by the period and re-localize.
++                # 5. Convert back to local time.
++                import pytz
++
++                now_naive = datetime.datetime.now().replace(tzinfo=None)
++                now_in_target = now_naive.astimezone().astimezone(self.at_time_zone)
++
++                # Determine the correct target date based on the target weekday.
++                target_date = now_in_target.replace(tzinfo=None)
++
++                if self.start_day is not None and self.unit == "weeks":
++                    # Adjust target_date to the next occurrence of start_day
++                    # in the target timezone.
++                    weekdays = (
++                        "monday",
++                        "tuesday",
++                        "wednesday",
++                        "thursday",
++                        "friday",
++                        "saturday",
++                        "sunday",
+                     )
+-                ):
+-                    self.next_run = self.next_run - datetime.timedelta(hours=1)
+-                elif self.unit == "minutes" and self.at_time.second > now.second:
+-                    self.next_run = self.next_run - datetime.timedelta(minutes=1)
++                    weekday = weekdays.index(self.start_day)
++                    days_ahead = weekday - target_date.weekday()
++                    if days_ahead <= 0:
++                        days_ahead += 7
++                    target_date = target_date + datetime.timedelta(days=days_ahead)
++
++                # Build target time as naive datetime in target timezone, then localize.
++                kwargs_tz = {
++                    "second": self.at_time.second,
++                    "microsecond": 0,
++                }
++                if self.unit == "days" or self.start_day is not None:
++                    kwargs_tz["hour"] = self.at_time.hour
++                if self.unit in ["days", "hours"] or self.start_day is not None:
++                    kwargs_tz["minute"] = self.at_time.minute
++
++                target_naive = target_date.replace(**kwargs_tz)
++
++                # Determine period in timedelta for advancement.
++                if self.unit == "weeks" and self.start_day is not None:
++                    period_td = datetime.timedelta(weeks=1)
++                elif self.unit == "days":
++                    period_td = datetime.timedelta(days=1)
++                elif self.unit == "hours":
++                    period_td = datetime.timedelta(hours=1)
++                elif self.unit == "minutes":
++                    period_td = datetime.timedelta(minutes=1)
++                else:
++                    period_td = datetime.timedelta(days=1)
++
++                def _localize_time(naive_dt):
++                    """Localize a naive datetime in the target timezone.
++
++                    Returns (target_aware, is_valid) where is_valid indicates
++                    whether the naive time existed in the timezone.  If it was
++                    ambiguous (fall-back), returns the first (EDT/summer)
++                    occurrence.  If non-existent (spring-forward), returns
++                    (None, False).
++                    """
++                    try:
++                        return self.at_time_zone.localize(
++                            naive_dt, is_dst=None
++                        ), True
++                    except pytz.exceptions.AmbiguousTimeError:
++                        return self.at_time_zone.localize(naive_dt, is_dst=True), True
++                    except pytz.exceptions.NonExistentTimeError:
++                        return None, False
++
++                # Start with the target date; if it doesn't exist or is in the
++                # past, advance by the period and re-localize.
++                candidate = target_naive
++                while True:
++                    target, valid = _localize_time(candidate)
++                    if valid and target > now_in_target:
++                        break
++                    candidate = candidate + period_td
++
++                self.next_run = target.astimezone().replace(tzinfo=None)
++            else:
++                kwargs = {"second": self.at_time.second, "microsecond": 0}
++                if self.unit == "days" or self.start_day is not None:
++                    kwargs["hour"] = self.at_time.hour
++                if self.unit in ["days", "hours"] or self.start_day is not None:
++                    kwargs["minute"] = self.at_time.minute
++                self.next_run = self.next_run.replace(**kwargs)  # type: ignore
++
++                # Make sure we run at the specified time *today* (or *this hour*)
++                # as well. This accounts for when a job takes so long it finished
++                # in the next period.
++                if not self.last_run or (self.next_run - self.last_run) > self.period:
++                    now = datetime.datetime.now()
++                    if (
++                        self.unit == "days"
++                        and self.next_run.time() > now.time()
++                        and self.interval == 1
++                    ):
++                        self.next_run = self.next_run - datetime.timedelta(days=1)
++                    elif self.unit == "hours" and (
++                        self.at_time.minute > now.minute
++                        or (
++                            self.at_time.minute == now.minute
++                            and self.at_time.second > now.second
++                        )
++                    ):
++                        self.next_run = self.next_run - datetime.timedelta(hours=1)
++                    elif self.unit == "minutes" and self.at_time.second > now.second:
++                        self.next_run = self.next_run - datetime.timedelta(minutes=1)
+         if self.start_day is not None and self.at_time is not None:
+             # Let's see if we will still make that time we specified today
+             if (self.next_run - datetime.datetime.now()).days >= 7:

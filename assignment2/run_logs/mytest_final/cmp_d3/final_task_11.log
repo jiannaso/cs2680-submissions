@@ -1,0 +1,28 @@
+== task 11: mytest__python-dotenv-711
+== image: madsloop-mytest:python-dotenv-711
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:python-dotenv-711
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__python-dotenv-711.diff
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index c78231c..44495e9 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -124,7 +124,11 @@ def set_value(ctx: click.Context, key: Any, value: Any) -> None:
+     file = ctx.obj["FILE"]
+     quote = ctx.obj["QUOTE"]
+     export = ctx.obj["EXPORT"]
+-    success, key, value = set_key(file, key, value, quote, export)
++    try:
++        success, key, value = set_key(file, key, value, quote, export)
++    except OSError as exc:
++        print(f"Error writing env file: {exc}", file=sys.stderr)
++        sys.exit(2)
+     if success:
+         click.echo(f"{key}={value}")
+     else:
+@@ -159,7 +163,11 @@ def unset(ctx: click.Context, key: Any) -> None:
+     """
+     file = ctx.obj["FILE"]

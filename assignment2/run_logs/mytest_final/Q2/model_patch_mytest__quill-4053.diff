@@ -1,0 +1,342 @@
+diff --git a/packages/quill/src/core/quill.ts b/packages/quill/src/core/quill.ts
+index 140d5b2..70f154f 100644
+--- a/packages/quill/src/core/quill.ts
++++ b/packages/quill/src/core/quill.ts
+@@ -23,6 +23,7 @@ import Theme from './theme.js';
+ import type { ThemeConstructor } from './theme.js';
+ import scrollRectIntoView from './utils/scrollRectIntoView.js';
+ import type { Rect } from './utils/scrollRectIntoView.js';
++import createRegistryWithFormats from './utils/createRegistryWithFormats.js';
+ 
+ const debug = logger('quill');
+ 
+@@ -33,6 +34,7 @@ interface Options {
+   theme?: string;
+   debug?: DebugLevel | boolean;
+   registry?: Parchment.Registry;
++  formats?: string[] | null;
+   readOnly?: boolean;
+   placeholder?: string;
+   bounds?: HTMLElement | string | null;
+@@ -785,6 +787,19 @@ function expandConfig(
+ 
+   const config = { ...quillDefaults, ...themeDefaults, ...options };
+ 
++  // Determine the registry to use:
++  // 1. If registry option is explicitly provided, use it (takes precedence)
++  // 2. If formats is an array, build a new registry from those formats
++  // 3. Otherwise fall back to the default (global) registry
++  let registry: Parchment.Registry;
++  if (options.registry != null) {
++    registry = options.registry;
++  } else if (Array.isArray(config.formats)) {
++    registry = createRegistryWithFormats(config.formats, globalRegistry, debug);
++  } else {
++    registry = globalRegistry;
++  }
++
+   return {
+     ...config,
+     container,
+@@ -808,6 +823,7 @@ function expandConfig(
+       },
+       {},
+     ),
++    registry,
+     bounds: resolveSelector(config.bounds),
+   };
+ }
+diff --git a/packages/quill/src/core/utils/createRegistryWithFormats.ts b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+new file mode 100644
+index 0000000..26be1a2
+--- /dev/null
++++ b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+@@ -0,0 +1,104 @@
++import * as Parchment from 'parchment';
++
++const CORE_BLOT_NAMES = new Set<string>([
++  'block',
++  'break',
++  'cursor',
++  'inline',
++  'scroll',
++  'text',
++]);
++
++function createRegistryWithFormats(
++  formats: string[] | null,
++  sourceRegistry: Parchment.Registry,
++  debug: { error: (message: string) => void },
++): Parchment.Registry {
++  // If formats is null or not provided, return a clone of the source registry
++  // to maintain backwards compatibility.
++  if (formats == null) {
++    const registry = new Parchment.Registry();
++    // Copy all entries from source registry
++    const sourceTypes = (sourceRegistry as any).types;
++    for (const name of Object.keys(sourceTypes)) {
++      registry.register(sourceTypes[name]);
++    }
++    return registry;
++  }
++
++  const registry = new Parchment.Registry();
++
++  // 3-state tracking for cycle detection:
++  // "resolving" = currently processing (in-progress stack for cycle detection)
++  // "done" = fully processed, no need to revisit
++  const resolving = new Set<string>();
++  const done = new Set<string>();
++
++  function registerBlot(name: string): boolean {
++    // Core blots are always needed
++    if (CORE_BLOT_NAMES.has(name)) {
++      if (!done.has(name)) {
++        const blot = (sourceRegistry as any).types[name];
++        if (blot != null) {
++          registry.register(blot);
++          done.add(name);
++        }
++      }
++      return true;
++    }
++
++    // Cycle detection: if we're already resolving this name, we have a cycle
++    if (resolving.has(name)) {
++      debug.error(`Cycle detected in required containers for ${name}`);
++      return false;
++    }
++
++    // Already fully processed
++    if (done.has(name)) {
++      return true;
++    }
++
++    const blot = (sourceRegistry as any).types[name];
++    if (blot == null) {
++      debug.error(`Cannot find format: ${name}`);
++      return false;
++    }
++
++    // Mark as in-progress before recursing into requiredContainer
++    resolving.add(name);
++
++    registry.register(blot);
++
++    // Follow requiredContainer recursively
++    if (blot.requiredContainer != null) {
++      const reqName = blot.requiredContainer.blotName;
++      if (!registerBlot(reqName)) {
++        // cycle was reported inside
++      }
++    }
++
++    resolving.delete(name);
++    done.add(name);
++
++    return true;
++  }
++
++  // Always register all core blots first
++  for (const coreName of CORE_BLOT_NAMES) {
++    const blot = (sourceRegistry as any).types[coreName];
++    if (blot != null) {
++      registry.register(blot);
++      done.add(coreName);
++    }
++  }
++
++  // Register requested formats and their required containers
++  for (const name of formats) {
++    registerBlot(name);
++  }
++
++  return registry;
++}
++
++export default createRegistryWithFormats;
++export { createRegistryWithFormats };
+diff --git a/packages/quill/test/unit/core/createRegistryWithFormats.spec.ts b/packages/quill/test/unit/core/createRegistryWithFormats.spec.ts
+new file mode 100644
+index 0000000..2617ed1
+--- /dev/null
++++ b/packages/quill/test/unit/core/createRegistryWithFormats.spec.ts
+@@ -0,0 +1,178 @@
++import '../../../src/quill.js';
++import { describe, expect, test } from 'vitest';
++import * as Parchment from 'parchment';
++import Quill, { expandConfig, globalRegistry } from '../../../src/core/quill.js';
++import createRegistryWithFormats from '../../../src/core/utils/createRegistryWithFormats.js';
++
++describe('createRegistryWithFormats', () => {
++  const createDebug = () => {
++    const messages: string[] = [];
++    return {
++      error: (msg: string) => messages.push(msg),
++      messages,
++    };
++  };
++
++  test('null formats returns a copy of the source registry', () => {
++    const debug = createDebug();
++    const registry = createRegistryWithFormats(null, globalRegistry, debug);
++    expect(debug.messages).toEqual([]);
++    // The returned registry should be a different instance but contain same definitions
++    expect(registry).not.toBe(globalRegistry);
++  });
++
++  test('core blots are always present', () => {
++    const debug = createDebug();
++    const registry = createRegistryWithFormats(['bold'], globalRegistry, debug);
++    
++    // Core blots should be present
++    expect(registry.query('scroll', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('block', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('inline', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('text', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('break', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('cursor', Parchment.Scope.ANY)).toBeTruthy();
++    
++    // The requested format should be present
++    expect(registry.query('bold', Parchment.Scope.ANY)).toBeTruthy();
++    expect(debug.messages).toEqual([]);
++  });
++
++  test('unknown format names are skipped with error message', () => {
++    const debug = createDebug();
++    const registry = createRegistryWithFormats(['bold', 'nonexistent-format'], globalRegistry, debug);
++    
++    expect(registry.query('bold', Parchment.Scope.ANY)).toBeTruthy();
++    expect(debug.messages.length).toBeGreaterThanOrEqual(1);
++    expect(debug.messages[0]).toContain('nonexistent-format');
++  });
++
++  test('requiredContainer is followed recursively (list -> list-container)', () => {
++    const debug = createDebug();
++    const registry = createRegistryWithFormats(['list'], globalRegistry, debug);
++    
++    // list blot should be present
++    expect(registry.query('list', Parchment.Scope.ANY)).toBeTruthy();
++    // list-container should be auto-registered as requiredContainer
++    expect(registry.query('list-container', Parchment.Scope.ANY)).toBeTruthy();
++    expect(debug.messages).toEqual([]);
++  });
++
++  test('cycle detection in requiredContainer', () => {
++    // Simulate a cycle by creating a registry where a blot requires itself
++    const sourceRegistry = new Parchment.Registry();
++    
++    // Create a mock blot that requires itself
++    const MockBlot: any = {
++      blotName: 'mock',
++      tagName: 'DIV',
++      requiredContainer: null, // will be set to self
++    };
++    MockBlot.requiredContainer = MockBlot;
++    
++    sourceRegistry.register(MockBlot);
++    
++    const debug = createDebug();
++    createRegistryWithFormats(['mock'], sourceRegistry, debug);
++    
++    expect(debug.messages.length).toBeGreaterThanOrEqual(1);
++    expect(debug.messages[0]).toContain('Cycle detected');
++  });
++
++  test('code-block requires code-block-container', () => {
++    const debug = createDebug();
++    const registry = createRegistryWithFormats(['code-block'], globalRegistry, debug);
++    
++    expect(registry.query('code-block', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('code-block-container', Parchment.Scope.ANY)).toBeTruthy();
++    expect(debug.messages).toEqual([]);
++  });
++
++  test('empty formats array creates registry with only core blots', () => {
++    const debug = createDebug();
++    const registry = createRegistryWithFormats([], globalRegistry, debug);
++    
++    // Core blots should be present
++    expect(registry.query('scroll', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('block', Parchment.Scope.ANY)).toBeTruthy();
++    // But no format blots
++    expect(registry.query('bold', Parchment.Scope.ANY)).toBeFalsy();
++    expect(debug.messages).toEqual([]);
++  });
++
++  test('multiple formats are all included', () => {
++    const debug = createDebug();
++    const registry = createRegistryWithFormats(['bold', 'italic', 'strike'], globalRegistry, debug);
++    
++    expect(registry.query('bold', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('italic', Parchment.Scope.ANY)).toBeTruthy();
++    expect(registry.query('strike', Parchment.Scope.ANY)).toBeTruthy();
++    expect(debug.messages).toEqual([]);
++  });
++});
++
++describe('expandConfig with formats option', () => {
++  const createContainer = (html = '') => {
++    const container = document.createElement('div');
++    container.innerHTML = html;
++    document.body.appendChild(container);
++    return container;
++  };
++
++  test('formats option filters the registry', () => {
++    const container = createContainer();
++    const config = expandConfig(container, { formats: ['bold', 'italic'] });
++    
++    // Should contain bold and italic
++    expect(config.registry.query('bold', Parchment.Scope.ANY)).toBeTruthy();
++    expect(config.registry.query('italic', Parchment.Scope.ANY)).toBeTruthy();
++    // Core blots should always be present
++    expect(config.registry.query('scroll', Parchment.Scope.ANY)).toBeTruthy();
++    expect(config.registry.query('block', Parchment.Scope.ANY)).toBeTruthy();
++    // Other formats should NOT be present
++    expect(config.registry.query('list', Parchment.Scope.ANY)).toBeFalsy();
++    expect(config.registry.query('header', Parchment.Scope.ANY)).toBeFalsy();
++    
++    document.body.removeChild(container);
++  });
++
++  test('formats null uses global registry', () => {
++    const container = createContainer();
++    const config = expandConfig(container, { formats: null });
++    
++    // Should have global registry content
++    expect(config.registry.query('list', Parchment.Scope.ANY)).toBeTruthy();
++    expect(config.registry.query('bold', Parchment.Scope.ANY)).toBeTruthy();
++    
++    document.body.removeChild(container);
++  });
++
++  test('registry option takes precedence over formats', () => {
++    const container = createContainer();
++    const customRegistry = new Parchment.Registry();
++    const BoldClass: any = Quill.import('formats/bold');
++    customRegistry.register(BoldClass);
++    
++    const config = expandConfig(container, { 
++      formats: ['bold', 'italic'], 
++      registry: customRegistry 
++    });
++    
++    // Should use custom registry - only bold present
++    expect(config.registry.query('bold', Parchment.Scope.ANY)).toBeTruthy();
++    expect(config.registry.query('italic', Parchment.Scope.ANY)).toBeFalsy();
++    
++    document.body.removeChild(container);
++  });
++
++  test('no formats option uses global registry (backwards compat)', () => {
++    const container = createContainer();
++    const config = expandConfig(container, {});
++    
++    // Global registry should have all formats
++    expect(config.registry.query('list', Parchment.Scope.ANY)).toBeTruthy();
++    expect(config.registry.query('bold', Parchment.Scope.ANY)).toBeTruthy();
++    
++    document.body.removeChild(container);
++  });
++});

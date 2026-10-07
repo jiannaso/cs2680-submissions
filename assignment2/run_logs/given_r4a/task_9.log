@@ -1,0 +1,32 @@
+== task 9: instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+== image: jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547: Pulling from jefzda/sweap-images
+Digest: sha256:cf8a28ff0ed3dfddd1d60dddae617a94bb5e4b566e60ef9fafabeaa7cc11d424
+Status: Image is up to date for jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+docker.io/jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+== workdir in container: /app
+== note: baseline checkout is dirty; committing image state so the diff is only your changes
+→ No staged files match any configured task.
+== harness interpreter: /usr/bin/python3.11 (Python 3.11.12)
+madsLoop finished: done
+== patch written to model_patch_instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547.diff
+diff --git a/packages/metrics/index.ts b/packages/metrics/index.ts
+index 5009ed0b72..568444c988 100644
+--- a/packages/metrics/index.ts
++++ b/packages/metrics/index.ts
+@@ -104,4 +104,6 @@ const metricsRequestService = new MetricsRequestService(metricsApi, {
+ });
+ const metrics = new Metrics(metricsRequestService);
+ 
++export { observeApiError, MetricsApiStatusTypes } from './lib/observeApiError';
++
+ export default metrics;
+diff --git a/packages/metrics/lib/observeApiError.ts b/packages/metrics/lib/observeApiError.ts
+new file mode 100644
+index 0000000000..707a1948f6
+--- /dev/null
++++ b/packages/metrics/lib/observeApiError.ts
+@@ -0,0 +1,28 @@
++export type MetricsApiStatusTypes = '4xx' | '5xx' | 'failure';
++
++type MetricObserverFn = (status: MetricsApiStatusTypes) => void;

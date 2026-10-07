@@ -1,0 +1,147 @@
+diff --git a/packages/quill/src/core/quill.ts b/packages/quill/src/core/quill.ts
+index 140d5b2..434ff0a 100644
+--- a/packages/quill/src/core/quill.ts
++++ b/packages/quill/src/core/quill.ts
+@@ -23,6 +23,7 @@ import Theme from './theme.js';
+ import type { ThemeConstructor } from './theme.js';
+ import scrollRectIntoView from './utils/scrollRectIntoView.js';
+ import type { Rect } from './utils/scrollRectIntoView.js';
++import createRegistryWithFormats from './utils/createRegistryWithFormats.js';
+ 
+ const debug = logger('quill');
+ 
+@@ -33,6 +34,7 @@ interface Options {
+   theme?: string;
+   debug?: DebugLevel | boolean;
+   registry?: Parchment.Registry;
++  formats?: string[] | null;
+   readOnly?: boolean;
+   placeholder?: string;
+   bounds?: HTMLElement | string | null;
+@@ -785,10 +787,21 @@ function expandConfig(
+ 
+   const config = { ...quillDefaults, ...themeDefaults, ...options };
+ 
++  // Use formats option to build a custom registry, unless registry is explicitly provided
++  let registry: Parchment.Registry;
++  if (options.registry != null) {
++    registry = options.registry;
++  } else if (options.formats != null) {
++    registry = createRegistryWithFormats(options.formats, globalRegistry, debug);
++  } else {
++    registry = globalRegistry;
++  }
++
+   return {
+     ...config,
+     container,
+     theme,
++    registry,
+     modules: Object.entries(modules).reduce(
+       (modulesWithDefaults, [name, value]) => {
+         if (!value) return modulesWithDefaults;
+diff --git a/packages/quill/src/core/utils/createRegistryWithFormats.ts b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+new file mode 100644
+index 0000000..ef5e548
+--- /dev/null
++++ b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+@@ -0,0 +1,98 @@
++import * as Parchment from 'parchment';
++import type { BlotConstructor, Registry } from 'parchment';
++
++const CORE_BLOTS = ['block', 'break', 'cursor', 'inline', 'scroll', 'text'];
++
++interface DebugLogger {
++  error(message: string): void;
++}
++
++function registerBlot(
++  registry: Registry,
++  sourceRegistry: Registry,
++  blotDef: BlotConstructor,
++  debug: DebugLogger,
++  visited: Set<string>,
++  visiting: Set<string>,
++): void {
++  const blotName =
++    typeof blotDef === 'function'
++      ? (blotDef as BlotConstructor).blotName
++      : (blotDef as { blotName: string }).blotName;
++  if (typeof blotName !== 'string') return;
++
++  if (visited.has(blotName)) return;
++  if (visiting.has(blotName)) {
++    debug.error(`Cycle detected for format ${blotName}`);
++    return;
++  }
++
++  visiting.add(blotName);
++  visited.add(blotName);
++
++  registry.register(blotDef);
++
++  // Recursively register required containers
++  const requiredContainer = (blotDef as BlotConstructor).requiredContainer;
++  if (requiredContainer) {
++    const containerName = (requiredContainer as BlotConstructor).blotName;
++    if (typeof containerName === 'string') {
++      // Check if already in new registry
++      let containerDef = registry.query(containerName, Parchment.Scope.BLOT);
++      if (containerDef == null) {
++        // Resolve from source registry
++        containerDef = sourceRegistry.query(containerName, Parchment.Scope.BLOT);
++      }
++      if (containerDef) {
++        registerBlot(registry, sourceRegistry, containerDef as BlotConstructor, debug, visited, visiting);
++      } else {
++        // Directly register the required container definition
++        registerBlot(registry, sourceRegistry, requiredContainer as BlotConstructor, debug, visited, visiting);
++      }
++    }
++  }
++
++  visiting.delete(blotName);
++}
++
++export default function createRegistryWithFormats(
++  formats: string[] | null,
++  sourceRegistry: Registry,
++  debug: DebugLogger,
++): Registry {
++  const registry = new Parchment.Registry();
++
++  // Always register core blots
++  for (const name of CORE_BLOTS) {
++    const coreBlot = sourceRegistry.query(name, Parchment.Scope.BLOT);
++    if (coreBlot) {
++      registry.register(coreBlot);
++    }
++  }
++
++  if (formats == null || !Array.isArray(formats)) {
++    return registry;
++  }
++
++  const visited = new Set<string>();
++  const visiting = new Set<string>();
++
++  for (const formatName of formats) {
++    if (CORE_BLOTS.includes(formatName)) continue;
++
++    const blotDef = sourceRegistry.query(
++      formatName,
++      Parchment.Scope.BLOT | Parchment.Scope.ANY,
++    );
++    if (blotDef == null) {
++      debug.error(`Cannot find format: ${formatName}`);
++      continue;
++    }
++
++    if (visited.has(formatName)) continue;
++    visiting.clear();
++    registerBlot(registry, sourceRegistry, blotDef as BlotConstructor, debug, visited, visiting);
++  }
++
++  return registry;
++}
+\ No newline at end of file

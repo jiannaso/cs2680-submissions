@@ -1,0 +1,64 @@
+diff --git a/boltons/ioutils.py b/boltons/ioutils.py
+index bfcaf3f..244e863 100644
+--- a/boltons/ioutils.py
++++ b/boltons/ioutils.py
+@@ -301,7 +301,9 @@ class SpooledBytesIO(SpooledIOBase):
+ 
+     def write(self, s):
+         self._checkClosed()
+-        if not isinstance(s, bytes):
++        if isinstance(s, (bytes, bytearray, memoryview)):
++            pass
++        else:
+             raise TypeError("bytes expected, got {}".format(
+                 type(s).__name__
+             ))
+@@ -309,6 +311,7 @@ class SpooledBytesIO(SpooledIOBase):
+         if self.tell() + len(s) >= self._max_size:
+             self.rollover()
+         self.buffer.write(s)
++        return len(s)
+ 
+     def seek(self, pos, mode=0):
+         self._checkClosed()
+@@ -403,6 +406,7 @@ class SpooledStringIO(SpooledIOBase):
+             self.rollover()
+         self.buffer.write(s.encode('utf-8'))
+         self._tell = current_pos + len(s)
++        return len(s)
+ 
+     def _traverse_codepoints(self, current_position, n):
+         """Traverse from current position to the right n codepoints"""
+@@ -435,17 +439,29 @@ class SpooledStringIO(SpooledIOBase):
+         self._checkClosed()
+         # Seek to position from the start of the file
+         if mode == os.SEEK_SET:
++            if pos < 0:
++                raise ValueError("Negative seek position")
+             self.buffer.seek(0)
+             self._traverse_codepoints(0, pos)
+             self._tell = pos
+         # Seek to new position relative to current position
+         elif mode == os.SEEK_CUR:
+             start_pos = self.tell()
+-            self._traverse_codepoints(self.tell(), pos)
+-            self._tell = start_pos + pos
+-        elif mode == os.SEEK_END:
++            target = start_pos + pos
++            if target < 0:
++                raise ValueError("Negative seek position")
++            # If target is same as current, just return
++            if target == start_pos:
++                return target
++            # Must seek from start to handle backward seeks
+             self.buffer.seek(0)
++            self._traverse_codepoints(0, target)
++            self._tell = target
++        elif mode == os.SEEK_END:
+             dest_position = self.len - pos
++            if dest_position < 0:
++                raise ValueError("Negative seek position")
++            self.buffer.seek(0)
+             self._traverse_codepoints(0, dest_position)
+             self._tell = dest_position
+         else:

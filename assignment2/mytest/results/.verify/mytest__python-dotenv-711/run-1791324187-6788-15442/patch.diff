@@ -1,0 +1,96 @@
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index c78231c..44495e9 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -124,7 +124,11 @@ def set_value(ctx: click.Context, key: Any, value: Any) -> None:
+     file = ctx.obj["FILE"]
+     quote = ctx.obj["QUOTE"]
+     export = ctx.obj["EXPORT"]
+-    success, key, value = set_key(file, key, value, quote, export)
++    try:
++        success, key, value = set_key(file, key, value, quote, export)
++    except OSError as exc:
++        print(f"Error writing env file: {exc}", file=sys.stderr)
++        sys.exit(2)
+     if success:
+         click.echo(f"{key}={value}")
+     else:
+@@ -159,7 +163,11 @@ def unset(ctx: click.Context, key: Any) -> None:
+     """
+     file = ctx.obj["FILE"]
+     quote = ctx.obj["QUOTE"]
+-    success, key = unset_key(file, key, quote)
++    try:
++        success, key = unset_key(file, key, quote)
++    except OSError as exc:
++        print(f"Error writing env file: {exc}", file=sys.stderr)
++        sys.exit(2)
+     if success:
+         click.echo(f"Successfully removed {key}")
+     else:
+diff --git a/src/dotenv/main.py b/src/dotenv/main.py
+index 3123690..ef8debd 100644
+--- a/src/dotenv/main.py
++++ b/src/dotenv/main.py
+@@ -160,34 +160,35 @@ def rewrite(
+         source = io.StringIO("")
+         original_mode = None
+ 
+-    with tempfile.NamedTemporaryFile(
+-        mode="w",
+-        encoding=encoding,
+-        delete=False,
+-        prefix=".tmp_",
+-        dir=os.path.dirname(os.path.abspath(path)),
+-    ) as dest:
+-        dest_path = pathlib.Path(dest.name)
+-        error = None
+-
+-        try:
+-            with source:
+-                yield (source, dest)
+-        except BaseException as err:
+-            error = err
+-
+-    if error is None:
+-        try:
+-            if original_mode is not None:
+-                os.chmod(dest_path, original_mode)
+-
+-            os.replace(dest_path, path)
+-        except BaseException:
++    dest_path: Optional[pathlib.Path] = None
++    try:
++        with tempfile.NamedTemporaryFile(
++            mode="w",
++            encoding=encoding,
++            delete=False,
++            prefix=".tmp_",
++            dir=os.path.dirname(os.path.abspath(path)),
++        ) as dest:
++            dest_path = pathlib.Path(dest.name)
++
++            try:
++                with source:
++                    yield (source, dest)
++            except BaseException:
++                dest_path.unlink(missing_ok=True)
++                raise
++        if original_mode is not None:
++            os.chmod(dest_path, original_mode)
++
++        os.replace(dest_path, path)
++    except BaseException as exc:
++        if dest_path is not None:
+             dest_path.unlink(missing_ok=True)
++        # Re-raise OSError/IOError with filename set to the dotenv path
++        if isinstance(exc, OSError):
++            exc.filename = str(path)
+             raise
+-    else:
+-        dest_path.unlink(missing_ok=True)
+-        raise error from None
++        raise
+ 
+ 
+ def set_key(

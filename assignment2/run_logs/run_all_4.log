@@ -1,0 +1,41 @@
+== running 10 tasks, 3 at a time (logs: /Users/jiannaso/Documents/github/cs2680-submissions/a2/run_logs/task_<i>.log)
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/patches.json (10/10 patches)
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/raw_samples.csv (10 instances)
+Running local-docker evaluation for instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+Running local-docker evaluation for instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+Running local-docker evaluation for instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+Stripped binary diff hunks from patch for instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+Using Docker Hub image: jefzda/sweap-images:ansible.ansible-ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+Using Docker Hub image: jefzda/sweap-images:ansible.ansible-ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+Using Docker Hub image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c
+  0%|          | 0/10 [00:00<?, ?it/s]Accuracy: 100.00%:   0%|          | 0/10 [00:04<?, ?it/s]Accuracy: 100.00%:  10%|█         | 1/10 [00:04<00:40,  4.50s/it]Accuracy: 100.00%:  10%|█         | 1/10 [00:12<00:40,  4.50s/it]Accuracy: 100.00%:  20%|██        | 2/10 [00:12<00:51,  6.45s/it]Accuracy: 100.00%:  20%|██        | 2/10 [00:20<00:51,  6.45s/it]Accuracy: 100.00%:  30%|███       | 3/10 [00:20<00:51,  7.41s/it]Accuracy: 100.00%:  30%|███       | 3/10 [00:21<00:51,  7.41s/it]Accuracy: 100.00%:  40%|████      | 4/10 [00:21<00:27,  4.66s/it]Accuracy: 100.00%:  40%|████      | 4/10 [00:25<00:27,  4.66s/it]Accuracy: 100.00%:  50%|█████     | 5/10 [00:25<00:21,  4.40s/it]Accuracy: 83.33%:  50%|█████     | 5/10 [00:31<00:21,  4.40s/it] Accuracy: 83.33%:  60%|██████    | 6/10 [00:31<00:20,  5.12s/it]Accuracy: 71.43%:  60%|██████    | 6/10 [00:51<00:20,  5.12s/it]Accuracy: 71.43%:  70%|███████   | 7/10 [00:51<00:29,  9.74s/it]Accuracy: 62.50%:  70%|███████   | 7/10 [02:15<00:29,  9.74s/it]Accuracy: 62.50%:  80%|████████  | 8/10 [02:15<01:06, 33.45s/it]Accuracy: 66.67%:  80%|████████  | 8/10 [03:55<01:06, 33.45s/it]Accuracy: 66.67%:  90%|█████████ | 9/10 [03:55<00:54, 54.32s/it]Accuracy: 70.00%:  90%|█████████ | 9/10 [06:08<00:54, 54.32s/it]Accuracy: 70.00%: 100%|██████████| 10/10 [06:08<00:00, 78.66s/it]Accuracy: 70.00%: 100%|██████████| 10/10 [06:08<00:00, 36.86s/it]
+Running local-docker evaluation for instance_flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a
+Using Docker Hub image: jefzda/sweap-images:flipt-io.flipt-flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a
+Running local-docker evaluation for instance_qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+Stripped binary diff hunks from patch for instance_qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+Using Docker Hub image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c
+Running local-docker evaluation for instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+Using Docker Hub image: jefzda/sweap-images:internetarchive.openlibrary-internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf81299
+Running local-docker evaluation for instance_gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718
+Using Docker Hub image: jefzda/sweap-images:gravitational.teleport-gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718
+Running local-docker evaluation for instance_qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d
+Using Docker Hub image: jefzda/sweap-images:qutebrowser.qutebrowser-qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac780366
+Running local-docker evaluation for instance_ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+Using Docker Hub image: jefzda/sweap-images:ansible.ansible-ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+Running local-docker evaluation for instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+Using Docker Hub image: jefzda/sweap-images:protonmail.webclients-protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+Overall accuracy:  0.7
+
+== results (/Users/jiannaso/Documents/github/cs2680-submissions/a2/pro_eval/eval_results.json):
+RESOLVED   instance_ansible__ansible-a26c325bd8f6e2822d9d7e62f77a424c1db4fbf6-v0f01c69f1e2528b935359cfe578530722bca2c59
+RESOLVED   instance_ansible__ansible-f327e65d11bb905ed9f15996024f857a95592629-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+RESOLVED   instance_qutebrowser__qutebrowser-de4a1c1a2839b5b49c3d4ce21d39de48d24e2091-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+RESOLVED   instance_qutebrowser__qutebrowser-c580ebf0801e5a3ecabc54f327498bb753c6d5f2-v2ef375ac784985212b1805e1d0431dc8f1b3c171
+RESOLVED   instance_internetarchive__openlibrary-4a5d2a7d24c9e4c11d3069220c0685b736d5ecde-v13642507b4fc1f8d234172bf8129942da2c2ca26
+unresolved instance_qutebrowser__qutebrowser-21b426b6a20ec1cc5ecad770730641750699757b-v363c8a7e5ccdf6968fc7ab84a2053ac78036691d
+unresolved instance_ansible__ansible-83909bfa22573777e3db5688773bda59721962ad-vba6da65a0f3baefda7a058ebbd0a8dcafb8512f5
+unresolved instance_gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718
+RESOLVED   instance_flipt-io__flipt-2eac0df47b5ecc8bb05002d80383ceb08ab3620a
+RESOLVED   instance_protonmail__webclients-944adbfe06644be0789f59b78395bdd8567d8547
+7/10 resolved
+wrote /Users/jiannaso/Documents/github/cs2680-submissions/a2/run_all_results.md (7/10 passed)

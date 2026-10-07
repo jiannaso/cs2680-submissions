@@ -1,0 +1,363 @@
+diff --git a/packages/quill/src/core/quill.ts b/packages/quill/src/core/quill.ts
+index 140d5b2..7e5574a 100644
+--- a/packages/quill/src/core/quill.ts
++++ b/packages/quill/src/core/quill.ts
+@@ -23,6 +23,7 @@ import Theme from './theme.js';
+ import type { ThemeConstructor } from './theme.js';
+ import scrollRectIntoView from './utils/scrollRectIntoView.js';
+ import type { Rect } from './utils/scrollRectIntoView.js';
++import createRegistryWithFormats from './utils/createRegistryWithFormats.js';
+ 
+ const debug = logger('quill');
+ 
+@@ -33,6 +34,7 @@ interface Options {
+   theme?: string;
+   debug?: DebugLevel | boolean;
+   registry?: Parchment.Registry;
++  formats?: string[];
+   readOnly?: boolean;
+   placeholder?: string;
+   bounds?: HTMLElement | string | null;
+@@ -785,6 +787,23 @@ function expandConfig(
+ 
+   const config = { ...quillDefaults, ...themeDefaults, ...options };
+ 
++  // Determine the registry to use:
++  // 1. If `registry` is explicitly passed in options, use it (takes precedence)
++  // 2. If `formats` is an array, create a registry with only those formats
++  // 3. Otherwise, use the global registry
++  let registry: Parchment.Registry;
++  if (options.registry) {
++    registry = options.registry;
++  } else if (Array.isArray(options.formats)) {
++    registry = createRegistryWithFormats(
++      options.formats,
++      globalRegistry,
++      debug,
++    );
++  } else {
++    registry = globalRegistry;
++  }
++
+   return {
+     ...config,
+     container,
+@@ -809,6 +828,7 @@ function expandConfig(
+       {},
+     ),
+     bounds: resolveSelector(config.bounds),
++    registry,
+   };
+ }
+ 
+diff --git a/packages/quill/src/core/utils/createRegistryWithFormats.ts b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+new file mode 100644
+index 0000000..4205842
+--- /dev/null
++++ b/packages/quill/src/core/utils/createRegistryWithFormats.ts
+@@ -0,0 +1,127 @@
++import * as Parchment from 'parchment';
++
++const CORE_BLOT_NAMES = new Set([
++  'block',
++  'break',
++  'cursor',
++  'inline',
++  'scroll',
++  'text',
++]);
++
++function getBlotConstructor(
++  def: Parchment.RegistryDefinition | null | undefined,
++): Parchment.BlotConstructor | undefined {
++  if (def == null) return undefined;
++  if ('blotName' in def) {
++    return def as Parchment.BlotConstructor;
++  }
++  return undefined;
++}
++
++interface DebugHelper {
++  error(message: string): void;
++}
++
++/**
++ * Create a new Parchment Registry that contains only the specified formats
++ * plus Quill's core blots, and the required containers for registered formats.
++ *
++ * @param formats - Array of format names to include. Core blots are always
++ *                  included. When null/undefined, the sourceRegistry is
++ *                  returned as-is.
++ * @param sourceRegistry - The registry to look up format definitions from.
++ * @param debug - Debug helper to report problems.
++ * @returns A new Registry containing the selected blots.
++ */
++export default function createRegistryWithFormats(
++  formats: string[] | null | undefined,
++  sourceRegistry: Parchment.Registry,
++  debug: DebugHelper,
++): Parchment.Registry {
++  // When formats is null or not given, use the global registry as before
++  if (formats == null || !Array.isArray(formats)) {
++    return sourceRegistry;
++  }
++
++  const registry = new Parchment.Registry();
++  const processed = new Set<string>();
++
++  // Always add core blots
++  for (const name of CORE_BLOT_NAMES) {
++    const def = sourceRegistry.query(name);
++    const blotDef = getBlotConstructor(def);
++    if (blotDef) {
++      registry.register(blotDef);
++      processed.add(name);
++    }
++  }
++
++  // Helper: recursively add a format and its required containers
++  function addFormat(name: string): void {
++    if (processed.has(name)) return;
++    processed.add(name);
++
++    const def = sourceRegistry.query(name);
++    if (def == null) {
++      debug.error(`Cannot find format: ${name}`);
++      return;
++    }
++
++    const blotDef = getBlotConstructor(def);
++    if (blotDef) {
++      registry.register(blotDef);
++    }
++
++    // If this blot has a requiredContainer, add it recursively
++    if (
++      blotDef &&
++      typeof blotDef.requiredContainer !== 'undefined' &&
++      blotDef.requiredContainer != null
++    ) {
++      const requiredContainerName = blotDef.requiredContainer.blotName;
++      if (requiredContainerName != null) {
++        addRequiredContainer(requiredContainerName);
++      }
++    }
++  }
++
++  // Helper: add a required container and track for cycles
++  function addRequiredContainer(name: string): void {
++    if (processed.has(name)) {
++      // Already seen - could be a cycle
++      debug.error(`Cycle detected for required container: ${name}`);
++      return;
++    }
++    processed.add(name);
++
++    const def = sourceRegistry.query(name);
++    const blotDef = getBlotConstructor(def);
++
++    if (blotDef) {
++      registry.register(blotDef);
++    } else {
++      debug.error(`Cannot find required container: ${name}`);
++      return;
++    }
++
++    // Recurse: check if this container itself requires another container
++    if (
++      typeof blotDef.requiredContainer !== 'undefined' &&
++      blotDef.requiredContainer != null
++    ) {
++      const nestedRequiredName = blotDef.requiredContainer.blotName;
++      if (nestedRequiredName != null) {
++        addRequiredContainer(nestedRequiredName);
++      }
++    }
++  }
++
++  // Process each requested format
++  for (const name of formats) {
++    if (typeof name !== 'string') continue;
++    addFormat(name);
++  }
++
++  return registry;
++}
+diff --git a/packages/quill/test/unit/core/createRegistryWithFormats.spec.ts b/packages/quill/test/unit/core/createRegistryWithFormats.spec.ts
+new file mode 100644
+index 0000000..85ae0db
+--- /dev/null
++++ b/packages/quill/test/unit/core/createRegistryWithFormats.spec.ts
+@@ -0,0 +1,172 @@
++import '/app/packages/quill/src/quill.js';
++import { globalRegistry } from '../../../src/core/quill.js';
++import { describe, expect, it } from 'vitest';
++
++describe('createRegistryWithFormats', () => {
++  it('creates registry with only specified formats', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const mockDebug = { error: () => {} };
++    const reg = createRegistryWithFormats(
++      ['bold', 'italic'],
++      globalRegistry,
++      mockDebug,
++    );
++
++    // Core blots must always be present
++    expect(reg.query('block')).toBeTruthy();
++    expect(reg.query('inline')).toBeTruthy();
++    expect(reg.query('text')).toBeTruthy();
++    expect(reg.query('scroll')).toBeTruthy();
++    expect(reg.query('break')).toBeTruthy();
++    expect(reg.query('cursor')).toBeTruthy();
++
++    // Requested formats must be present
++    expect(reg.query('bold')).toBeTruthy();
++    expect(reg.query('italic')).toBeTruthy();
++
++    // Unrequested formats must NOT be present
++    expect(reg.query('underline')).toBeFalsy();
++    expect(reg.query('strike')).toBeFalsy();
++    expect(reg.query('list')).toBeFalsy();
++    expect(reg.query('header')).toBeFalsy();
++  });
++
++  it('formats: null returns global registry', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const mockDebug = { error: () => {} };
++    const reg = createRegistryWithFormats(null, globalRegistry, mockDebug);
++    expect(reg).toBe(globalRegistry);
++  });
++
++  it('formats: undefined returns global registry', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const mockDebug = { error: () => {} };
++    const reg = createRegistryWithFormats(undefined, globalRegistry, mockDebug);
++    expect(reg).toBe(globalRegistry);
++  });
++
++  it('unknown format names are skipped with debug error', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const reported = [];
++    const mockDebug = {
++      error: (msg: string) => {
++        reported.push(msg);
++      },
++    };
++    createRegistryWithFormats(
++      ['nonexistent-format'],
++      globalRegistry,
++      mockDebug,
++    );
++    expect(reported).toContainEqual(
++      expect.stringContaining('nonexistent-format'),
++    );
++  });
++
++  it('allowing list also registers list-container', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const mockDebug = { error: () => {} };
++    const reg = createRegistryWithFormats(['list'], globalRegistry, mockDebug);
++    expect(reg.query('list')).toBeTruthy();
++    expect(reg.query('list-container')).toBeTruthy();
++  });
++
++  it('no false cycle detection for normal usage', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const reported = [];
++    const mockDebug = {
++      error: (msg: string) => {
++        reported.push(msg);
++      },
++    };
++    createRegistryWithFormats(
++      ['bold', 'italic', 'list'],
++      globalRegistry,
++      mockDebug,
++    );
++    const cycleMessages = reported.filter((m) => m.includes('Cycle detected'));
++    expect(cycleMessages.length).toBe(0);
++  });
++
++  it('code-block format includes code-block-container via requiredContainer', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const mockDebug = { error: () => {} };
++    const reg = createRegistryWithFormats(
++      ['code-block'],
++      globalRegistry,
++      mockDebug,
++    );
++    expect(reg.query('code-block')).toBeTruthy();
++    expect(reg.query('code-block-container')).toBeTruthy();
++  });
++
++  it('table format includes all table containers via requiredContainer chain', async () => {
++    const { default: createRegistryWithFormats } = await import(
++      '../../../src/core/utils/createRegistryWithFormats.js'
++    );
++    const mockDebug = { error: () => {} };
++    const reg = createRegistryWithFormats(['table'], globalRegistry, mockDebug);
++    expect(reg.query('table')).toBeTruthy();
++    expect(reg.query('table-row')).toBeTruthy();
++    expect(reg.query('table-body')).toBeTruthy();
++    expect(reg.query('table-container')).toBeTruthy();
++  });
++
++  it('expandConfig with formats option creates restricted registry', async () => {
++    const { expandConfig } = await import('../../../src/core/quill.js');
++    const container = document.createElement('div');
++    document.body.appendChild(container);
++    const config = expandConfig(container, { formats: ['bold', 'italic'] });
++    // Verify the registry doesn't have all formats
++    expect(config.registry.query('bold')).toBeTruthy();
++    expect(config.registry.query('italic')).toBeTruthy();
++    expect(config.registry.query('underline')).toBeFalsy();
++    expect(config.registry.query('strike')).toBeFalsy();
++  });
++
++  it('expandConfig without formats uses global registry', async () => {
++    const { expandConfig } = await import('../../../src/core/quill.js');
++    const container = document.createElement('div');
++    document.body.appendChild(container);
++    const config = expandConfig(container, {});
++    // Should use the global registry
++    expect(config.registry.query('underline')).toBeTruthy();
++    expect(config.registry.query('strike')).toBeTruthy();
++  });
++
++  it('expandConfig with registry option takes precedence over formats', async () => {
++    const { expandConfig } = await import('../../../src/core/quill.js');
++    const container = document.createElement('div');
++    const customRegistry = new (await import('parchment')).Registry();
++    const config = expandConfig(container, {
++      formats: ['bold'],
++      registry: customRegistry,
++    });
++    // Should use the explicitly passed registry
++    expect(config.registry).toBe(customRegistry);
++    // The custom registry is empty (no core blots registered)
++    expect(config.registry.query('bold')).toBeFalsy();
++  });
++
++  it('expandConfig with registry and no formats uses registry', async () => {
++    const { expandConfig } = await import('../../../src/core/quill.js');
++    const container = document.createElement('div');
++    const customRegistry = new (await import('parchment')).Registry();
++    const config = expandConfig(container, { registry: customRegistry });
++    expect(config.registry).toBe(customRegistry);
++  });
++});

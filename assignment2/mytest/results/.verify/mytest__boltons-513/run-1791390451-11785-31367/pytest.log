@@ -1,0 +1,261 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+collected 88 items
+
+tests/test_ioutils.py ..F............................................. [ 54%]
+........................................                                 [100%]
+
+=================================== FAILURES ===================================
+________ TestSpooledBytesIO.test_buffer_write_rollover_uses_byte_count _________
+
+self = <tests.test_ioutils.TestSpooledBytesIO testMethod=test_buffer_write_rollover_uses_byte_count>
+
+    def test_buffer_write_rollover_uses_byte_count(self):
+        with ioutils.SpooledBytesIO(max_size=4) as stream:
+            with memoryview(bytearray(b'abcd')).cast('I') as view:
+>               self.assertEqual(stream.write(view), 4)
+                                 ^^^^^^^^^^^^^^^^^^
+
+tests/test_ioutils.py:314: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <boltons.ioutils.SpooledBytesIO object at 0x7ffffdf26800>
+s = <released memory at 0x7ffffde84dc0>
+
+    def write(self, s):
+        self._checkClosed()
+        if not isinstance(s, bytes):
+>           raise TypeError("bytes expected, got {}".format(
+                type(s).__name__
+            ))
+E           TypeError: bytes expected, got memoryview
+
+boltons/ioutils.py:305: TypeError
+_________ TestSpooledBytesIO.test_buffered_writer_flush (rolled=False) _________
+
+self = <tests.test_ioutils.TestSpooledBytesIO testMethod=test_buffered_writer_flush>
+
+    def test_buffered_writer_flush(self):
+        for rolled in (False, True):
+            with self.subTest(rolled=rolled):
+                stream = ioutils.SpooledBytesIO()
+                if rolled:
+                    stream.rollover()
+                writer = io.BufferedWriter(stream)
+                try:
+                    writer.write(b'payload')
+>                   writer.flush()
+
+tests/test_ioutils.py:303: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <boltons.ioutils.SpooledBytesIO object at 0x7ffffdf26230>
+s = <memory at 0x7ffffde85e40>
+
+    def write(self, s):
+        self._checkClosed()
+        if not isinstance(s, bytes):
+>           raise TypeError("bytes expected, got {}".format(
+                type(s).__name__
+            ))
+E           TypeError: bytes expected, got memoryview
+
+boltons/ioutils.py:305: TypeError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.test_ioutils.TestSpooledBytesIO testMethod=test_buffered_writer_flush>
+
+    def test_buffered_writer_flush(self):
+        for rolled in (False, True):
+            with self.subTest(rolled=rolled):
+                stream = ioutils.SpooledBytesIO()
+                if rolled:
+                    stream.rollover()
+                writer = io.BufferedWriter(stream)
+                try:
+                    writer.write(b'payload')
+                    writer.flush()
+                    self.assertEqual(stream.getvalue(), b'payload')
+                finally:
+                    try:
+>                       writer.close()
+
+tests/test_ioutils.py:307: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <boltons.ioutils.SpooledBytesIO object at 0x7ffffdf26230>
+s = <memory at 0x7ffffde86140>
+
+    def write(self, s):
+        self._checkClosed()
+        if not isinstance(s, bytes):
+>           raise TypeError("bytes expected, got {}".format(
+                type(s).__name__
+            ))
+E           TypeError: bytes expected, got memoryview
+
+boltons/ioutils.py:305: TypeError
+_________ TestSpooledBytesIO.test_buffered_writer_flush (rolled=True) __________
+
+self = <tests.test_ioutils.TestSpooledBytesIO testMethod=test_buffered_writer_flush>
+
+    def test_buffered_writer_flush(self):
+        for rolled in (False, True):
+            with self.subTest(rolled=rolled):
+                stream = ioutils.SpooledBytesIO()
+                if rolled:
+                    stream.rollover()
+                writer = io.BufferedWriter(stream)
+                try:
+                    writer.write(b'payload')
+>                   writer.flush()
+
+tests/test_ioutils.py:303: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <boltons.ioutils.SpooledBytesIO object at 0x7ffffdf264a0>
+s = <memory at 0x7ffffde86440>
+
+    def write(self, s):
+        self._checkClosed()
+        if not isinstance(s, bytes):
+>           raise TypeError("bytes expected, got {}".format(
+                type(s).__name__
+            ))
+E           TypeError: bytes expected, got memoryview
+
+boltons/ioutils.py:305: TypeError
+
+During handling of the above exception, another exception occurred:
+
+self = <tests.test_ioutils.TestSpooledBytesIO testMethod=test_buffered_writer_flush>
+
+    def test_buffered_writer_flush(self):
+        for rolled in (False, True):
+            with self.subTest(rolled=rolled):
+                stream = ioutils.SpooledBytesIO()
+                if rolled:
+                    stream.rollover()
+                writer = io.BufferedWriter(stream)
+                try:
+                    writer.write(b'payload')
+                    writer.flush()
+                    self.assertEqual(stream.getvalue(), b'payload')
+                finally:
+                    try:
+>                       writer.close()
+
+tests/test_ioutils.py:307: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <boltons.ioutils.SpooledBytesIO object at 0x7ffffdf264a0>
+s = <memory at 0x7ffffde86200>
+
+    def write(self, s):
+        self._checkClosed()
+        if not isinstance(s, bytes):
+>           raise TypeError("bytes expected, got {}".format(
+                type(s).__name__
+            ))
+E           TypeError: bytes expected, got memoryview
+
+boltons/ioutils.py:305: TypeError
+==================================== PASSES ====================================
+________________ TestSpooledBytesIO.test_buffered_writer_flush _________________
+----------------------------- Captured stdout call -----------------------------
+uu
+=========================== short test summary info ============================
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_auto_rollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_buf_property
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_buffered_writer_flush
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_closed_file_method_valueerrors
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_closed_property
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_compare_different_instances
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_compare_err
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_compare_not_equal_instances
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_compare_two_equal_instances
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_compare_unequal_instances
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_flush_after_rollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_getvalue_norollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_getvalue_rollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_instance_check
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_invalid_type
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_io_error_negative_truncate
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_isatty
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_iter
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_len_no_rollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_len_rollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_next
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_pos_property
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_readline
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_readlines
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_rollover_custom_directory
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_set_softspace_attribute
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_set_softspace_attribute_rolled
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_truncate_noargs_norollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_truncate_noargs_rollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_truncate_with_args_norollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_truncate_with_args_rollover
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_truthy
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_type_error_too_many_args
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_use_as_context_mgr
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_write_returns_byte_count
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_writelines
+PASSED tests/test_ioutils.py::TestSpooledBytesIO::test_zip_compat
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_auto_rollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_buf_property
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_closed_file_method_valueerrors
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_closed_property
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_codepoints_all_enc
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_compare_different_instances
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_compare_err
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_compare_not_equal_instances
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_compare_two_equal_instances
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_compare_unequal_instances
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_getvalue_norollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_getvalue_rollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_instance_check
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_invalid_type
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_io_error_negative_truncate
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_isatty
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_iter
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_len_no_rollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_len_rollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_negative_destination_rejected_without_moving
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_next
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_pos_property
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_readline
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_readlines
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_relative_backwards_seek_uses_character_position
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_rollover_custom_directory
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_seek_codepoints_SEEK_CUR
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_seek_codepoints_SEEK_END
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_seek_codepoints_SEEK_SET
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_seek_codepoints_large_SEEK_CUR
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_seek_codepoints_large_SEEK_END
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_seek_codepoints_large_SEEK_SET
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_seek_encoded
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_set_softspace_attribute
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_set_softspace_attribute_rolled
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_tell_codepoints
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_truncate_noargs_norollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_truncate_noargs_rollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_truncate_with_args_norollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_truncate_with_args_rollover
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_truthy
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_type_error_too_many_args
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_use_as_context_mgr
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_write_returns_character_count
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_writelines
+PASSED tests/test_ioutils.py::TestSpooledStringIO::test_x80_codepoint
+PASSED tests/test_ioutils.py::TestMultiFileReader::test_no_mixed_bytes_and_text
+PASSED tests/test_ioutils.py::TestMultiFileReader::test_open
+PASSED tests/test_ioutils.py::TestMultiFileReader::test_read_seek_bytes
+PASSED tests/test_ioutils.py::TestMultiFileReader::test_read_seek_text
+FAILED tests/test_ioutils.py::TestSpooledBytesIO::test_buffer_write_rollover_uses_byte_count
+SUBFAILED(rolled=False) tests/test_ioutils.py::TestSpooledBytesIO::test_buffered_writer_flush
+SUBFAILED(rolled=True) tests/test_ioutils.py::TestSpooledBytesIO::test_buffered_writer_flush
+========================= 3 failed, 87 passed in 0.23s =========================

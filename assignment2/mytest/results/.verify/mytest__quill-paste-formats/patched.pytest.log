@@ -1,0 +1,40 @@
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events paste pastes html data
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events paste pastes with "paste and match style"
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events paste pastes html data if present with file
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events paste pastes image file if present with image only html
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events paste does not fire selection-change
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events cut keeps formats of first line
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events dangerouslyPasteHTML(html)
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard events dangerouslyPasteHTML(index, html)
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert plain text
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert whitespace
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert inline whitespace
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert intentional whitespace
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert consecutive intentional whitespace
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert newlines between inline elements
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert multiple newlines between inline elements
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert newlines between block elements
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert multiple newlines between block elements
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert break
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert empty block
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert mixed inline and block
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert alias
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert pre
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert pre with \n node
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert nested list
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert html nested list
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert html nested bullet
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert html nested checklist
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert html partial list
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert html table
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert embeds
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert block embed
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert block embeds within blocks
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert wrapped block embed
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert wrapped block embed with siblings
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert attributor and style match
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert nested styles
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert custom matcher
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert does not execute javascript
+PASSED packages/quill/test/unit/modules/clipboard.spec.ts |  Clipboard convert xss
+===== 0 failed, 39 passed =====

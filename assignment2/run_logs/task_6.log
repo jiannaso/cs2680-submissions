@@ -1,0 +1,36 @@
+== task 6: instance_gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718
+== image: jefzda/sweap-images:gravitational.teleport-gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718
+gravitational.teleport-gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718: Pulling from jefzda/sweap-images
+Digest: sha256:aa32f03dac526c46a948b64a46e0c62080c253b859dec5b1fd2e960c184c5d6b
+Status: Image is up to date for jefzda/sweap-images:gravitational.teleport-gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718
+docker.io/jefzda/sweap-images:gravitational.teleport-gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718
+== workdir in container: /app
+== no Python >=3.10 in image; bootstrapping one with uv
+Downloading cpython-3.12.15-linux-x86_64-gnu (download) (32.7MiB)
+ Downloaded cpython-3.12.15-linux-x86_64-gnu (download)
+Installed Python 3.12.15 in 4.48s
+ + cpython-3.12.15-linux-x86_64-gnu (python3.12)
+warning: `/root/.local/bin` is not on your PATH. To use installed Python executables, run `export PATH="/root/.local/bin:$PATH"` or `uv python update-shell`.
+== harness interpreter: /tmp/uv-pythons/cpython-3.12-linux-x86_64-gnu/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_instance_gravitational__teleport-89f0432ad5dc70f1f6a30ec3a8363d548371a718.diff
+diff --git a/lib/utils/utils.go b/lib/utils/utils.go
+index 3eb860e792..13cd9ef1bb 100644
+--- a/lib/utils/utils.go
++++ b/lib/utils/utils.go
+@@ -18,6 +18,7 @@ package utils
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"fmt"
+ 	"io"
+ 	"io/ioutil"
+@@ -537,6 +538,52 @@ func FileExists(fp string) bool {
+ 	return true
+ }
+ 
++// ErrLimitReached is returned when the read limit is reached
++var ErrLimitReached = errors.New("read limit reached")
++
++// limitedReader wraps an io.Reader and limits the number of bytes it can return.

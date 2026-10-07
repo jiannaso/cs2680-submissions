@@ -1,0 +1,147 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+collected 81 items
+
+test_schedule.py ....................................................... [ 67%]
+...............F....F.....                                               [100%]
+
+=================================== FAILURES ===================================
+_______________ SchedulerTests.test_tz_daily_opposite_dst_change _______________
+
+self = <test_schedule.SchedulerTests testMethod=test_tz_daily_opposite_dst_change>
+
+    def test_tz_daily_opposite_dst_change(self):
+        mock_job = self.make_tz_mock_job()
+    
+        # TZ_BERLIN_INVERTED changes in the opposite direction of Berlin
+        # This is a fictional timezone
+        TZ_BERLIN_INVERTED = "CET-1CEST,M10.5.0/3,M3.5.0"
+        with mock_datetime(2024, 3, 31, 0, 0, 0, TZ_BERLIN_INVERTED):
+            # In Berlin at March 31 2024, 02:00:00 clocks were turned forward 1 hour
+            # In Berlin Inverted, the clocks move back 1 hour at the same time
+            # Current time Berlin Inverted:  31 Mar, 00:00 (UTC+02:00)
+            # Current time Berlin:           31 Mar, 00:00 (UTC+01:00)
+            # Expected time Berlin:          31 Mar, 10:00 (UTC+02:00) +9 hour
+            # Expected time Berlin Inverted: 31 Mar, 09:00 (UTC+01:00)
+            schedule.clear()
+            next = (
+                schedule.every().day.at("10:00", "Europe/Berlin").do(mock_job).next_run
+            )
+>           assert next.day == 31
+E           assert 1 == 31
+E            +  where 1 = MockDate(2024, 4, 1, 9, 0).day
+
+test_schedule.py:1142: AssertionError
+__________________ SchedulerTests.test_tz_minutes_year_round ___________________
+
+self = <test_schedule.SchedulerTests testMethod=test_tz_minutes_year_round>
+
+    def test_tz_minutes_year_round(self):
+        mock_job = self.make_tz_mock_job()
+        # Test a full year of scheduling across timezones, where one timezone
+        # is in the northern hemisphere and the other in the southern hemisphere
+        # These two timezones are also a bit exotic (not the usual UTC+1, UTC-1)
+        # Local timezone: Newfoundland, Canada: UTC-2:30 / DST UTC-3:30
+        # Remote timezone: Chatham Islands, New Zealand: UTC+12:45 / DST UTC+13:45
+        schedule.clear()
+        job = schedule.every(20).minutes.at(":13", "Canada/Newfoundland").do(mock_job)
+        with mock_datetime(2024, 9, 29, 2, 20, 0, TZ_CHATHAM):
+            # First run, nothing special, no utc-offset change
+            # Current time: 29 sept, 02:20:00  Chatham
+            # Current time: 28 sept, 11:05:00  Newfoundland
+            # Expected time: 28 sept, 11:20:13 Newfoundland
+            # Expected time: 29 sept, 02:40:13 Chatham
+            job.run()
+            assert job.next_run.day == 29
+            assert job.next_run.hour == 2
+>           assert job.next_run.minute == 40
+E           assert 39 == 40
+E            +  where 39 = MockDate(2024, 9, 29, 2, 39, 13).minute
+E            +    where MockDate(2024, 9, 29, 2, 39, 13) = Every 20 minutes at 00:00:13 do job() (last run: 2024-09-29 02:20:00, next run: 2024-09-29 02:39:13).next_run
+
+test_schedule.py:954: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test_schedule.py::SchedulerTests::test_align_utc_offset_after_fold_fixate
+PASSED test_schedule.py::SchedulerTests::test_align_utc_offset_no_change
+PASSED test_schedule.py::SchedulerTests::test_align_utc_offset_no_timezone
+PASSED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold
+PASSED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_1
+PASSED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_2
+PASSED test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_gap
+PASSED test_schedule.py::SchedulerTests::test_at_time
+PASSED test_schedule.py::SchedulerTests::test_at_time_hour
+PASSED test_schedule.py::SchedulerTests::test_at_time_minute
+PASSED test_schedule.py::SchedulerTests::test_cancel_job
+PASSED test_schedule.py::SchedulerTests::test_cancel_jobs
+PASSED test_schedule.py::SchedulerTests::test_clear_by_tag
+PASSED test_schedule.py::SchedulerTests::test_daylight_saving_time
+PASSED test_schedule.py::SchedulerTests::test_get_by_tag
+PASSED test_schedule.py::SchedulerTests::test_idle_seconds
+PASSED test_schedule.py::SchedulerTests::test_job_func_args_are_passed_on
+PASSED test_schedule.py::SchedulerTests::test_misconfigured_job_wont_break_scheduler
+PASSED test_schedule.py::SchedulerTests::test_move_to_next_weekday_nextweek
+PASSED test_schedule.py::SchedulerTests::test_move_to_next_weekday_today
+PASSED test_schedule.py::SchedulerTests::test_move_to_next_weekday_tommorrow
+PASSED test_schedule.py::SchedulerTests::test_next_run_property
+PASSED test_schedule.py::SchedulerTests::test_next_run_time
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_day_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_katmandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_hour_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_katmhandu
+PASSED test_schedule.py::SchedulerTests::test_next_run_time_minute_end_london
+PASSED test_schedule.py::SchedulerTests::test_next_run_with_tag
+PASSED test_schedule.py::SchedulerTests::test_repr_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_run_all
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_args
+PASSED test_schedule.py::SchedulerTests::test_run_all_with_decorator_defaultargs
+PASSED test_schedule.py::SchedulerTests::test_run_every_n_days_at_specific_time
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_past_today
+PASSED test_schedule.py::SchedulerTests::test_run_every_weekday_at_specific_time_today
+PASSED test_schedule.py::SchedulerTests::test_run_pending
+PASSED test_schedule.py::SchedulerTests::test_singular_time_units_match_plural_units
+PASSED test_schedule.py::SchedulerTests::test_tag_type_enforcement
+PASSED test_schedule.py::SchedulerTests::test_time_range
+PASSED test_schedule.py::SchedulerTests::test_time_range_repr
+PASSED test_schedule.py::SchedulerTests::test_time_units
+PASSED test_schedule.py::SchedulerTests::test_to_repr
+PASSED test_schedule.py::SchedulerTests::test_to_string
+PASSED test_schedule.py::SchedulerTests::test_to_string_functools_partial_job_func
+PASSED test_schedule.py::SchedulerTests::test_to_string_lambda_job_func
+PASSED test_schedule.py::SchedulerTests::test_tz
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_different_simultaneous_dst_change
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_ending_point
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_overlap_hour
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_skip_hour
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_dst_starting_point
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_end_month_offset
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_end_year_cross_continent
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_exact_future_scheduling
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_exact_seconds_precision
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_half_hour_offset
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_592
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_605
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_before_dst_end
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_mid_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_post_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_issue_608_pre_dst
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_leap_year
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_midnight
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_new_year_offset
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_skip_dst_change
+PASSED test_schedule.py::SchedulerTests::test_tz_daily_utc
+PASSED test_schedule.py::SchedulerTests::test_tz_hourly_intermediate_conversion
+PASSED test_schedule.py::SchedulerTests::test_tz_invalid_timezone_exceptions
+PASSED test_schedule.py::SchedulerTests::test_tz_weekly_large_interval_backward
+PASSED test_schedule.py::SchedulerTests::test_tz_weekly_large_interval_forward
+PASSED test_schedule.py::SchedulerTests::test_tz_weekly_sunday_conversion
+PASSED test_schedule.py::SchedulerTests::test_until_time
+PASSED test_schedule.py::SchedulerTests::test_weekday_at_todady
+FAILED test_schedule.py::SchedulerTests::test_tz_daily_opposite_dst_change - ...
+FAILED test_schedule.py::SchedulerTests::test_tz_minutes_year_round - assert ...
+========================= 2 failed, 79 passed in 0.52s =========================

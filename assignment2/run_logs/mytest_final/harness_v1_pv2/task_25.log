@@ -1,0 +1,28 @@
+== task 25: mytest__quill-paste-formats
+== image: madsloop-mytest:quill-paste-formats
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:quill-paste-formats
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__quill-paste-formats.diff
+diff --git a/packages/quill/core b/packages/quill/core
+new file mode 100644
+index 0000000..132b745
+Binary files /dev/null and b/packages/quill/core differ
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..4acbd0b 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -392,7 +392,14 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
++function matchAlias(
++  format: string,
++  node: Element,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
++  const match = scroll.query(format);

@@ -1,0 +1,212 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0
+rootdir: /app
+configfile: pyproject.toml
+collected 43 items
+
+tests/test_cli.py .................................FF........            [100%]
+
+=================================== FAILURES ===================================
+_ test_run_interpolation_respects_override[--no-override-environment-environment\nenvironment/suffix\n] _
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_run_interpolation_respect1')
+option = '--no-override', existing_value = 'environment'
+expected = 'environment\nenvironment/suffix\n'
+
+    @pytest.mark.parametrize(
+        "option,existing_value,expected",
+        [
+            ("--override", "environment", "file\nfile/suffix\n"),
+            ("--no-override", "environment", "environment\nenvironment/suffix\n"),
+            ("--no-override", "", "\n/suffix\n"),
+        ],
+    )
+    def test_run_interpolation_respects_override(
+        tmp_path, option, existing_value, expected
+    ):
+        (tmp_path / ".env").write_text(
+            "DOTENV_TEST_BASE=file\nDOTENV_TEST_DERIVED=${DOTENV_TEST_BASE}/suffix\n"
+        )
+        env = dict(os.environ)
+        env.pop("DOTENV_TEST_DERIVED", None)
+        env["DOTENV_TEST_BASE"] = existing_value
+    
+        result = run_dotenv(
+            [
+                "run",
+                option,
+                sys.executable,
+                "-c",
+                "import os; print(os.environ['DOTENV_TEST_BASE']); "
+                "print(os.environ['DOTENV_TEST_DERIVED'])",
+            ],
+            cwd=tmp_path,
+            env=env,
+        )
+    
+>       check_process(result, exit_code=0, stdout=expected)
+
+tests/test_cli.py:246: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+process = CompletedProcess(args=['dotenv', 'run', '--no-override', '/usr/local/bin/python', '-c', "import os; print(os.environ['...TEST_BASE']); print(os.environ['DOTENV_TEST_DERIVED'])"], returncode=0, stdout='environment\nfile/suffix\n', stderr='')
+exit_code = 0, stdout = 'environment\nenvironment/suffix\n'
+
+    def check_process(
+        process: subprocess.CompletedProcess,
+        exit_code: int,
+        stdout: str | None = None,
+    ):
+        """
+        Check that the process completed with the expected exit code and output.
+    
+        This provides better error messages than directly checking the attributes.
+        """
+    
+        assert process.returncode == exit_code, (
+            f"Unexpected exit code {process.returncode} (expected {exit_code})\n"
+            f"stdout:\n{process.stdout}\n"
+            f"stderr:\n{process.stderr}"
+        )
+    
+        if stdout is not None:
+>           assert process.stdout == stdout, (
+                f"Unexpected output: {process.stdout.strip()!r} (expected {stdout!r})"
+            )
+E           AssertionError: Unexpected output: 'environment\nfile/suffix' (expected 'environment\nenvironment/suffix\n')
+E           assert 'environment\nfile/suffix\n' == 'environment\...ment/suffix\n'
+E             
+E               environment
+E             - environment/suffix
+E             + file/suffix
+
+tests/test_lib.py:44: AssertionError
+_____ test_run_interpolation_respects_override[--no-override--\n/suffix\n] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-0/test_run_interpolation_respect2')
+option = '--no-override', existing_value = '', expected = '\n/suffix\n'
+
+    @pytest.mark.parametrize(
+        "option,existing_value,expected",
+        [
+            ("--override", "environment", "file\nfile/suffix\n"),
+            ("--no-override", "environment", "environment\nenvironment/suffix\n"),
+            ("--no-override", "", "\n/suffix\n"),
+        ],
+    )
+    def test_run_interpolation_respects_override(
+        tmp_path, option, existing_value, expected
+    ):
+        (tmp_path / ".env").write_text(
+            "DOTENV_TEST_BASE=file\nDOTENV_TEST_DERIVED=${DOTENV_TEST_BASE}/suffix\n"
+        )
+        env = dict(os.environ)
+        env.pop("DOTENV_TEST_DERIVED", None)
+        env["DOTENV_TEST_BASE"] = existing_value
+    
+        result = run_dotenv(
+            [
+                "run",
+                option,
+                sys.executable,
+                "-c",
+                "import os; print(os.environ['DOTENV_TEST_BASE']); "
+                "print(os.environ['DOTENV_TEST_DERIVED'])",
+            ],
+            cwd=tmp_path,
+            env=env,
+        )
+    
+>       check_process(result, exit_code=0, stdout=expected)
+
+tests/test_cli.py:246: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+process = CompletedProcess(args=['dotenv', 'run', '--no-override', '/usr/local/bin/python', '-c', "import os; print(os.environ['DOTENV_TEST_BASE']); print(os.environ['DOTENV_TEST_DERIVED'])"], returncode=0, stdout='\nfile/suffix\n', stderr='')
+exit_code = 0, stdout = '\n/suffix\n'
+
+    def check_process(
+        process: subprocess.CompletedProcess,
+        exit_code: int,
+        stdout: str | None = None,
+    ):
+        """
+        Check that the process completed with the expected exit code and output.
+    
+        This provides better error messages than directly checking the attributes.
+        """
+    
+        assert process.returncode == exit_code, (
+            f"Unexpected exit code {process.returncode} (expected {exit_code})\n"
+            f"stdout:\n{process.stdout}\n"
+            f"stderr:\n{process.stderr}"
+        )
+    
+        if stdout is not None:
+>           assert process.stdout == stdout, (
+                f"Unexpected output: {process.stdout.strip()!r} (expected {stdout!r})"
+            )
+E           AssertionError: Unexpected output: 'file/suffix' (expected '\n/suffix\n')
+E           assert '\nfile/suffix\n' == '\n/suffix\n'
+E             
+E               
+E             - /suffix
+E             + file/suffix
+E             ? ++++
+
+tests/test_lib.py:44: AssertionError
+=============================== warnings summary ===============================
+tests/test_cli.py: 28 warnings
+  /app/tests/conftest.py:8: DeprecationWarning: 'isolated_filesystem' is deprecated and will be removed in Click 9.0. Use 'tempfile.TemporaryDirectory' or pytest's 'tmp_path' fixture with absolute paths instead.
+    with runner.isolated_filesystem():
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+==================================== PASSES ====================================
+________________________ test_unset_non_existent_value _________________________
+------------------------------ Captured log call -------------------------------
+WARNING  dotenv.main:main.py:286 Key a not removed from /tmp/pytest-of-root/pytest-0/test_unset_non_existent_value0/.env - key doesn't exist.
+=========================== short test summary info ============================
+PASSED tests/test_cli.py::test_list[None-x='a b c'-x=a b c\n]
+PASSED tests/test_cli.py::test_list[simple-x='a b c'-x=a b c\n]
+PASSED tests/test_cli.py::test_list[simple-x='"a b c"'-x="a b c"\n]
+PASSED tests/test_cli.py::test_list[simple-x="'a b c'"-x='a b c'\n]
+PASSED tests/test_cli.py::test_list[json-x='a b c'-{\n  "x": "a b c"\n}\n]
+PASSED tests/test_cli.py::test_list[shell-x='a b c'-x='a b c'\n]
+PASSED tests/test_cli.py::test_list[shell-x='"a b c"'-x='"a b c"'\n]
+PASSED tests/test_cli.py::test_list[shell-x="'a b c'"-x=''"'"'a b c'"'"''\n]
+PASSED tests/test_cli.py::test_list[shell-x='a\nb\nc'-x='a\nb\nc'\n]
+PASSED tests/test_cli.py::test_list[export-x='a b c'-export x='a b c'\n]
+PASSED tests/test_cli.py::test_list_non_existent_file
+PASSED tests/test_cli.py::test_list_not_a_file
+PASSED tests/test_cli.py::test_list_no_file
+PASSED tests/test_cli.py::test_get_existing_value
+PASSED tests/test_cli.py::test_get_non_existent_value
+PASSED tests/test_cli.py::test_get_non_existent_file
+PASSED tests/test_cli.py::test_get_not_a_file
+PASSED tests/test_cli.py::test_unset_existing_value
+PASSED tests/test_cli.py::test_unset_non_existent_value
+PASSED tests/test_cli.py::test_set_quote_options[always-a-x-a='x'\n]
+PASSED tests/test_cli.py::test_set_quote_options[never-a-x-a=x\n]
+PASSED tests/test_cli.py::test_set_quote_options[auto-a-x-a=x\n]
+PASSED tests/test_cli.py::test_set_quote_options[auto-a-x y-a='x y'\n]
+PASSED tests/test_cli.py::test_set_quote_options[auto-a-$-a='$'\n]
+PASSED tests/test_cli.py::test_set_export[dotenv_path0-true-a-x-export a='x'\n]
+PASSED tests/test_cli.py::test_set_export[dotenv_path1-false-a-x-a='x'\n]
+PASSED tests/test_cli.py::test_set_non_existent_file
+PASSED tests/test_cli.py::test_set_no_file
+PASSED tests/test_cli.py::test_get_default_path
+PASSED tests/test_cli.py::test_run
+PASSED tests/test_cli.py::test_run_with_existing_variable
+PASSED tests/test_cli.py::test_run_with_existing_variable_not_overridden
+PASSED tests/test_cli.py::test_run_interpolation_respects_override[--override-environment-file\nfile/suffix\n]
+PASSED tests/test_cli.py::test_run_with_none_value
+PASSED tests/test_cli.py::test_run_with_other_env
+PASSED tests/test_cli.py::test_run_without_cmd
+PASSED tests/test_cli.py::test_run_with_invalid_cmd
+PASSED tests/test_cli.py::test_run_with_env_missing_and_invalid_cmd
+PASSED tests/test_cli.py::test_run_with_version
+PASSED tests/test_cli.py::test_run_with_command_flags
+PASSED tests/test_cli.py::test_run_with_dotenv_and_command_flags
+FAILED tests/test_cli.py::test_run_interpolation_respects_override[--no-override-environment-environment\nenvironment/suffix\n]
+FAILED tests/test_cli.py::test_run_interpolation_respects_override[--no-override--\n/suffix\n]
+================== 2 failed, 41 passed, 28 warnings in 2.65s ===================

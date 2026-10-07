@@ -1,0 +1,28 @@
+== task 0: mytest__boltons-513
+== image: madsloop-mytest:boltons-513
+Error response from daemon: pull access denied for madsloop-mytest, repository does not exist or may require 'docker login'
+== using local image madsloop-mytest:boltons-513
+== workdir in container: /app
+== harness interpreter: /usr/local/bin/python3.12 (Python 3.12.15)
+madsLoop finished: done
+== patch written to model_patch_mytest__boltons-513.diff
+diff --git a/boltons/ioutils.py b/boltons/ioutils.py
+index bfcaf3f..44639bc 100644
+--- a/boltons/ioutils.py
++++ b/boltons/ioutils.py
+@@ -301,14 +301,21 @@ class SpooledBytesIO(SpooledIOBase):
+ 
+     def write(self, s):
+         self._checkClosed()
+-        if not isinstance(s, bytes):
++        if isinstance(s, memoryview):
++            nbytes = s.nbytes
++        elif isinstance(s, bytearray):
++            nbytes = len(s)
++        elif isinstance(s, bytes):
++            nbytes = len(s)
++        else:
+             raise TypeError("bytes expected, got {}".format(
+                 type(s).__name__
+             ))
+ 

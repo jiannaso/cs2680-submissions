@@ -1,0 +1,43 @@
+diff --git a/src/dotenv/cli.py b/src/dotenv/cli.py
+index 79613e2..bd5bb53 100644
+--- a/src/dotenv/cli.py
++++ b/src/dotenv/cli.py
+@@ -190,7 +190,7 @@ def run(ctx: click.Context, override: bool, commandline: tuple[str, ...]) -> Non
+         )
+     dotenv_as_dict = {
+         k: v
+-        for (k, v) in dotenv_values(file).items()
++        for (k, v) in dotenv_values(file, override=override).items()
+         if v is not None and (override or k not in os.environ)
+     }
+ 
+diff --git a/src/dotenv/main.py b/src/dotenv/main.py
+index 3123690..7b60cb0 100644
+--- a/src/dotenv/main.py
++++ b/src/dotenv/main.py
+@@ -441,6 +441,7 @@ def dotenv_values(
+     verbose: bool = False,
+     interpolate: bool = True,
+     encoding: Optional[str] = "utf-8",
++    override: bool = True,
+ ) -> Dict[str, Optional[str]]:
+     """
+     Parse a .env file and return its content as a dict.
+@@ -455,6 +456,8 @@ def dotenv_values(
+         verbose: Whether to output a warning if the .env file is missing.
+         interpolate: Whether to interpolate variables using POSIX variable expansion.
+         encoding: Encoding to be used to read the file.
++        override: Whether to override the system environment variables with the variables
++            from the `.env` file during interpolation.
+ 
+     If both `dotenv_path` and `stream` are `None`, `find_dotenv()` is used to find the
+     .env file.
+@@ -467,7 +470,7 @@ def dotenv_values(
+         stream=stream,
+         verbose=verbose,
+         interpolate=interpolate,
+-        override=True,
++        override=override,
+         encoding=encoding,
+     ).dict()
+ 

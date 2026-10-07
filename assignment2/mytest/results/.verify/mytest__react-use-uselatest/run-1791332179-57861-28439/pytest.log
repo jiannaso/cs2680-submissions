@@ -1,0 +1,3 @@
+PASSED tests/useLatest.test.ts | should return a ref with the latest value on initial render
+PASSED tests/useLatest.test.ts | should always return a ref with the latest value after each update
+===== 0 failed, 2 passed =====
