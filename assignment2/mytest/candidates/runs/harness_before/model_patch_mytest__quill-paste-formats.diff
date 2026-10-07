@@ -1,0 +1,150 @@
+diff --git a/packages/quill/src/modules/clipboard.ts b/packages/quill/src/modules/clipboard.ts
+index 50af925..c866d09 100644
+--- a/packages/quill/src/modules/clipboard.ts
++++ b/packages/quill/src/modules/clipboard.ts
+@@ -14,13 +14,7 @@ import logger from '../core/logger';
+ import Module from '../core/module';
+ import Quill from '../core/quill';
+ import type { Range } from '../core/selection';
+-import { AlignAttribute, AlignStyle } from '../formats/align';
+-import { BackgroundStyle } from '../formats/background';
+ import CodeBlock from '../formats/code';
+-import { ColorStyle } from '../formats/color';
+-import { DirectionAttribute, DirectionStyle } from '../formats/direction';
+-import { FontStyle } from '../formats/font';
+-import { SizeStyle } from '../formats/size';
+ import { deleteRange } from './keyboard';
+ 
+ const debug = logger('quill:clipboard');
+@@ -46,26 +40,6 @@ const CLIPBOARD_CONFIG: [Selector, Matcher][] = [
+   ['style', matchIgnore],
+ ];
+ 
+-const ATTRIBUTE_ATTRIBUTORS = [AlignAttribute, DirectionAttribute].reduce(
+-  (memo: Record<string, Attributor>, attr) => {
+-    memo[attr.keyName] = attr;
+-    return memo;
+-  },
+-  {},
+-);
+-
+-const STYLE_ATTRIBUTORS = [
+-  AlignStyle,
+-  BackgroundStyle,
+-  ColorStyle,
+-  DirectionStyle,
+-  FontStyle,
+-  SizeStyle,
+-].reduce((memo: Record<string, Attributor>, attr) => {
+-  memo[attr.keyName] = attr;
+-  return memo;
+-}, {});
+-
+ interface ClipboardOptions {
+   matchers: [Selector, Matcher][];
+ }
+@@ -392,7 +366,13 @@ function traverse(
+   return new Delta();
+ }
+ 
+-function matchAlias(format: string, node: Element, delta: Delta) {
++function matchAlias(
++  format: string,
++  node: Element,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
++  if (scroll.query(format, Scope.BLOT) == null) return delta;
+   return applyFormat(delta, format, true);
+ }
+ 
+@@ -405,19 +385,12 @@ function matchAttributor(node: HTMLElement, delta: Delta, scroll: ScrollBlot) {
+     .concat(classes)
+     .concat(styles)
+     .forEach((name) => {
+-      let attr = scroll.query(name, Scope.ATTRIBUTE) as Attributor;
++      const attr = scroll.query(name, Scope.ATTRIBUTE) as Attributor | null;
+       if (attr != null) {
+-        formats[attr.attrName] = attr.value(node);
+-        if (formats[attr.attrName]) return;
+-      }
+-      attr = ATTRIBUTE_ATTRIBUTORS[name];
+-      if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+-        formats[attr.attrName] = attr.value(node) || undefined;
+-      }
+-      attr = STYLE_ATTRIBUTORS[name];
+-      if (attr != null && (attr.attrName === name || attr.keyName === name)) {
+-        attr = STYLE_ATTRIBUTORS[name];
+-        formats[attr.attrName] = attr.value(node) || undefined;
++        const value = attr.value(node);
++        if (value) {
++          formats[attr.attrName] = value;
++        }
+       }
+     });
+   if (Object.keys(formats).length > 0) {
+@@ -448,7 +421,11 @@ function matchBlot(node: Node, delta: Delta, scroll: ScrollBlot) {
+     // @ts-expect-error
+     if (typeof match.formats === 'function') {
+       // @ts-expect-error
+-      return applyFormat(delta, match.blotName, match.formats(node, scroll));
++      const formats = match.formats(node, scroll);
++      if (formats) {
++        // @ts-expect-error
++        return applyFormat(delta, match.blotName, formats);
++      }
+     }
+   }
+   return delta;
+@@ -463,8 +440,9 @@ function matchBreak(node: Node, delta: Delta) {
+ 
+ function matchCodeBlock(node: Node, delta: Delta, scroll: ScrollBlot) {
+   const match = scroll.query('code-block');
++  if (match == null) return delta;
+   // @ts-expect-error
+-  const language = match ? match.formats(node, scroll) : true;
++  const language = match.formats(node, scroll);
+   return applyFormat(delta, 'code-block', language);
+ }
+ 
+@@ -532,22 +510,33 @@ function matchNewline(node: Node, delta: Delta, scroll: ScrollBlot) {
+   return delta;
+ }
+ 
+-function matchStyles(node: HTMLElement, delta: Delta) {
++function matchStyles(
++  node: HTMLElement,
++  delta: Delta,
++  scroll: ScrollBlot,
++) {
+   const formats: Record<string, unknown> = {};
+   const style: Partial<CSSStyleDeclaration> = node.style || {};
+-  if (style.fontStyle === 'italic') {
++  if (style.fontStyle === 'italic' && scroll.query('italic', Scope.BLOT) != null) {
+     formats.italic = true;
+   }
+-  if (style.textDecoration === 'underline') {
++  if (
++    style.textDecoration === 'underline' &&
++    scroll.query('underline', Scope.BLOT) != null
++  ) {
+     formats.underline = true;
+   }
+-  if (style.textDecoration === 'line-through') {
++  if (
++    style.textDecoration === 'line-through' &&
++    scroll.query('strike', Scope.BLOT) != null
++  ) {
+     formats.strike = true;
+   }
+   if (
+-    style.fontWeight?.startsWith('bold') ||
+-    // @ts-expect-error Fix me later
+-    parseInt(style.fontWeight, 10) >= 700
++    (style.fontWeight?.startsWith('bold') ||
++      // @ts-expect-error Fix me later
++      parseInt(style.fontWeight, 10) >= 700) &&
++    scroll.query('bold', Scope.BLOT) != null
+   ) {
+     formats.bold = true;
+   }

@@ -1,0 +1,184 @@
+diff --git a/packages/quill/test/unit/core/quill.spec.ts b/packages/quill/test/unit/core/quill.spec.ts
+index 6dda6b88..9680b200 100644
+--- a/packages/quill/test/unit/core/quill.spec.ts
++++ b/packages/quill/test/unit/core/quill.spec.ts
+@@ -1,11 +1,16 @@
+ import '../../../src/quill.js';
+ import Delta from 'quill-delta';
++import { Registry } from 'parchment';
+ import { beforeEach, describe, expect, test, vitest } from 'vitest';
+ import type { MockedFunction } from 'vitest';
+ import Emitter from '../../../src/core/emitter.js';
+ import Theme from '../../../src/core/theme.js';
+ import Toolbar from '../../../src/modules/toolbar.js';
+-import Quill, { expandConfig, overload } from '../../../src/core/quill.js';
++import Quill, {
++  expandConfig,
++  globalRegistry,
++  overload,
++} from '../../../src/core/quill.js';
+ import { Range } from '../../../src/core/selection.js';
+ import Snow from '../../../src/themes/snow.js';
+ import { normalizeHTML } from '../__helpers__/utils.js';
+@@ -779,6 +784,74 @@ describe('Quill', () => {
+         Toolbar.DEFAULTS.handlers.clean,
+       );
+     });
++
++    test('registry defaults to globalRegistry', () => {
++      const config = expandConfig(`#${testContainerId}`, {});
++      expect(config.registry).toBe(globalRegistry);
++    });
++
++    describe('formats', () => {
++      test('null value allows all formats', () => {
++        const config = expandConfig(`#${testContainerId}`, {
++          formats: null,
++        });
++
++        expect(config.registry.query('cursor')).toBeTruthy();
++        expect(config.registry.query('bold')).toBeTruthy();
++      });
++
++      test('always allows core formats', () => {
++        const config = expandConfig(`#${testContainerId}`, {
++          formats: ['bold'],
++        });
++
++        expect(config.registry.query('cursor')).toBeTruthy();
++        expect(config.registry.query('break')).toBeTruthy();
++      });
++
++      test('limits allowed formats', () => {
++        const config = expandConfig(`#${testContainerId}`, {
++          formats: ['bold'],
++        });
++
++        expect(config.registry.query('italic')).toBeFalsy();
++        expect(config.registry.query('bold')).toBeTruthy();
++      });
++
++      test('ignores unknown formats', () => {
++        const name = 'my-unregistered-format';
++        const config = expandConfig(`#${testContainerId}`, {
++          formats: [name],
++        });
++
++        expect(config.registry.query(name)).toBeFalsy();
++      });
++
++      test('registers list container when there is a list', () => {
++        expect(
++          expandConfig(`#${testContainerId}`, {
++            formats: ['bold'],
++          }).registry.query('list-container'),
++        ).toBeFalsy();
++
++        expect(
++          expandConfig(`#${testContainerId}`, {
++            formats: ['list'],
++          }).registry.query('list-container'),
++        ).toBeTruthy();
++      });
++
++      test('provides both registry and formats', () => {
++        const registry = new Registry();
++        const config = expandConfig(`#${testContainerId}`, {
++          registry,
++          formats: ['bold'],
++        });
++
++        expect(config.registry).toBe(registry);
++        expect(config.registry.query('bold')).toBeFalsy();
++      });
++    });
+   });
+ 
+   describe('overload', () => {
+diff --git a/packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts b/packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts
+new file mode 100644
+index 00000000..331ed177
+--- /dev/null
++++ b/packages/quill/test/unit/core/utils/createRegistryWithFormats.spec.ts
+@@ -0,0 +1,81 @@
++import '../../../../src/quill.js';
++import { describe, expect, test, vitest } from 'vitest';
++import createRegistryWithFormats from '../../../../src/core/utils/createRegistryWithFormats.js';
++import { globalRegistry } from '../../../../src/core/quill.js';
++import logger from '../../../../src/core/logger.js';
++import { Registry } from 'parchment';
++import Inline from '../../../../src/blots/inline.js';
++import Container from '../../../../src/blots/container.js';
++
++const debug = logger('test');
++
++describe('createRegistryWithFormats', () => {
++  test('register core formats', () => {
++    const registry = createRegistryWithFormats([], globalRegistry, debug);
++    expect(registry.query('cursor')).toBeTruthy();
++    expect(registry.query('bold')).toBeFalsy();
++  });
++
++  test('register specified formats', () => {
++    const registry = createRegistryWithFormats(['bold'], globalRegistry, debug);
++    expect(registry.query('cursor')).toBeTruthy();
++    expect(registry.query('bold')).toBeTruthy();
++  });
++
++  test('register required container', () => {
++    const sourceRegistry = new Registry();
++
++    class RequiredContainer extends Container {
++      static blotName = 'my-required-container';
++    }
++    class Child extends Inline {
++      static requiredContainer = RequiredContainer;
++      static blotName = 'my-child';
++    }
++
++    sourceRegistry.register(Child);
++
++    const registry = createRegistryWithFormats(
++      ['my-child'],
++      sourceRegistry,
++      debug,
++    );
++
++    expect(registry.query('my-child')).toBeTruthy();
++    expect(registry.query('my-required-container')).toBeTruthy();
++  });
++
++  test('infinite loop', () => {
++    const sourceRegistry = new Registry();
++
++    class InfiniteBlot extends Inline {
++      static requiredContainer = InfiniteBlot;
++      static blotName = 'infinite-blot';
++    }
++
++    sourceRegistry.register(InfiniteBlot);
++
++    const logError = vitest.spyOn(debug, 'error');
++    const registry = createRegistryWithFormats(
++      ['infinite-blot'],
++      sourceRegistry,
++      debug,
++    );
++
++    expect(registry.query('infinite-blot')).toBeTruthy();
++    expect(logError).toHaveBeenCalledWith(
++      expect.stringMatching('Cycle detected'),
++    );
++  });
++
++  test('report missing formats', () => {
++    const logError = vitest.spyOn(debug, 'error');
++    const registry = createRegistryWithFormats(
++      ['my-unknown'],
++      globalRegistry,
++      debug,
++    );
++    expect(registry.query('my-unknown')).toBeFalsy();
++    expect(logError).toHaveBeenCalledWith(expect.stringMatching('my-unknown'));
++  });
++});

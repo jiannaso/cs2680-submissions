@@ -1,0 +1,119 @@
+diff --git a/starlette/middleware/trustedhost.py b/starlette/middleware/trustedhost.py
+index 98451e2..f94c0ea 100644
+--- a/starlette/middleware/trustedhost.py
++++ b/starlette/middleware/trustedhost.py
+@@ -1,5 +1,6 @@
+ from __future__ import annotations
+ 
++import re
+ from collections.abc import Sequence
+ 
+ from starlette.datastructures import URL, Headers
+@@ -8,6 +9,31 @@ from starlette.types import ASGIApp, Receive, Scope, Send
+ 
+ ENFORCE_DOMAIN_WILDCARD = "Domain wildcard patterns must be like '*.example.com'."
+ 
++# Regex for validating host headers.
++# Matches valid hostnames and bracketed IPv6 addresses, optionally with a numeric port.
++_HOST_RE = re.compile(
++    r"^([a-z0-9._-]+|\[[a-f0-9]*:[a-f0-9.:]+\])(?::[0-9]+)?$", re.IGNORECASE
++)
++
++
++def _get_host(host_header: str) -> str:
++    """Extract the host from a Host header value, stripping the port if present.
++
++    Handles bracketed IPv6 addresses like [::1]:8000 correctly.
++    Returns the host with brackets for IPv6 (e.g. "[::1]" for "[::1]", "[::1]" for "[::1]:8000"),
++    and without port for non-IPv6 (e.g. "api_service" for "api_service:8000").
++    """
++    if host_header.startswith("["):
++        # Bracketed IPv6 address: find the closing bracket
++        bracket_end = host_header.find("]")
++        if bracket_end != -1:
++            return host_header[: bracket_end + 1]
++        return host_header
++    # Non-bracketed: split on the last colon for port
++    if ":" in host_header:
++        return host_header.rsplit(":", 1)[0]
++    return host_header
++
+ 
+ class TrustedHostMiddleware:
+     def __init__(
+@@ -29,7 +55,7 @@ class TrustedHostMiddleware:
+         self.www_redirect = www_redirect
+ 
+     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+-        if self.allow_any or scope["type"] not in (
++        if scope["type"] not in (
+             "http",
+             "websocket",
+         ):  # pragma: no cover
+@@ -37,7 +63,18 @@ class TrustedHostMiddleware:
+             return
+ 
+         headers = Headers(scope=scope)
+-        host = headers.get("host", "").split(":")[0]
++        host_header = headers.get("host", "")
++
++        if not host_header or not _HOST_RE.fullmatch(host_header):
++            response: Response = PlainTextResponse("Invalid host header", status_code=400)
++            await response(scope, receive, send)
++            return
++
++        if self.allow_any:
++            await self.app(scope, receive, send)
++            return
++
++        host = _get_host(host_header)
+         is_valid_host = False
+         found_www_redirect = False
+         for pattern in self.allowed_hosts:
+diff --git a/starlette/testclient.py b/starlette/testclient.py
+index 23ca964..4789980 100644
+--- a/starlette/testclient.py
++++ b/starlette/testclient.py
+@@ -224,27 +224,32 @@ class _TestClientTransport(httpx.BaseTransport):
+ 
+     def handle_request(self, request: httpx.Request) -> httpx.Response:
+         scheme = request.url.scheme
+-        netloc = request.url.netloc.decode(encoding="ascii")
++        host = request.url.host
++        port = request.url.port
+         path = request.url.path
+         raw_path = request.url.raw_path
+         query = request.url.query.decode(encoding="ascii")
+ 
+         default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+ 
+-        if ":" in netloc:
+-            host, port_string = netloc.split(":", 1)
+-            port = int(port_string)
+-        else:
+-            host = netloc
++        if port is None:
+             port = default_port
+ 
+         # Include the 'host' header.
+         if "host" in request.headers:
+             headers: list[tuple[bytes, bytes]] = []
+-        elif port == default_port:  # pragma: no cover
+-            headers = [(b"host", host.encode())]
+-        else:  # pragma: no cover
+-            headers = [(b"host", (f"{host}:{port}").encode())]
++        elif port == default_port:
++            # For IPv6, use bracketed form; for hostname, just the name
++            if ":" in host:
++                headers = [(b"host", (f"[{host}]").encode())]
++            else:
++                headers = [(b"host", host.encode())]
++        else:
++            # For IPv6, use [host]:port; for hostname, use host:port
++            if ":" in host:
++                headers = [(b"host", (f"[{host}]:{port}").encode())]
++            else:
++                headers = [(b"host", (f"{host}:{port}").encode())]
+ 
+         # Include other request headers.
+         headers += [(key.lower().encode(), value.encode()) for key, value in request.headers.multi_items()]

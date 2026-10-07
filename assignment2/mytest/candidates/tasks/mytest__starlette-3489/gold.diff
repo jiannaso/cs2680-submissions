@@ -1,0 +1,62 @@
+diff --git a/starlette/endpoints.py b/starlette/endpoints.py
+index bdd51dc..21481f6 100644
+--- a/starlette/endpoints.py
++++ b/starlette/endpoints.py
+@@ -22,7 +22,7 @@ class HTTPEndpoint:
+         self.send = send
+         self._allowed_methods = [
+             method
+-            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
++            for method in ("GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "QUERY")
+             if getattr(self, method.lower(), None) is not None
+         ]
+ 
+diff --git a/starlette/middleware/cors.py b/starlette/middleware/cors.py
+index b65fc15..b10cc11 100644
+--- a/starlette/middleware/cors.py
++++ b/starlette/middleware/cors.py
+@@ -8,7 +8,7 @@ from starlette.datastructures import Headers, MutableHeaders
+ from starlette.responses import PlainTextResponse, Response
+ from starlette.types import ASGIApp, Message, Receive, Scope, Send
+ 
+-ALL_METHODS = ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT")
++ALL_METHODS = ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "QUERY")
+ SAFELISTED_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-Type"}
+ 
+ 
+diff --git a/starlette/schemas.py b/starlette/schemas.py
+index cf7d439..484664c 100644
+--- a/starlette/schemas.py
++++ b/starlette/schemas.py
+@@ -44,7 +44,7 @@ class BaseSchemaGenerator:
+         - path
+             eg: /users/
+         - http_method
+-            one of 'get', 'post', 'put', 'patch', 'delete', 'options'
++            one of 'get', 'post', 'put', 'patch', 'delete', 'options', 'query'
+         - func
+             method ready to extract the docstring
+         """
+@@ -78,7 +78,7 @@ class BaseSchemaGenerator:
+                     endpoints_info.append(EndpointInfo(path, method.lower(), route.endpoint))
+             else:
+                 path = self._remove_converter(route.path)
+-                for method in ["get", "post", "put", "patch", "delete", "options"]:
++                for method in ["get", "post", "put", "patch", "delete", "options", "query"]:
+                     if not hasattr(route.endpoint, method):
+                         continue
+                     func = getattr(route.endpoint, method)
+@@ -132,9 +132,13 @@ class SchemaGenerator(BaseSchemaGenerator):
+     def get_schema(self, routes: list[BaseRoute]) -> dict[str, Any]:
+         schema = dict(self.base_schema)
+         schema.setdefault("paths", {})
++        openapi_version_match = re.match(r"^(\d+)\.(\d+)", str(schema.get("openapi", "")))
++        supports_query = openapi_version_match is not None and tuple(map(int, openapi_version_match.groups())) >= (3, 2)
+         endpoints_info = self.get_endpoints(routes)
+ 
+         for endpoint in endpoints_info:
++            if endpoint.http_method == "query" and not supports_query:
++                continue
+             parsed = self.parse_docstring(endpoint.func)
+ 
+             if not parsed:

@@ -1,0 +1,5 @@
+harness_before_pb1 mytest__quill-paste-formats: fail_to_pass: 1/3 pass_to_pass: 36/36 unresolved 
+harness_before_pb2 mytest__quill-paste-formats: fail_to_pass: 1/3 pass_to_pass: 36/36 unresolved 
+harness_before_pb3 mytest__quill-paste-formats: fail_to_pass: 3/3 pass_to_pass: 36/36 RESOLVED 
+harness_v1_pv2 mytest__quill-paste-formats: unresolved (container exit 4) 
+harness_before_pb4 mytest__quill-paste-formats: fail_to_pass: 1/3 pass_to_pass: 36/36 unresolved 

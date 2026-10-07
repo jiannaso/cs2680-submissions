@@ -1,0 +1,11 @@
+== mytest__schedule-604
+== image: madsloop-mytest:schedule-604
+== patch: <none: base_commit baseline>
+== pytest: ========================= 4 failed, 38 passed in 0.56s =========================
+== fail_to_pass: 0/4 passing
+   FAILED   test_schedule.py::SchedulerTests::test_at_timezone
+   FAILED   test_schedule.py::SchedulerTests::test_next_run_time_hour_end_katmandu
+   FAILED   test_schedule.py::SchedulerTests::test_next_run_time_hour_end_london
+   FAILED   test_schedule.py::SchedulerTests::test_next_run_time_minute_end_katmhandu
+== pass_to_pass: 38/38 passing
+unresolved

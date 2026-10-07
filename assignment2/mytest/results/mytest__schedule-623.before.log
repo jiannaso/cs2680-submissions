@@ -1,0 +1,19 @@
+== mytest__schedule-623
+== image: madsloop-mytest:schedule-623
+== patch: <none: base_commit baseline>
+== pytest: ======================== 12 failed, 69 passed in 0.73s =========================
+== fail_to_pass: 0/12 passing
+   FAILED   test_schedule.py::SchedulerTests::test_align_utc_offset_after_fold_fixate
+   FAILED   test_schedule.py::SchedulerTests::test_align_utc_offset_no_change
+   FAILED   test_schedule.py::SchedulerTests::test_align_utc_offset_no_timezone
+   FAILED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold
+   FAILED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_1
+   FAILED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_2
+   FAILED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_gap
+   FAILED   test_schedule.py::SchedulerTests::test_move_to_next_weekday_nextweek
+   FAILED   test_schedule.py::SchedulerTests::test_move_to_next_weekday_today
+   FAILED   test_schedule.py::SchedulerTests::test_move_to_next_weekday_tommorrow
+   FAILED   test_schedule.py::SchedulerTests::test_tz_daily_opposite_dst_change
+   FAILED   test_schedule.py::SchedulerTests::test_tz_minutes_year_round
+== pass_to_pass: 69/69 passing
+unresolved

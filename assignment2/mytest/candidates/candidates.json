@@ -1,0 +1,218 @@
+{
+  "mytest__boltons-513": {
+    "instance_id": "mytest__boltons-513",
+    "repo": "mahmoud/boltons",
+    "base_commit": "961dcff3f42e73b245aef65e377fe82763b257bb",
+    "docker_image": "madsloop-mytest:boltons-513",
+    "problem_statement": "`boltons.ioutils.SpooledBytesIO` and `SpooledStringIO` do not behave like regular file objects in two ways. First, `write()` does not return the amount written as the `io` contract requires (the number of bytes for the bytes variant, the number of characters for the text variant), which breaks callers such as `io.BufferedWriter` wrapping a `SpooledBytesIO` (flush fails), and the rollover-to-disk threshold must be computed from the actual byte count written. Second, in `SpooledStringIO`, a relative backwards seek (`seek(-n, os.SEEK_CUR)`) moves to the wrong position because it is not computed in characters, and a seek to a negative absolute position should raise `ValueError` without moving the stream. The task is done when both spooled classes return the correct count from `write()` both before and after rolling over to a temporary file, work under `io.BufferedWriter`, and `SpooledStringIO` handles relative backwards seeks in characters and rejects negative destinations while leaving the current position unchanged.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__python-dotenv-615": {
+    "instance_id": "mytest__python-dotenv-615",
+    "repo": "theskumar/python-dotenv",
+    "base_commit": "6bdf86adb2b8e3d9e3031b3a81f24851c8bfca0e",
+    "docker_image": "madsloop-mytest:python-dotenv-615",
+    "problem_statement": "python-dotenv does not expand a leading `~` in file paths, so `load_dotenv(\"~/.env\")` silently loads nothing and `set_key(\"~/.env\", \"A\", \"1\")` writes to a file literally named `~` relative to the current directory instead of the user's home directory; the same happens for `dotenv_values`, `get_key` and `unset_key`, and for the command-line `--file` option (e.g. `dotenv --file ~/.env list`). Paths may be given as `str` or `os.PathLike`. The task is done when every one of these entry points expands a leading `~` to the user's home directory (as `os.path.expanduser` does) before reading or writing, for both string and `Path` arguments, keeping the path's type (a `str` stays a `str`, a `Path` stays a `Path`, `None` stays `None`), while paths without `~` and explicit relative paths behave exactly as before.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__python-dotenv-698": {
+    "instance_id": "mytest__python-dotenv-698",
+    "repo": "theskumar/python-dotenv",
+    "base_commit": "a00cb2eed0704cd6d2071b2004c37e95ccc86ee5",
+    "docker_image": "madsloop-mytest:python-dotenv-698",
+    "problem_statement": "`dotenv run --no-override` does not fully honour the no-override setting: variables that already exist in the environment are correctly kept for the child process, but when values in the .env file are interpolated the expansion still uses the .env file's values. For example, with a .env file containing `BASE=file` and `DERIVED=${BASE}/suffix` and `BASE=environment` already set in the environment, `dotenv run --no-override cmd` gives the child `BASE=environment` but `DERIVED=file/suffix`, which is inconsistent. A variable that exists in the environment counts as set even if its value is the empty string (then `DERIVED` should be `/suffix`). The task is done when `dotenv run --no-override` resolves `${...}` references using the existing environment values where a variable exists, so the child process sees `BASE=environment` and `DERIVED=environment/suffix`, while `dotenv run --override` (the default) keeps giving .env values priority (`file` and `file/suffix`).",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tenacity-643": {
+    "instance_id": "mytest__tenacity-643",
+    "repo": "jd/tenacity",
+    "base_commit": "a49e9d6dd4e4611238dc277263d1975e1cada21e",
+    "docker_image": "madsloop-mytest:tenacity-643",
+    "problem_statement": "When a retry controller is created with `enabled=False`, using it through the iteration protocol still runs the full retry machinery: `for attempt in Retrying(enabled=False, stop=stop_after_attempt(3)): with attempt: ...` executes the block up to three times and finally raises a `RetryError` instead of the original exception, and `async for attempt in AsyncRetrying(enabled=False, ...)` behaves the same way. This is inconsistent with the decorator form, `@retry(enabled=False)`, which already calls the function exactly once and lets any exception propagate unchanged. The task is done when iterating over a disabled `Retrying` or `AsyncRetrying` controller yields a single attempt, a successful body runs once, and a failing body raises its original exception (not a `RetryError`) after exactly one execution, while enabled controllers behave as before.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tenacity-645": {
+    "instance_id": "mytest__tenacity-645",
+    "repo": "jd/tenacity",
+    "base_commit": "949dcfa6c0a4f0109dbbd019ff58208a580d185b",
+    "docker_image": "madsloop-mytest:tenacity-645",
+    "problem_statement": "Calling a retry controller directly ignores its `enabled` flag: with `r = Retrying(enabled=False, stop=stop_after_attempt(3))`, `r(fn)` still retries a failing `fn` three times and raises a `RetryError` wrapping the original exception, and `await AsyncRetrying(enabled=False, ...)(fn)` does the same for coroutine functions. The decorator form (`@retry(enabled=False)`) and the iteration protocols already treat a disabled controller as \"run once, no retrying\", so the direct-call path is the odd one out. The task is done when calling a disabled `Retrying` or `AsyncRetrying` controller runs the function exactly once, returns its result on success, and propagates the original exception unchanged on failure, while enabled controllers keep their current behaviour.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tldextract-383": {
+    "instance_id": "mytest__tldextract-383",
+    "repo": "john-kurkowski/tldextract",
+    "base_commit": "544e3cc2082751de8ea1fa5fd49be71402992a78",
+    "docker_image": "madsloop-mytest:tldextract-383",
+    "problem_statement": "With `include_psl_private_domains=True`, tldextract reports wrong private-suffix metadata when a hostname matches part of a longer private rule but not all of it. For example, with a suffix list whose private section contains both `example.com` and `service.region.example.com`, extracting `region.example.com` or `tenant.region.example.com` walks into the longer rule, backs off to the shorter private suffix `example.com`, and returns the right subdomain/domain/suffix split, but `is_private` comes out `False` even though the matched suffix `example.com` is a private rule; the same happens with the bundled list for `r.appspot.com`, whose suffix `appspot.com` is a private rule that is the parent of the private wildcard `*.r.appspot.com`. The task is done when the result's `is_private` (and the metadata derived from it, like `registry_suffix` and `top_domain_under_registry_suffix`) always describes the suffix that was actually matched, for partial matches and at wildcard parents, with the subdomain/domain/suffix split unchanged and results without private domains unaffected.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__cachetools-405": {
+    "instance_id": "mytest__cachetools-405",
+    "repo": "tkem/cachetools",
+    "base_commit": "16e88894ef7d79b25a68f5a3b5411ed881342725",
+    "docker_image": "madsloop-mytest:cachetools-405",
+    "problem_statement": "In cachetools, when a cache is created with a `getsizeof` function and an existing key is assigned a larger value, `Cache.__setitem__` evicts more than necessary: `currsize` already includes the key's old size, but the method reserves room for the full new size, so it double-counts the old value and evicts an unrelated entry even though the updated cache would still fit within `maxsize`. For example, in `LRUCache(maxsize=10, getsizeof=len)` holding `a` (size 3) and `b` (size 3), setting `a` to a value of size 5 should leave both keys in the cache (total 8) but currently evicts `b`. The task is done when updating an existing key only evicts entries if the size increase (new size minus old size) does not fit, for every cache class (`Cache`, `FIFOCache`, `LFUCache`, `LRUCache`, `RRCache`, `TTLCache`, `TLRUCache`), including the case where the eviction happens to remove the key being updated itself, after which the new value must be inserted as if it were a new key; `currsize` must stay consistent and values larger than `maxsize` must still raise `ValueError`.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tenacity-694": {
+    "instance_id": "mytest__tenacity-694",
+    "repo": "jd/tenacity",
+    "base_commit": "a09999688c8d3bb3d4ca1716748009954cc7c4d0",
+    "docker_image": "madsloop-mytest:tenacity-694",
+    "problem_statement": "Recent typing changes in tenacity introduced runtime regressions in how wait strategies are handled, which only show up once a retry actually happens. `Retrying(wait=None)`, `wait=0` and `wait=sum([])` (summing an empty list of strategies gives the integer 0) used to mean \"do not wait\" but now crash with `TypeError: 'NoneType' object is not callable` (or `'int' object is not callable`) from inside the retry loop, which also hides the caller's real exception; the same applies to `AsyncRetrying`. Adding a strategy to a plain callable, as in `wait_fixed(1) + my_wait` or `my_wait + wait_fixed(1)` where `my_wait(retry_state)` is an ordinary function, no longer works, and combined waits must call each component with the retry state passed positionally (`fn(retry_state)`), since user callables may name the parameter differently. The task is done when falsy wait values mean no waiting for both `Retrying` and `AsyncRetrying`, adding a strategy and a plain callable works in either order, and `wait_combine` passes the retry state positionally to every component, with the behaviour of normal wait strategies unchanged.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__boltons-458": {
+    "instance_id": "mytest__boltons-458",
+    "repo": "mahmoud/boltons",
+    "base_commit": "d45cc414e33aa4e08a73e0993574df4397e2e9db",
+    "docker_image": "madsloop-mytest:boltons-458",
+    "problem_statement": "`OrderedMultiDict.addlist(key, values)` in boltons is documented to accept \"tuples and other sequences and iterables\", but it silently corrupts the dictionary when given a one-shot iterator such as a generator or `iter([...])`: the method walks the values twice, so the second pass sees an exhausted iterator, and afterwards `keys()` and `repr()` show the key while `getlist(key)` returns `[]` and `get(key)` raises `IndexError`; an empty generator is even worse, because the key gets recorded with no values and `len()` disagrees with `keys()`. boltons has two implementations of this class with the same `addlist` code: the one in `boltons.dictutils`, and the copy in `boltons.urlutils` that backs URL query parameters. The task is done when, in both, `addlist` with any iterable (including one-shot and empty iterators) behaves exactly like passing the equivalent list: all values are stored in order, `getlist`/`get`/`len`/`keys` stay consistent, and an empty iterable adds nothing.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__python-dotenv-680": {
+    "instance_id": "mytest__python-dotenv-680",
+    "repo": "theskumar/python-dotenv",
+    "base_commit": "751f8c148222e58aa173c83c4e5e6cfccb2cc124",
+    "docker_image": "madsloop-mytest:python-dotenv-680",
+    "problem_statement": "Values containing backslashes do not survive a round trip through python-dotenv: `set_key(\".env\", \"P\", r\"C:\\Users\")` writes `P='C:\\Users'`, but `get_key(\".env\", \"P\")` then returns `C:Users`, because the single-quoted value parser treats backslash as an escape character while the writer only escapes single quotes. A value that ends in a backslash is worse: in a line like `P='back\\'` the parser treats `\\'` as an escaped quote, the value runs on into the following lines, and that binding and the ones after it fail to parse. The same problem affects double-quoted values such as `a=\"b\\\\\"` followed by more lines. The task is done when `set_key` (which writes values single-quoted) escapes every backslash as `\\\\` before escaping single quotes as `\\'` (so the value `b\\c` is written as `a='b\\\\c'` and `b\\'c` as `a='b\\\\\\'c'`), so that reading the file back (with `get_key`, `dotenv_values` or `load_dotenv`) returns exactly the original string for any value containing backslashes and/or single quotes, including values ending in a backslash, and when the parser treats a backslash inside a quoted value as escaping the character that follows it, so that `a='b\\\\'` and `a=\"b\\\\\"` parse as `b\\` and do not swallow the next lines.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__python-dotenv-711": {
+    "instance_id": "mytest__python-dotenv-711",
+    "repo": "theskumar/python-dotenv",
+    "base_commit": "828bdfe5ba91b736b545561ebb53326f1f88f6e5",
+    "docker_image": "madsloop-mytest:python-dotenv-711",
+    "problem_statement": "When python-dotenv cannot write a .env file, the error does not say which file it was about. `set_key` and `unset_key` write the new content to a temporary file next to the target and then move it into place, so if the directory of the .env file does not exist (or is not writable), the raised `FileNotFoundError`/`PermissionError` refers to the temporary file (or has no useful `filename`) instead of the .env path, and the command-line interface (`dotenv --file path/to/.env set a b`, and `unset`) crashes with a traceback. The task is done when `set_key` and `unset_key` raise the original error type (`FileNotFoundError`, `PermissionError`, ...) with `filename` set to the .env path (as a string), without creating the missing directory or leaving temporary files behind, and when the CLI `set` and `unset` commands catch such errors and exit with status 2 after printing to stderr exactly `Error writing env file: <error>` followed by a newline, where `<error>` is the error's normal string form, e.g. `Error writing env file: [Errno 2] No such file or directory: '/path/to/nx_dir/.env'`.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tenacity-604": {
+    "instance_id": "mytest__tenacity-604",
+    "repo": "jd/tenacity",
+    "base_commit": "124e3a67c7a9b68f46df39d2a7b1a5e8d15270c1",
+    "docker_image": "madsloop-mytest:tenacity-604",
+    "problem_statement": "There is no simple way to switch tenacity's retrying off, for example during development or in tests: users have to remove the `@retry` decorator or build a different controller. Add an `enabled` option (default `True`) to tenacity's retry controllers so that with `enabled=False` a wrapped function is simply called once and any exception it raises propagates unchanged (no retries, no `RetryError`), for example `@retry(enabled=False, stop=stop_after_attempt(3))` on a function that always raises `ValueError` calls it exactly once and raises that `ValueError`. `enabled` is a controller option like the existing ones (`stop`, `wait`, `reraise`, ...), so it must work in every way those options can be given, changed and used, for regular functions and for coroutines alike. The task is done when `enabled=False` disables retrying wherever the controller options apply, decorated functions keep their usual tenacity attributes, and `enabled=True` behaves exactly as before.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tenacity-597": {
+    "instance_id": "mytest__tenacity-597",
+    "repo": "jd/tenacity",
+    "base_commit": "213446e8f5f73ca0d20e22ec8ee38b1f75a45434",
+    "docker_image": "madsloop-mytest:tenacity-597",
+    "problem_statement": "When `Retrying` or `AsyncRetrying` is used as a context manager (`for attempt in Retrying(...): with attempt: ...`) there is no decorated function, so tenacity's logging helpers (`before_log`, `after_log`, `before_sleep_log`) print `'<unknown>'` instead of a useful name, and users have no way to name the block. Add a `name` option to the retry controllers, handled like their other options, and make `str()` of a controller return its name (or `'<unknown>'` when it has none). Introduce `RetryCallState.get_fn_name()` as the single place that decides the display name: the decorated function's qualified name when there is one, otherwise `str()` of the retry controller; the logging helpers must use it. The task is done when, in context-manager mode, the helpers log the given name (e.g. `Retrying(name=\"ws_listener\", before=before_log(...))` logs `ws_listener`), `str(Retrying())` is `'<unknown>'`, the name behaves like any other controller option, and log messages for decorated functions are unchanged.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__validators-consider-tld": {
+    "instance_id": "mytest__validators-consider-tld",
+    "repo": "python-validators/validators",
+    "base_commit": "6b970dc8083016bae258ddb9db563b224268ed6e",
+    "docker_image": "madsloop-mytest:validators-consider-tld",
+    "problem_statement": "TODO",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tldextract-289": {
+    "instance_id": "mytest__tldextract-289",
+    "repo": "john-kurkowski/tldextract",
+    "base_commit": "4b358ce274cfd2e3b7fb67933433f5a412e7939b",
+    "docker_image": "madsloop-mytest:tldextract-289",
+    "problem_statement": "The `include_psl_private_domains` option given to the `TLDExtract` constructor is ignored when extracting: `TLDExtract(include_psl_private_domains=True)(\"foo.uk.com\")` returns `subdomain='foo', domain='uk', suffix='com'`, exactly like an extractor without private domains, although `uk.com` is in the private section of the Public Suffix List and the expected result is `subdomain='', domain='foo', suffix='uk.com'`. Passing `include_psl_private_domains=True` to the call itself still works; only the value stored on the extractor is lost. The task is done when calls that do not pass `include_psl_private_domains` use the extractor's own setting, calls that do pass it keep overriding the setting for that call, and extractors created with `include_psl_private_domains=False` (the default) keep returning `subdomain='foo', domain='uk', suffix='com'` for that hostname.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__react-use-uselatest": {
+    "instance_id": "mytest__react-use-uselatest",
+    "repo": "streamich/react-use",
+    "base_commit": "b3d14e2c71852e95ba6b40414caf5bf5131fef2e",
+    "docker_image": "madsloop-mytest:react-use-uselatest",
+    "problem_statement": "react-use has no hook for reading the most recent value of a prop or state from inside callbacks, timers or effects without listing it as a dependency, so users end up with stale closures. Add a new hook `useLatest(value)` in its own module `src/useLatest.ts`, following the conventions of the existing hooks, and export it from the package entry point `src/index.ts` as `useLatest` like the other hooks. `useLatest(value)` returns a React ref object (`MutableRefObject<T>`, the same object on every render) whose `.current` holds the value passed on the most recent render: on the first render it is the initial value, and after the component re-renders with a new value it is that new value. The task is done when the hook can be imported from its module and from the package entry point, `result.current.current` reflects the initial value on mount and the latest value after each rerender (e.g. 0, then 1, then 2 when rendered with state 0, 1, 2), and all existing hooks and their tests keep working.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__tldextract-344": {
+    "instance_id": "mytest__tldextract-344",
+    "repo": "john-kurkowski/tldextract",
+    "base_commit": "ad256d9003e6d26e2d2b04b0525d823ba1abc8fb",
+    "docker_image": "madsloop-mytest:tldextract-344",
+    "problem_statement": "tldextract's `ExtractResult` only reports the public suffix that applies under the current settings (`suffix`, which includes private Public Suffix List rules when `include_psl_private_domains=True`), so callers cannot tell which part of the name is the ICANN registry suffix, and `registered_domain` is ambiguous about which suffix it is based on. Add a new field `registry_suffix` to `ExtractResult`, after `is_private` (so results compare equal to `ExtractResult(subdomain=..., domain=..., suffix=..., is_private=..., registry_suffix=...)`), holding the suffix the name would have if private rules were ignored; for example, with private domains enabled `foo.blogspot.com` gives `subdomain='', domain='foo', suffix='blogspot.com', is_private=True, registry_suffix='com'`, and without them `subdomain='foo', domain='blogspot', suffix='com', is_private=False, registry_suffix='com'`. Add two properties: `top_domain_under_public_suffix` (the domain plus `suffix`, e.g. `bbc.co.uk` for `www.bbc.co.uk`; `registered_domain` must keep working as an alias of it) and `top_domain_under_registry_suffix` (the single label directly under `registry_suffix` plus `registry_suffix`, e.g. `amazoncognito.com` for `www.example.auth.us-east-1.amazoncognito.com` whether or not private domains are included). The task is done when every extraction path fills `registry_suffix` correctly (including custom and private suffixes, IP addresses and names without a known suffix, where it is empty), both properties behave as described, and the CLI `--json` output contains `registry_suffix`, `top_domain_under_public_suffix` and `top_domain_under_registry_suffix` alongside the existing keys (for `www.bbc.co.uk`: `co.uk`, `bbc.co.uk`, `bbc.co.uk`).",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__starlette-3472": {
+    "instance_id": "mytest__starlette-3472",
+    "repo": "encode/starlette",
+    "base_commit": "6ad24bb7809c2d833445d5b1cfb9e95c26260e56",
+    "docker_image": "madsloop-mytest:starlette-3472",
+    "problem_statement": "TODO",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__starlette-3471": {
+    "instance_id": "mytest__starlette-3471",
+    "repo": "encode/starlette",
+    "base_commit": "04d7869c1ec3016fa11f58382a9ac7bc14b46662",
+    "docker_image": "madsloop-mytest:starlette-3471",
+    "problem_statement": "Starlette does not handle IPv6 hosts properly. `TrustedHostMiddleware(allowed_hosts=[\"[::1]\", ...])` rejects requests whose `Host` header is the bracketed IPv6 literal `[::1]` or `[::1]:8000` with 400 \"Invalid host header\", because the header's host part is not split from its port correctly for bracketed addresses; and the `TestClient` cannot be used with an IPv6 base URL: with `base_url=\"http://[::1]:8000\"` the ASGI scope's `server` and the `Host` header it sends are wrong (they should be `[\"::1\", 8000]` and `[::1]:8000`, and `[\"::1\", 80]` / `[::1]` for `http://[::1]`). The task is done when `TrustedHostMiddleware` accepts `[::1]` and `[::1]:8000` for an allowed `[::1]` while still rejecting anything malformed or not allowed with 400 (e.g. `[2001:db8::1]`, `[::1`, `[::1]evil.example.com`, `[::1]@attacker`, `[::1].`, `[::1]:evil`, `[::1]:`, `api_service/evil`, `api_service?evil`, `api_service#evil`, `api_service@attacker`, `api service`) and still accepting allowed names with ports such as `api_service:8000`, and when `TestClient` with an IPv6 base URL (`http://[::1]`, `http://[::1]:8000`, `http://[::1]:0`) passes the unbracketed address and the port as the scope's `server` and the bracketed host (with the port when one is given in the URL) as the `Host` header.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__click-3228": {
+    "instance_id": "mytest__click-3228",
+    "repo": "pallets/click",
+    "base_commit": "19fd4d6e18bc9fce451f92f422696b11169faa57",
+    "docker_image": "madsloop-mytest:click-3228",
+    "problem_statement": "When a user mistypes a subcommand, click only says `Error: No such command 'pause'.` and gives no hint, even though it already suggests close matches for mistyped options (`--cat` \u2192 \"Did you mean --count?\"). Add a `NoSuchCommand` exception, exported from the `click` package like the other exceptions, raised by groups for unknown subcommands, that suggests similar command names the same way `NoSuchOption` does for options, and make both use one consistent message format: the error reads `No such command 'NAME'.` / `No such option 'NAME'.`, followed by `Did you mean 'X'?` when there is one close match or `(Did you mean one of: 'X', 'Y'?)` when there are several (names quoted, sorted, comma-separated). For example, with commands `push`, `declare` and `refine`, invoking `pause` should print `Did you mean 'push'?` and `decline` should print `(Did you mean one of: 'declare', 'refine'?)`; for options `--bound` and `--count`, `--cat` gives `Did you mean '--count'?` and `--bounds` gives `(Did you mean one of: '--bound', '--count'?)`. The task is done when unknown commands and unknown options both produce these messages (with no suggestion text when nothing is close), existing callers that catch `UsageError` keep working, and the rest of click's behaviour is unchanged.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__starlette-3489": {
+    "instance_id": "mytest__starlette-3489",
+    "repo": "encode/starlette",
+    "base_commit": "723de8254c606ac7dbed7b7cf21badb86cc4876c",
+    "docker_image": "madsloop-mytest:starlette-3489",
+    "problem_statement": "Starlette does not support the new HTTP `QUERY` method (a safe, idempotent request that carries a body, like a GET with a body); for example, a class-based `HTTPEndpoint` that defines `async def query(self, request)` still answers `QUERY` requests with 405 Method Not Allowed. `QUERY` should be a first-class standard method: wherever Starlette handles, lists, advertises or documents the standard HTTP methods (GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS), `QUERY` must be handled in the same way. One special case: OpenAPI only defines a `query` operation from version 3.2, so generated OpenAPI schemas must include `QUERY` operations only when the schema's `openapi` version is 3.2 or later (e.g. `\"3.2.0\"`) and leave them out for older versions such as `\"3.1.2\"`. The task is done when `QUERY` requests work and are treated consistently with the other standard methods across Starlette, and everything else behaves exactly as before.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__click-edit-path": {
+    "instance_id": "mytest__click-edit-path",
+    "repo": "pallets/click",
+    "base_commit": "2103e157683c5e4cadc8ee1838df526a54bde9a4",
+    "docker_image": "madsloop-mytest:click-edit-path",
+    "problem_statement": "TODO",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__quill-4053": {
+    "instance_id": "mytest__quill-4053",
+    "repo": "slab/quill",
+    "base_commit": "db7455a4a56e44f5426f59339612794cb94c6cdb",
+    "docker_image": "madsloop-mytest:quill-4053",
+    "problem_statement": "Quill has no simple way to restrict which formats an editor accepts: every format registered globally (bold, italic, lists, ...) is always available, and the only workaround is building a custom Parchment `Registry` by hand. Add a `formats` option to the Quill configuration: when it is an array of format names, the editor's registry (the `registry` returned by `expandConfig` and used by the editor) contains only those formats plus Quill's core blots, which must always be present (`block`, `break`, `cursor`, `inline`, `scroll`, `text`), and any container a registered format requires (its `requiredContainer`, followed recursively, so allowing `list` also registers `list-container`); unknown format names are skipped. When `formats` is `null` or not given, the global registry is used as before, and an explicitly passed `registry` option takes precedence over `formats`. Implement the registry construction as a helper `createRegistryWithFormats(formats, sourceRegistry, debug)` in its own module `packages/quill/src/core/utils/createRegistryWithFormats.ts`, following the conventions of Quill's other modules; it returns a new Parchment `Registry` and reports problems through `debug.error(message)`: a format name not found in `sourceRegistry` is reported with a message containing the name, and a cycle of required containers (a blot that requires itself) must not hang but stop and report a message containing `Cycle detected`. The task is done when the option and the helper behave as described and existing configurations are unaffected.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__quill-paste-formats": {
+    "instance_id": "mytest__quill-paste-formats",
+    "repo": "slab/quill",
+    "base_commit": "f8bfde4119c2c6a193ae7d435d4f11c6d764e27f",
+    "docker_image": "madsloop-mytest:quill-paste-formats",
+    "problem_statement": "When HTML is pasted or converted with Quill's clipboard (`quill.clipboard.convert({ html })`), the matchers can produce formats that the editor does not support: the `<b>`/`<i>`/`<strike>` aliases, `<pre>` code blocks, CSS styles and attributes (such as `style=\"direction:rtl\"` or `style=\"color: blue\"`) and blots' own `formats()` always emit their format, even when the editor was created with a custom `registry` that does not contain it, so the resulting delta carries formats the editor cannot render. The task is done when `convert` only emits formats that the editor's own registry (the `registry` the editor was created with) supports, dropping unsupported formats while keeping the text, with everything else unchanged. For example: with the code-block format registered, `<pre> 01 \\n 23 </pre>` converts to the text ` 01 \\n 23 \\n` with `code-block: true`, and without it to the plain text ` 01 \\n 23 ` (whitespace kept, no trailing newline); with any direction attributor registered (style, class or attribute variant), `<p style=\"direction:rtl;\">Test</p>` converts to `Test\\n` with `direction: 'rtl'`, and without one to plain `Test`; and with a color attributor registered (style or class), `<span style=\"color: red;\"><span style=\"color: blue;\">Test</span></span>` converts to `Test` with `color: 'blue'`, and without one to plain `Test`.",
+    "requirements": "",
+    "interface": ""
+  }
+}
