@@ -1,0 +1,85 @@
+diff --git a/tests/middleware/test_trusted_host.py b/tests/middleware/test_trusted_host.py
+index 5b8b217..055d7dc 100644
+--- a/tests/middleware/test_trusted_host.py
++++ b/tests/middleware/test_trusted_host.py
+@@ -1,3 +1,7 @@
++from __future__ import annotations
++
++import pytest
++
+ from starlette.applications import Starlette
+ from starlette.middleware import Middleware
+ from starlette.middleware.trustedhost import TrustedHostMiddleware
+@@ -29,6 +33,41 @@ def test_trusted_host_middleware(test_client_factory: TestClientFactory) -> None
+     assert response.status_code == 400
+ 
+ 
++@pytest.mark.parametrize(
++    ("host", "status_code"),
++    [
++        ("[::1]", 200),
++        ("[::1]:8000", 200),
++        ("[2001:db8::1]", 400),
++        ("[::1", 400),
++        ("[::1]evil.example.com", 400),
++        ("[::1]@attacker", 400),
++        ("[::1].", 400),
++        ("[::1]:evil", 400),
++        ("[::1]:", 400),
++        ("api_service", 200),
++        ("api_service:8000", 200),
++        ("api_service/evil", 400),
++        ("api_service?evil", 400),
++        ("api_service#evil", 400),
++        ("api_service@attacker", 400),
++        ("api service", 400),
++    ],
++)
++def test_trusted_host_middleware_ipv6(test_client_factory: TestClientFactory, host: str, status_code: int) -> None:
++    def homepage(request: Request) -> PlainTextResponse:
++        return PlainTextResponse("OK")
++
++    app = Starlette(
++        routes=[Route("/", endpoint=homepage)],
++        middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=["[::1]", "api_service", "*.example.com"])],
++    )
++
++    client = test_client_factory(app)
++    response = client.get("/", headers={"host": host})
++    assert response.status_code == status_code
++
++
+ def test_default_allowed_hosts() -> None:
+     app = Starlette()
+     middleware = TrustedHostMiddleware(app)
+diff --git a/tests/test_testclient.py b/tests/test_testclient.py
+index e5d4545..ff67b56 100644
+--- a/tests/test_testclient.py
++++ b/tests/test_testclient.py
+@@ -450,6 +450,26 @@ def test_raw_path_with_querystring(test_client_factory: TestClientFactory) -> No
+     assert response.content == b"/hello-world"
+ 
+ 
++@pytest.mark.parametrize(
++    ("base_url", "server", "host"),
++    [
++        ("http://[::1]", ["::1", 80], "[::1]"),
++        ("http://[::1]:8000", ["::1", 8000], "[::1]:8000"),
++        ("http://[::1]:0", ["::1", 0], "[::1]:0"),
++    ],
++)
++def test_ipv6_base_url(
++    test_client_factory: TestClientFactory, base_url: str, server: list[str | int], host: str
++) -> None:
++    def homepage(request: Request) -> JSONResponse:
++        return JSONResponse({"server": request.scope["server"], "host": request.headers["host"]})
++
++    app = Starlette(routes=[Route("/", endpoint=homepage)])
++    client = test_client_factory(app, base_url=base_url)
++    response = client.get("/")
++    assert response.json() == {"server": server, "host": host}
++
++
+ def test_websocket_raw_path_without_params(test_client_factory: TestClientFactory) -> None:
+     async def app(scope: Scope, receive: Receive, send: Send) -> None:
+         websocket = WebSocket(scope, receive=receive, send=send)

@@ -1,0 +1,88 @@
+diff --git a/tests/test_cli.py b/tests/test_cli.py
+index 1833b9d..b6d29c2 100644
+--- a/tests/test_cli.py
++++ b/tests/test_cli.py
+@@ -191,6 +191,40 @@ def test_set_no_file(cli):
+     assert "Missing argument" in result.output
+ 
+ 
++def test_set_missing_directory(cli, tmp_path):
++    dotenv_path = tmp_path / "nx_dir" / ".env"
++
++    result = cli.invoke(dotenv_cli, ["--file", dotenv_path, "set", "a", "b"])
++
++    assert (result.exit_code, result.output) == (
++        2,
++        f"Error writing env file: [Errno 2] No such file or directory: {str(dotenv_path)!r}\n",
++    )
++
++
++@pytest.mark.skipif(
++    sys.platform == "win32" or os.geteuid() == 0,
++    reason="Directory permissions are not enforced on Windows or for root.",
++)
++def test_unset_read_only_directory(cli, tmp_path):
++    directory = tmp_path / "ro"
++    directory.mkdir()
++    dotenv_path = directory / ".env"
++    dotenv_path.write_text("a=b\n")
++    directory.chmod(0o555)
++
++    try:
++        result = cli.invoke(dotenv_cli, ["--file", dotenv_path, "unset", "a"])
++    finally:
++        directory.chmod(0o755)
++
++    assert (result.exit_code, result.output) == (
++        2,
++        f"Error writing env file: [Errno 13] Permission denied: {str(dotenv_path)!r}\n",
++    )
++    assert dotenv_path.read_text() == "a=b\n"
++
++
+ def test_get_default_path(tmp_path):
+     (tmp_path / ".env").write_text("A=x")
+ 
+diff --git a/tests/test_main.py b/tests/test_main.py
+index 6f9d4c5..ded4f1f 100644
+--- a/tests/test_main.py
++++ b/tests/test_main.py
+@@ -195,6 +195,38 @@ def test_set_key_permission_error(dotenv_path):
+     assert dotenv_path.read_text() == ""
+ 
+ 
++def test_set_key_missing_directory(tmp_path):
++    dotenv_path = tmp_path / "nx_dir" / ".env"
++
++    with pytest.raises(FileNotFoundError) as exc_info:
++        dotenv.set_key(dotenv_path, "a", "b")
++
++    assert exc_info.value.filename == str(dotenv_path)
++    assert not dotenv_path.parent.exists()
++
++
++@pytest.mark.skipif(
++    sys.platform == "win32" or os.geteuid() == 0,
++    reason="Directory permissions are not enforced on Windows or for root.",
++)
++def test_set_key_read_only_directory(tmp_path):
++    directory = tmp_path / "ro"
++    directory.mkdir()
++    dotenv_path = directory / ".env"
++    dotenv_path.write_text("a=x\n")
++    directory.chmod(0o555)
++
++    try:
++        with pytest.raises(PermissionError) as exc_info:
++            dotenv.set_key(dotenv_path, "a", "y")
++    finally:
++        directory.chmod(0o755)
++
++    assert exc_info.value.filename == str(dotenv_path)
++    assert dotenv_path.read_text() == "a=x\n"
++    assert list(directory.iterdir()) == [dotenv_path]
++
++
+ def test_get_key_no_file(tmp_path):
+     nx_path = tmp_path / "nx"
+     logger = logging.getLogger("dotenv.main")

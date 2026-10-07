@@ -1,0 +1,19 @@
+== mytest__schedule-623
+== image: madsloop-mytest:schedule-623
+== patch: mytest/tasks/mytest__schedule-623/gold.diff
+== pytest: ============================== 81 passed in 0.44s ==============================
+== fail_to_pass: 12/12 passing
+   PASSED   test_schedule.py::SchedulerTests::test_align_utc_offset_after_fold_fixate
+   PASSED   test_schedule.py::SchedulerTests::test_align_utc_offset_no_change
+   PASSED   test_schedule.py::SchedulerTests::test_align_utc_offset_no_timezone
+   PASSED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold
+   PASSED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_1
+   PASSED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_fold_fixate_2
+   PASSED   test_schedule.py::SchedulerTests::test_align_utc_offset_with_dst_gap
+   PASSED   test_schedule.py::SchedulerTests::test_move_to_next_weekday_nextweek
+   PASSED   test_schedule.py::SchedulerTests::test_move_to_next_weekday_today
+   PASSED   test_schedule.py::SchedulerTests::test_move_to_next_weekday_tommorrow
+   PASSED   test_schedule.py::SchedulerTests::test_tz_daily_opposite_dst_change
+   PASSED   test_schedule.py::SchedulerTests::test_tz_minutes_year_round
+== pass_to_pass: 69/69 passing
+RESOLVED

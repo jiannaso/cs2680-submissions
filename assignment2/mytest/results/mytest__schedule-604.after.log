@@ -1,0 +1,11 @@
+== mytest__schedule-604
+== image: madsloop-mytest:schedule-604
+== patch: mytest/tasks/mytest__schedule-604/gold.diff
+== pytest: ============================== 42 passed in 0.34s ==============================
+== fail_to_pass: 4/4 passing
+   PASSED   test_schedule.py::SchedulerTests::test_at_timezone
+   PASSED   test_schedule.py::SchedulerTests::test_next_run_time_hour_end_katmandu
+   PASSED   test_schedule.py::SchedulerTests::test_next_run_time_hour_end_london
+   PASSED   test_schedule.py::SchedulerTests::test_next_run_time_minute_end_katmhandu
+== pass_to_pass: 38/38 passing
+RESOLVED

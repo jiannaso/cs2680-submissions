@@ -1,0 +1,134 @@
+diff --git a/src/click/__init__.py b/src/click/__init__.py
+index 5da5a39..64be7e0 100644
+--- a/src/click/__init__.py
++++ b/src/click/__init__.py
+@@ -33,6 +33,7 @@ from .exceptions import BadParameter as BadParameter
+ from .exceptions import ClickException as ClickException
+ from .exceptions import FileError as FileError
+ from .exceptions import MissingParameter as MissingParameter
++from .exceptions import NoSuchCommand as NoSuchCommand
+ from .exceptions import NoSuchOption as NoSuchOption
+ from .exceptions import UsageError as UsageError
+ from .formatting import HelpFormatter as HelpFormatter
+diff --git a/src/click/core.py b/src/click/core.py
+index 583b745..e78c417 100644
+--- a/src/click/core.py
++++ b/src/click/core.py
+@@ -29,6 +29,7 @@ from .exceptions import ClickException
+ from .exceptions import Exit
+ from .exceptions import MissingParameter
+ from .exceptions import NoArgsIsHelpError
++from .exceptions import NoSuchCommand
+ from .exceptions import UsageError
+ from .formatting import HelpFormatter
+ from .formatting import join_options
+@@ -1957,7 +1958,17 @@ class Group(Command):
+         if cmd is None and not ctx.resilient_parsing:
+             if _split_opt(cmd_name)[0]:
+                 self.parse_args(ctx, args)
+-            ctx.fail(_("No such command {name!r}.").format(name=original_cmd_name))
++            from difflib import get_close_matches
++
++            cmd_name_str = original_cmd_name
++            possibilities = get_close_matches(
++                cmd_name_str, self.list_commands(ctx)
++            )
++            raise NoSuchCommand(
++                cmd_name_str,
++                possibilities=possibilities,
++                ctx=ctx,
++            )
+         return cmd_name if cmd else None, cmd, args[1:]
+ 
+     def shell_complete(self, ctx: Context, incomplete: str) -> list[CompletionItem]:
+diff --git a/src/click/exceptions.py b/src/click/exceptions.py
+index 71bb263..25bd6a7 100644
+--- a/src/click/exceptions.py
++++ b/src/click/exceptions.py
+@@ -209,6 +209,27 @@ class MissingParameter(BadParameter):
+             return self.message
+ 
+ 
++def _format_suggestion(
++    possibilities: cabc.Sequence[str],
++    single_msg: str,
++    plural_msg: str,
++) -> str:
++    """Format a suggestion message for close matches.
++
++    :param possibilities: Sequence of possible matches (should be sorted).
++    :param single_msg: Message template for a single match, e.g. "Did you mean {possibility}?"
++    :param plural_msg: Message template for multiple matches, e.g. "(Did you mean one of: {possibilities}?)"
++    :return: The formatted suggestion string.
++    """
++    possibility_str = ", ".join(f"{p!r}" for p in possibilities)
++    suggest = ngettext(
++        single_msg,
++        plural_msg,
++        len(possibilities),
++    ).format(possibility=possibility_str, possibilities=possibility_str)
++    return suggest
++
++
+ class NoSuchOption(UsageError):
+     """Raised if click attempted to handle an option that does not
+     exist.
+@@ -224,7 +245,7 @@ class NoSuchOption(UsageError):
+         ctx: Context | None = None,
+     ) -> None:
+         if message is None:
+-            message = _("No such option: {name}").format(name=option_name)
++            message = _("No such option {name!r}.").format(name=option_name)
+ 
+         super().__init__(message, ctx)
+         self.option_name = option_name
+@@ -235,11 +256,45 @@ class NoSuchOption(UsageError):
+             return self.message
+ 
+         possibility_str = ", ".join(sorted(self.possibilities))
+-        suggest = ngettext(
++        suggest = _format_suggestion(
++            sorted(self.possibilities),
+             "Did you mean {possibility}?",
+-            "(Possible options: {possibilities})",
+-            len(self.possibilities),
+-        ).format(possibility=possibility_str, possibilities=possibility_str)
++            "(Did you mean one of: {possibilities}?)",
++        )
++        return f"{self.message} {suggest}"
++
++
++class NoSuchCommand(UsageError):
++    """Raised if click attempted to handle a command that does not
++    exist.
++
++    .. versionadded:: NEXT.VERSION
++    """
++
++    def __init__(
++        self,
++        command_name: str,
++        message: str | None = None,
++        possibilities: cabc.Sequence[str] | None = None,
++        ctx: Context | None = None,
++    ) -> None:
++        if message is None:
++            message = _("No such command {name!r}.").format(name=command_name)
++
++        super().__init__(message, ctx)
++        self.command_name = command_name
++        self.possibilities = possibilities
++
++    def format_message(self) -> str:
++        if not self.possibilities:
++            return self.message
++
++        possibility_str = ", ".join(sorted(self.possibilities))
++        suggest = _format_suggestion(
++            sorted(self.possibilities),
++            "Did you mean {possibility}?",
++            "(Did you mean one of: {possibilities}?)",
++        )
+         return f"{self.message} {suggest}"
+ 
+ 

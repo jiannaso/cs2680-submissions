@@ -1,0 +1,17 @@
+A mytest__boltons-513: == fail_to_pass: 5/6 passing == pass_to_pass: 82/82 passing unresolved 
+A mytest__schedule-604: == fail_to_pass: 3/4 passing == pass_to_pass: 38/38 passing unresolved 
+A mytest__python-dotenv-680: == fail_to_pass: 6/7 passing == pass_to_pass: 162/162 passing unresolved 
+B mytest__boltons-513: == fail_to_pass: 5/6 passing == pass_to_pass: 82/82 passing unresolved 
+B mytest__python-dotenv-680: == fail_to_pass: 3/7 passing == pass_to_pass: 162/162 passing unresolved 
+U1 mytest__tldextract-344: == fail_to_pass: 7/7 passing == pass_to_pass: 41/41 passing RESOLVED 
+U1 mytest__schedule-623: == fail_to_pass: 10/12 passing == pass_to_pass: 69/69 passing unresolved 
+U2 mytest__tldextract-344: == fail_to_pass: 7/7 passing == pass_to_pass: 41/41 passing RESOLVED 
+U2 mytest__schedule-623: == fail_to_pass: 11/12 passing == pass_to_pass: 69/69 passing unresolved 
+Q1 mytest__quill-4053: == fail_to_pass: 6/7 passing == pass_to_pass: 102/102 passing unresolved 
+Q2 mytest__quill-4053: == fail_to_pass: 6/7 passing == pass_to_pass: 102/102 passing unresolved 
+QA1 mytest__quill-4053: == fail_to_pass: 6/7 passing == pass_to_pass: 102/102 passing unresolved 
+QA2 mytest__quill-4053: == fail_to_pass: 6/7 passing == pass_to_pass: 102/102 passing unresolved 
+PA1 mytest__quill-paste-formats: == fail_to_pass: 1/3 passing == pass_to_pass: 36/36 passing unresolved 
+PA2 mytest__quill-paste-formats: == fail_to_pass: 3/3 passing == pass_to_pass: 36/36 passing RESOLVED 
+BO1 mytest__boltons-513: == fail_to_pass: 4/6 passing == pass_to_pass: 82/82 passing unresolved 
+BO2 mytest__boltons-513: == fail_to_pass: 4/6 passing == pass_to_pass: 82/82 passing unresolved 

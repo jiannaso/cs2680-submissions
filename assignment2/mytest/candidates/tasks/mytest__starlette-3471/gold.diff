@@ -1,0 +1,136 @@
+diff --git a/starlette/_utils.py b/starlette/_utils.py
+index b9b8639..c50ebec 100644
+--- a/starlette/_utils.py
++++ b/starlette/_utils.py
+@@ -1,6 +1,7 @@
+ from __future__ import annotations
+ 
+ import functools
++import re
+ import sys
+ from collections.abc import AsyncGenerator, Awaitable, Callable, Generator
+ from contextlib import AbstractAsyncContextManager, asynccontextmanager
+@@ -30,6 +31,9 @@ if sys.version_info < (3, 11):  # pragma: no cover
+ T = TypeVar("T")
+ AwaitableCallable = Callable[..., Awaitable[T]]
+ 
++# Reject characters that could make a Host header change the URL path or authority.
++_HOST_RE = re.compile(r"^([a-z0-9._~%!$&'()*+,;=-]+|\[[a-f0-9]*:[a-f0-9.:]+\])(?::[0-9]+)?$", re.IGNORECASE)
++
+ 
+ @overload
+ def is_async_callable(obj: AwaitableCallable[T]) -> TypeIs[AwaitableCallable[T]]: ...
+@@ -93,6 +97,16 @@ async def create_collapsing_task_group() -> AsyncGenerator[anyio.abc.TaskGroup,
+         raise exc from exc.__cause__ or context
+ 
+ 
++def parse_host_header(host_header: str) -> str | None:
++    """Parse `host_header` into its host component.
++
++    The result excludes the port and preserves brackets around IPv6 addresses.
++    Invalid headers produce `None`.
++    """
++    match = _HOST_RE.fullmatch(host_header)
++    return match.group(1) if match is not None else None
++
++
+ def get_route_path(scope: Scope) -> str:
+     path: str = scope["path"]
+     root_path = scope.get("root_path", "")
+diff --git a/starlette/datastructures.py b/starlette/datastructures.py
+index 33ecb1b..01d49d5 100644
+--- a/starlette/datastructures.py
++++ b/starlette/datastructures.py
+@@ -1,11 +1,11 @@
+ from __future__ import annotations
+ 
+-import re
+ from collections.abc import ItemsView, Iterable, Iterator, KeysView, Mapping, MutableMapping, Sequence, ValuesView
+ from shlex import shlex
+ from typing import Any, BinaryIO, Literal, NamedTuple, TypeVar, cast
+ from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
+ 
++from starlette._utils import parse_host_header
+ from starlette.concurrency import run_in_threadpool
+ from starlette.types import Scope
+ 
+@@ -21,9 +21,6 @@ _KeyType = TypeVar("_KeyType")
+ # that is, you can't do `Mapping[str, Animal]()["fido"] = Dog()`
+ _CovariantValueType = TypeVar("_CovariantValueType", covariant=True)
+ 
+-# Rejects Host header chars (/, ?, #, @, ...) that would let urlsplit produce a path differing from scope["path"].
+-_HOST_RE = re.compile(r"^([a-z0-9.-]+|\[[a-f0-9]*:[a-f0-9.:]+\])(?::[0-9]+)?$", re.IGNORECASE)
+-
+ 
+ class URL:
+     def __init__(
+@@ -46,7 +43,7 @@ class URL:
+                     host_header = value.decode("latin-1")
+                     break
+ 
+-            if host_header is not None and _HOST_RE.fullmatch(host_header):
++            if host_header is not None and parse_host_header(host_header) is not None:
+                 netloc = host_header
+             elif server is not None:
+                 host, port = server
+diff --git a/starlette/middleware/trustedhost.py b/starlette/middleware/trustedhost.py
+index 98451e2..cccdfd2 100644
+--- a/starlette/middleware/trustedhost.py
++++ b/starlette/middleware/trustedhost.py
+@@ -2,6 +2,7 @@ from __future__ import annotations
+ 
+ from collections.abc import Sequence
+ 
++from starlette._utils import parse_host_header
+ from starlette.datastructures import URL, Headers
+ from starlette.responses import PlainTextResponse, RedirectResponse, Response
+ from starlette.types import ASGIApp, Receive, Scope, Send
+@@ -37,7 +38,11 @@ class TrustedHostMiddleware:
+             return
+ 
+         headers = Headers(scope=scope)
+-        host = headers.get("host", "").split(":")[0]
++        host = parse_host_header(headers.get("host", ""))
++        if host is None:
++            await PlainTextResponse("Invalid host header", status_code=400)(scope, receive, send)
++            return
++
+         is_valid_host = False
+         found_www_redirect = False
+         for pattern in self.allowed_hosts:
+diff --git a/starlette/testclient.py b/starlette/testclient.py
+index 23ca964..40a5943 100644
+--- a/starlette/testclient.py
++++ b/starlette/testclient.py
+@@ -224,27 +224,21 @@ class _TestClientTransport(httpx.BaseTransport):
+ 
+     def handle_request(self, request: httpx.Request) -> httpx.Response:
+         scheme = request.url.scheme
+-        netloc = request.url.netloc.decode(encoding="ascii")
++        host = request.url.raw_host.decode(encoding="ascii")
+         path = request.url.path
+         raw_path = request.url.raw_path
+         query = request.url.query.decode(encoding="ascii")
+ 
+         default_port = {"http": 80, "ws": 80, "https": 443, "wss": 443}[scheme]
+-
+-        if ":" in netloc:
+-            host, port_string = netloc.split(":", 1)
+-            port = int(port_string)
+-        else:
+-            host = netloc
++        port = request.url.port
++        if port is None:
+             port = default_port
+ 
+         # Include the 'host' header.
+         if "host" in request.headers:
+             headers: list[tuple[bytes, bytes]] = []
+-        elif port == default_port:  # pragma: no cover
+-            headers = [(b"host", host.encode())]
+         else:  # pragma: no cover
+-            headers = [(b"host", (f"{host}:{port}").encode())]
++            headers = [(b"host", request.url.netloc)]
+ 
+         # Include other request headers.
+         headers += [(key.lower().encode(), value.encode()) for key, value in request.headers.multi_items()]

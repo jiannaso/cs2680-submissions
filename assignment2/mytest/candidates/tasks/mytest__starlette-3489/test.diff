@@ -1,0 +1,234 @@
+diff --git a/tests/middleware/test_cors.py b/tests/middleware/test_cors.py
+index 7fb7d0b..84ec9f7 100644
+--- a/tests/middleware/test_cors.py
++++ b/tests/middleware/test_cors.py
+@@ -257,12 +257,11 @@ def test_cors_preflight_allow_all_methods(
+ 
+     client = test_client_factory(app)
+ 
+-    headers = {
+-        "Origin": "https://example.org",
+-        "Access-Control-Request-Method": "POST",
+-    }
+-
+-    for method in ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"):
++    for method in ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT", "QUERY"):
++        headers = {
++            "Origin": "https://example.org",
++            "Access-Control-Request-Method": method,
++        }
+         response = client.options("/", headers=headers)
+         assert response.status_code == 200
+         assert method in response.headers["access-control-allow-methods"]
+diff --git a/tests/test_endpoints.py b/tests/test_endpoints.py
+index dfc2019..33746fe 100644
+--- a/tests/test_endpoints.py
++++ b/tests/test_endpoints.py
+@@ -18,6 +18,9 @@ class Homepage(HTTPEndpoint):
+             return PlainTextResponse("Hello, world!")
+         return PlainTextResponse(f"Hello, {username}!")
+ 
++    async def query(self, request: Request) -> PlainTextResponse:
++        return PlainTextResponse("Hello, QUERY!")
++
+ 
+ app = Router(routes=[Route("/", endpoint=Homepage), Route("/{username}", endpoint=Homepage)])
+ 
+@@ -44,7 +47,13 @@ def test_http_endpoint_route_method(client: TestClient) -> None:
+     response = client.post("/")
+     assert response.status_code == 405
+     assert response.text == "Method Not Allowed"
+-    assert response.headers["allow"] == "GET"
++    assert response.headers["allow"] == "GET, QUERY"
++
++
++def test_http_endpoint_route_query_method(client: TestClient) -> None:
++    response = client.request("QUERY", "/")
++    assert response.status_code == 200
++    assert response.text == "Hello, QUERY!"
+ 
+ 
+ def test_http_endpoint_does_not_dispatch_non_verb_method(test_client_factory: TestClientFactory) -> None:
+diff --git a/tests/test_routing.py b/tests/test_routing.py
+index 7f1c43e..004459b 100644
+--- a/tests/test_routing.py
++++ b/tests/test_routing.py
+@@ -80,6 +80,10 @@ def contact(request: Request) -> Response:
+     return Response("Hello, POST!", media_type="text/plain")
+ 
+ 
++def search(request: Request) -> Response:
++    return Response("Hello, QUERY!", media_type="text/plain")
++
++
+ def int_convertor(request: Request) -> JSONResponse:
+     number = request.path_params["param"]
+     return JSONResponse({"int": number})
+@@ -148,6 +152,7 @@ app = Router(
+         Mount("/static", app=Response("xxxxx", media_type="image/png")),
+         Route("/func", endpoint=func_homepage, methods=["GET"]),
+         Route("/func", endpoint=contact, methods=["POST"]),
++        Route("/search", endpoint=search, methods=["QUERY"]),
+         Route("/int/{param:int}", endpoint=int_convertor, name="int-convertor"),
+         Route("/float/{param:float}", endpoint=float_convertor, name="float-convertor"),
+         Route("/path/{param:path}", endpoint=path_convertor, name="path-convertor"),
+@@ -304,6 +309,17 @@ def test_router_duplicate_path(client: TestClient) -> None:
+     assert response.text == "Hello, POST!"
+ 
+ 
++def test_router_query_method(client: TestClient) -> None:
++    response = client.request("QUERY", "/search")
++    assert response.status_code == 200
++    assert response.text == "Hello, QUERY!"
++
++    response = client.get("/search")
++    assert response.status_code == 405
++    assert response.text == "Method Not Allowed"
++    assert response.headers["allow"] == "QUERY"
++
++
+ def test_router_add_websocket_route(client: TestClient) -> None:
+     with client.websocket_connect("/ws") as session:
+         text = session.receive_text()
+diff --git a/tests/test_schemas.py b/tests/test_schemas.py
+index 3b321ca..8d580ee 100644
+--- a/tests/test_schemas.py
++++ b/tests/test_schemas.py
+@@ -7,7 +7,7 @@ from starlette.schemas import SchemaGenerator
+ from starlette.websockets import WebSocket
+ from tests.types import TestClientFactory
+ 
+-schemas = SchemaGenerator({"openapi": "3.0.0", "info": {"title": "Example API", "version": "1.0"}})
++schemas = SchemaGenerator({"openapi": "3.2.0", "info": {"title": "Example API", "version": "1.0"}})
+ 
+ 
+ def ws(session: WebSocket) -> None:
+@@ -48,6 +48,17 @@ def create_user(request: Request) -> None:
+     pass  # pragma: no cover
+ 
+ 
++def query_users(request: Request) -> None:
++    """
++    responses:
++      200:
++        description: Users matching a query.
++        examples:
++          [{"username": "tom"}]
++    """
++    pass  # pragma: no cover
++
++
+ class OrganisationsEndpoint(HTTPEndpoint):
+     def get(self, request: Request) -> None:
+         """
+@@ -69,6 +80,16 @@ class OrganisationsEndpoint(HTTPEndpoint):
+         """
+         pass  # pragma: no cover
+ 
++    def query(self, request: Request) -> None:
++        """
++        responses:
++          200:
++            description: Organisations matching a query.
++            examples:
++              [{"name": "Foo Corp."}]
++        """
++        pass  # pragma: no cover
++
+ 
+ def regular_docstring_and_schema(request: Request) -> None:
+     """
+@@ -119,6 +140,7 @@ app = Starlette(
+         Route("/users/{id:int}", endpoint=get_user, methods=["GET"]),
+         Route("/users", endpoint=list_users, methods=["GET", "HEAD"]),
+         Route("/users", endpoint=create_user, methods=["POST"]),
++        Route("/users", endpoint=query_users, methods=["QUERY"]),
+         Route("/orgs", endpoint=OrganisationsEndpoint),
+         Route("/regular-docstring-and-schema", endpoint=regular_docstring_and_schema),
+         Route("/regular-docstring", endpoint=regular_docstring),
+@@ -133,7 +155,7 @@ app = Starlette(
+ def test_schema_generation() -> None:
+     schema = schemas.get_schema(routes=app.routes)
+     assert schema == {
+-        "openapi": "3.0.0",
++        "openapi": "3.2.0",
+         "info": {"title": "Example API", "version": "1.0"},
+         "paths": {
+             "/orgs": {
+@@ -153,6 +175,14 @@ def test_schema_generation() -> None:
+                         }
+                     }
+                 },
++                "query": {
++                    "responses": {
++                        200: {
++                            "description": "Organisations matching a query.",
++                            "examples": [{"name": "Foo Corp."}],
++                        }
++                    }
++                },
+             },
+             "/regular-docstring-and-schema": {
+                 "get": {"responses": {200: {"description": "This is included in the schema."}}}
+@@ -173,6 +203,14 @@ def test_schema_generation() -> None:
+                     }
+                 },
+                 "post": {"responses": {200: {"description": "A user.", "examples": {"username": "tom"}}}},
++                "query": {
++                    "responses": {
++                        200: {
++                            "description": "Users matching a query.",
++                            "examples": [{"username": "tom"}],
++                        }
++                    }
++                },
+             },
+             "/users/{id}": {
+                 "get": {
+@@ -188,11 +226,19 @@ def test_schema_generation() -> None:
+     }
+ 
+ 
++def test_query_schema_requires_openapi_3_2() -> None:
++    schemas = SchemaGenerator({"openapi": "3.1.2", "info": {"title": "Example API", "version": "1.0"}})
++    schema = schemas.get_schema(routes=app.routes)
++
++    assert "query" not in schema["paths"]["/users"]
++    assert "query" not in schema["paths"]["/orgs"]
++
++
+ EXPECTED_SCHEMA = """
+ info:
+   title: Example API
+   version: '1.0'
+-openapi: 3.0.0
++openapi: 3.2.0
+ paths:
+   /orgs:
+     get:
+@@ -208,6 +254,12 @@ paths:
+           description: An organisation.
+           examples:
+             name: Foo Corp.
++    query:
++      responses:
++        200:
++          description: Organisations matching a query.
++          examples:
++          - name: Foo Corp.
+   /regular-docstring-and-schema:
+     get:
+       responses:
+@@ -237,6 +289,12 @@ paths:
+           description: A user.
+           examples:
+             username: tom
++    query:
++      responses:
++        200:
++          description: Users matching a query.
++          examples:
++          - username: tom
+   /users/{id}:
+     get:
+       responses:

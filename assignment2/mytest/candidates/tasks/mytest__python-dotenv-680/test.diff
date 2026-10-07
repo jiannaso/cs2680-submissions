@@ -1,0 +1,127 @@
+diff --git a/tests/test_main.py b/tests/test_main.py
+index 1c33c80..48dd7bf 100644
+--- a/tests/test_main.py
++++ b/tests/test_main.py
+@@ -40,6 +40,9 @@ def test_set_key_no_file(tmp_path):
+         ("a=b\nc=d\ne=f", "c", "g", (True, "c", "g"), "a=b\nc='g'\ne=f"),
+         ("a=b\n", "c", "d", (True, "c", "d"), "a=b\nc='d'\n"),
+         ("a=b", "c", "d", (True, "c", "d"), "a=b\nc='d'\n"),
++        ("", "a", "b\\c", (True, "a", "b\\c"), "a='b\\\\c'\n"),
++        ("", "a", "b\\", (True, "a", "b\\"), "a='b\\\\'\n"),
++        ("", "a", "b\\'c", (True, "a", "b\\'c"), "a='b\\\\\\'c'\n"),
+     ],
+ )
+ def test_set_key(dotenv_path, before, key, value, expected, after):
+@@ -54,6 +57,32 @@ def test_set_key(dotenv_path, before, key, value, expected, after):
+     mock_warning.assert_not_called()
+ 
+ 
++@pytest.mark.parametrize(
++    "value",
++    [
++        "C:\\Users",
++        "C:\\Users\\",
++        "\\d+",
++        "back\\",
++        "a\\'b",
++        "it's",
++        'say "hi"',
++        "a\\nb",
++        "plain",
++        "",
++    ],
++)
++def test_set_key_round_trips(dotenv_path, value):
++    dotenv_path.write_text("")
++
++    dotenv.set_key(dotenv_path, "a", value)
++    dotenv.set_key(dotenv_path, "b", "sentinel")
++
++    assert dotenv.get_key(dotenv_path, "a") == value
++    # A value that is mis-tokenized can swallow the lines that follow it.
++    assert dotenv.get_key(dotenv_path, "b") == "sentinel"
++
++
+ def test_set_key_encoding(dotenv_path):
+     encoding = "latin-1"
+ 
+diff --git a/tests/test_parser.py b/tests/test_parser.py
+index 4ec5a5a..dd638d9 100644
+--- a/tests/test_parser.py
++++ b/tests/test_parser.py
+@@ -295,6 +295,75 @@ from dotenv.parser import Binding, Original, parse_stream
+                 )
+             ],
+         ),
++        (
++            "a='b\\\\c'",
++            [
++                Binding(
++                    key="a",
++                    value="b\\c",
++                    original=Original(string="a='b\\\\c'", line=1),
++                    error=False,
++                )
++            ],
++        ),
++        (
++            'a="b\\\\c"',
++            [
++                Binding(
++                    key="a",
++                    value="b\\c",
++                    original=Original(string='a="b\\\\c"', line=1),
++                    error=False,
++                )
++            ],
++        ),
++        # An escaped backslash at the end of the value must not be read as the
++        # start of an escaped quote, which would swallow the following lines.
++        (
++            "a='b\\\\'\nc='d'",
++            [
++                Binding(
++                    key="a",
++                    value="b\\",
++                    original=Original(string="a='b\\\\'\n", line=1),
++                    error=False,
++                ),
++                Binding(
++                    key="c",
++                    value="d",
++                    original=Original(string="c='d'", line=2),
++                    error=False,
++                ),
++            ],
++        ),
++        (
++            'a="b\\\\"\nc="d"',
++            [
++                Binding(
++                    key="a",
++                    value="b\\",
++                    original=Original(string='a="b\\\\"\n', line=1),
++                    error=False,
++                ),
++                Binding(
++                    key="c",
++                    value="d",
++                    original=Original(string='c="d"', line=2),
++                    error=False,
++                ),
++            ],
++        ),
++        (
++            "a='b\\\\\\'c'",
++            [
++                Binding(
++                    key="a",
++                    value="b\\'c",
++                    original=Original(string="a='b\\\\\\'c'", line=1),
++                    error=False,
++                )
++            ],
++        ),
+         (
+             "a=à",
+             [

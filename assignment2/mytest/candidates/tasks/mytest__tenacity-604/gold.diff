@@ -1,0 +1,90 @@
+diff --git a/tenacity/__init__.py b/tenacity/__init__.py
+index 57af68a..591f970 100644
+--- a/tenacity/__init__.py
++++ b/tenacity/__init__.py
+@@ -240,6 +240,7 @@ class BaseRetrying(ABC):
+         retry_error_cls: type[RetryError] = RetryError,
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any] | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ):
+         self.sleep = sleep
+         self.stop = stop
+@@ -253,6 +254,7 @@ class BaseRetrying(ABC):
+         self.retry_error_cls = retry_error_cls
+         self.retry_error_callback = retry_error_callback
+         self._name = name
++        self.enabled = enabled
+ 
+     def copy(
+         self,
+@@ -269,6 +271,7 @@ class BaseRetrying(ABC):
+         | None
+         | object = _unset,
+         name: str | None | object = _unset,
++        enabled: bool | object = _unset,
+     ) -> "Self":
+         """Copy this object with some parameters changed if needed."""
+         return self.__class__(
+@@ -285,6 +288,7 @@ class BaseRetrying(ABC):
+                 retry_error_callback, self.retry_error_callback
+             ),
+             name=_first_set(name, self._name),
++            enabled=_first_set(enabled, self.enabled),
+         )
+ 
+     def __str__(self) -> str:
+@@ -344,6 +348,8 @@ class BaseRetrying(ABC):
+             f, functools.WRAPPER_ASSIGNMENTS + ("__defaults__", "__kwdefaults__")
+         )
+         def wrapped_f(*args: t.Any, **kw: t.Any) -> t.Any:
++            if not self.enabled:
++                return f(*args, **kw)
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()
+@@ -667,6 +673,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = ...,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = ...,
++    enabled: bool = ...,
+ ) -> _AsyncRetryDecorator: ...
+ 
+ 
+@@ -684,6 +691,7 @@ def retry(
+     retry_error_cls: type["RetryError"] = RetryError,
+     retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+     | None = None,
++    enabled: bool = True,
+ ) -> t.Callable[[t.Callable[P, R]], _RetryDecorated[P, R]]: ...
+ 
+ 
+diff --git a/tenacity/asyncio/__init__.py b/tenacity/asyncio/__init__.py
+index 85b216a..0ff4885 100644
+--- a/tenacity/asyncio/__init__.py
++++ b/tenacity/asyncio/__init__.py
+@@ -91,6 +91,7 @@ class AsyncRetrying(BaseRetrying):
+         retry_error_callback: t.Callable[["RetryCallState"], t.Any | t.Awaitable[t.Any]]
+         | None = None,
+         name: str | None = None,
++        enabled: bool = True,
+     ) -> None:
+         super().__init__(
+             sleep=sleep,  # type: ignore[arg-type]
+@@ -104,6 +105,7 @@ class AsyncRetrying(BaseRetrying):
+             retry_error_cls=retry_error_cls,
+             retry_error_callback=retry_error_callback,
+             name=name,
++            enabled=enabled,
+         )
+ 
+     async def __call__(  # type: ignore[override]
+@@ -189,6 +191,8 @@ class AsyncRetrying(BaseRetrying):
+             fn, functools.WRAPPER_ASSIGNMENTS + ("__defaults__", "__kwdefaults__")
+         )
+         async def async_wrapped(*args: t.Any, **kwargs: t.Any) -> t.Any:
++            if not self.enabled:
++                return await fn(*args, **kwargs)  # type: ignore[misc]
+             # Always create a copy to prevent overwriting the local contexts when
+             # calling the same wrapped functions multiple times in the same stack
+             copy = self.copy()

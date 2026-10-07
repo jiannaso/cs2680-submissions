@@ -1,0 +1,20 @@
+{
+  "mytest__schedule-604": {
+    "instance_id": "mytest__schedule-604",
+    "repo": "dbader/schedule",
+    "base_commit": "073dbc6e5f8254d27c656f88a5062cca2cdfc4a2",
+    "docker_image": "madsloop-mytest:schedule-604",
+    "problem_statement": "Jobs scheduled with a timezone via `.at(time, tz)` compute the wrong `next_run` in several cases. For hourly and minutely jobs, `every().hour.at(\":10\", \"Asia/Kathmandu\")` or `every().minute.at(\":15\", tz)` should fire at that minute/second of the clock in the given timezone, which for zones with non-whole-hour offsets (Kathmandu is UTC+5:45) means a different minute of the local clock (a job at :10 Kathmandu time runs at :25 local Berlin time), but the offset is currently ignored or misapplied; daily jobs scheduled in another timezone (e.g. `every().day.at(\"10:30\", \"America/New_York\")` from Berlin) also drift by an hour around daylight-saving transitions in either zone. `next_run` is always expressed in naive local time. The task is done when `next_run` for jobs with a timezone is the correct local time of the next occurrence of the requested wall-clock time in that timezone, for hourly, minutely and daily jobs and across DST changes (a time skipped when the clock moves forward runs once right after the jump; a time repeated when the clock moves back runs only once), while jobs without a timezone keep computing `next_run` from naive local time exactly as before.",
+    "requirements": "",
+    "interface": ""
+  },
+  "mytest__schedule-623": {
+    "instance_id": "mytest__schedule-623",
+    "repo": "dbader/schedule",
+    "base_commit": "4386f4562df3ed24fd198324e279d215db2154d6",
+    "docker_image": "madsloop-mytest:schedule-623",
+    "problem_statement": "schedule computes wrong `next_run` times for jobs pinned to a timezone with `.at(time, tz)` (pytz timezones) whenever daylight-saving changes are involved: when the machine's local timezone and the job's timezone change their UTC offset on different dates (e.g. one in each hemisphere, or zones with unusual offsets such as Canada/Newfoundland at UTC-2:30/-3:30 and Pacific/Chatham at UTC+12:45/+13:45), when a scheduled time falls in a DST gap or in a repeated (folded) hour, and for weekly jobs, whose target weekday is miscomputed, so jobs repeatedly run an hour early or late or on the wrong day. The fix needs two helpers that the tests call directly. A module-level `_move_to_next_weekday(moment, weekday)` takes a naive `datetime` and a lower-case weekday name and returns the same time of day on the next such weekday, or the same day if `moment` already is that weekday (Monday 2024-05-13 10:27:54 with \"monday\" stays the 13th, with \"tuesday\" gives the 14th, and Wednesday the 15th with \"tuesday\" gives the 21st). A method `Job._correct_utc_offset(moment, fixate_time)` takes a `datetime` produced by date arithmetic and returns it with the UTC offset that is valid for its wall-clock time in the job's timezone: naive datetimes and jobs without a timezone are returned unchanged; a time that does not exist (in Europe/Berlin, 2024-03-31 02:30) is moved forward by the gap to 03:30+02:00 when `fixate_time` is true; a time that is valid as given (including each occurrence of a repeated hour, e.g. 2024-10-27 02:30+02:00 and 02:30+01:00) is left unchanged; and a time whose offset became stale after adding hours (2024-10-27 02:30+02:00 plus one hour, i.e. 03:30 with a stale +02:00) gets the correct offset, 03:30+01:00, keeping its wall-clock time. The task is done when these helpers behave as described and timezone jobs (minutely, hourly, daily and weekly) get correct `next_run` values in local time across a full year of DST changes in both zones, while jobs without a timezone behave as before.",
+    "requirements": "",
+    "interface": ""
+  }
+}
