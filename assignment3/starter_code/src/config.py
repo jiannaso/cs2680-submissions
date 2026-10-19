@@ -15,10 +15,10 @@ NEXT_TASK_RETRY_S = 5           # wait between next_task() retries when 5 tasks 
 # -- per task ---------------------------------------------------------------------------------
 MODEL_TIER = "STANDARD"         # CS2680_MODEL_<tier> used for the first attempt
 RETRY_MODEL_TIER = "STANDARD"   # model for attempts after a failed evaluation
-MAX_TURNS = 60                  # model calls in the first attempt
+MAX_TURNS = 80                  # model calls in the first attempt
 RETRY_TURNS = 25                # model calls in each later attempt
 MAX_ATTEMPTS = 2                # evaluations per task (each grading can take up to 35 min)
-TASK_WALL_S = 35 * 60           # agent-side work per task, not counting grading
+TASK_WALL_S = 40 * 60           # agent-side work per task, not counting grading
 RETRY_MIN_RUN_LEFT_S = 50 * 60  # only retry when at least this much run time is left
 
 # -- model calls ------------------------------------------------------------------------------
