@@ -283,6 +283,10 @@ class Agent:
             try:
                 return call_model(self.client, model_id, st.messages, st.logger, st.iterations,
                                   tools=TOOL_SPECS, **config.EXTRA_MODEL_ARGS)
+            except (openai.AuthenticationError, openai.PermissionDeniedError) as e:   # retrying cannot help
+                st.logger.api_retry(st.iterations, f"{type(e).__name__}: {e}", 0)
+                _debug(f"task {st.k}: API refused the key: {e}")
+                return None
             except openai.BadRequestError as e:          # most likely the context is too long
                 st.logger.api_retry(st.iterations, f"BadRequestError: {e}", 0)
                 if attempt >= 1:
