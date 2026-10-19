@@ -33,5 +33,17 @@ TOOL_OUTPUT_LIMIT = 10_000      # chars of one tool result the model sees (head 
 VIEW_MAX_LINES = 400            # lines one view_file call returns
 
 # -- context management -----------------------------------------------------------------------
-CONTEXT_CHAR_LIMIT = 240_000    # when the conversation is longer than this (~60k tokens) ...
-KEEP_RECENT_TOOL_RESULTS = 8    # ... older tool results are replaced by a short note
+COMPACT_AT_CHARS = 100_000      # compact once the conversation is longer than this (~25k tokens)
+COMPACT_KEEP_MESSAGES = 10      # the most recent messages kept verbatim; older ones are summarized
+COMPACT_MODEL_TIER = "STANDARD" # model that writes the summary
+COMPACT_INPUT_CHARS = 80_000    # transcript sent to the summarizer (head + tail kept)
+CONTEXT_CHAR_LIMIT = 240_000    # safety net if compaction fails: older tool results are dropped ...
+KEEP_RECENT_TOOL_RESULTS = 8    # ... except the most recent ones
+
+# -- playbook: lessons carried from one task to the next ------------------------------------------
+PLAYBOOK_ENABLED = True
+PLAYBOOK_MODEL_TIER = "EXPERT"  # model that rewrites the playbook after each task
+PLAYBOOK_MAX_CHARS = 2500       # longest playbook put into later tasks' system prompt
+PLAYBOOK_DIGEST_CHARS = 10_000  # report on one task sent to the expert
+PLAYBOOK_LOCK_WAIT_S = 60       # if another task is updating it, queue this report and move on
+PLAYBOOK_MIN_RUN_LEFT_S = 15 * 60   # stop updating near the end of the run

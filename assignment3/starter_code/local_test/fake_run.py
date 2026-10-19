@@ -9,6 +9,8 @@ retry    the first patch fails grading, the retry fixes it
 flaky    every third API call raises (the agent must retry)
 notools  the model never calls a tool (the agent must give up cleanly)
 badjson  the first tool call has invalid JSON arguments
+compact  big tool outputs force context compaction mid-task
+playbook tasks run one at a time; later tasks must get the expert's playbook
 Checks to read in the output: each task's final result, that the patch only touches calc.py
 (scratch files and test-file edits are cleaned up), and that the trace has every event type.
 """
@@ -17,7 +19,7 @@ STARTER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCEN = sys.argv[1] if len(sys.argv) > 1 else "fix"
 if SCEN == "all":
     bad = 0
-    for s in ("fix", "retry", "flaky", "notools", "badjson"):
+    for s in ("fix", "retry", "flaky", "notools", "badjson", "compact", "playbook"):
         print(f"===== {s}", flush=True)
         bad |= subprocess.run([sys.executable, os.path.abspath(__file__), s]).returncode
     sys.exit(bad)
@@ -29,6 +31,12 @@ from dispatcher import DispatcherError
 from evaluation_scripts.trace_logger import TraceLogger
 import src.config as config
 config.RETRY_MIN_RUN_LEFT_S = 0
+config.PLAYBOOK_MIN_RUN_LEFT_S = 0
+if SCEN == "compact":
+    config.COMPACT_AT_CHARS = 12_000
+    config.COMPACT_KEEP_MESSAGES = 4
+if SCEN == "playbook":
+    config.NUM_WORKERS = 1                         # sequential, so later tasks see the playbook
 
 N_TASKS = 3
 work = os.path.realpath(tempfile.mkdtemp())
@@ -83,34 +91,54 @@ def reply(calls, content=""):
     msg = types.SimpleNamespace(content=content, tool_calls=calls or None)
     return types.SimpleNamespace(choices=[types.SimpleNamespace(message=msg)], usage=types.SimpleNamespace(prompt_tokens=100, completion_tokens=10, total_tokens=110))
 
+STEP = {}
+SYSTEMS = {}        # task -> system prompt it was given (to check the playbook reaches later tasks)
+STATS = {"compact": 0, "playbook": 0}
+
 def script(messages):
-    n_assist = sum(1 for m in messages if m["role"] == "assistant")
-    retry = any(m["role"] == "user" and "was graded" in m["content"] for m in messages)
-    task_repo = messages[0]["content"].split("checked out in the current directory at ")[1].split(".")[0]
+    wd = messages[0]["content"].split("checked out in the current directory at ")[1].split(". There")[0]
+    k = int(wd.rsplit("repo", 1)[1])
+    SYSTEMS.setdefault(k, messages[0]["content"])
+    nevals = len(d.evals[k])
+    retry = nevals > 0
+    key = (k, nevals)
+    n = STEP.get(key, 0); STEP[key] = n + 1
+    if retry:
+        n += 2                                   # a retry goes straight to the edit
     bad = SCEN == "retry" and not retry
+    big = "x" * 3000 if SCEN == "compact" else ""
     steps = [
-        [tc(1, "bash", {"command": "grep -n def -r . --include=*.py"})],
+        [tc(1, "bash", {"command": f"grep -n def -r . --include=*.py; echo {big}"})],
         [tc(2, "view_file", {"path": "calc.py"})],
         [tc(3, "str_replace", {"path": "calc.py", "old_str": "return a - b" if not retry else "return a * b",
                                "new_str": "return a * b" if bad else "return a + b"}),
-         tc(4, "bash", {"command": "echo 'x' > repro.py; echo junk >> tests/test_calc.py; echo hi"})],
-        [tc(5, "finish", {"summary": "fixed"})],
+         tc(4, "bash", {"command": "echo 'x' > /tmp/repro_fake.py; echo 'x' > repro.py; echo junk >> tests/test_calc.py; echo hi"})],
+        [tc(5, "create_file", {"path": "/tmp/scratch_fake.txt", "content": "hello"}),
+         tc(6, "view_file", {"path": "/tmp/scratch_fake.txt"})],
+        [tc(7, "finish", {"summary": "fixed"})],
     ]
-    if retry:
-        n_assist = sum(1 for m in messages[[i for i, m in enumerate(messages) if m["role"] == "user" and "was graded" in m["content"]][0]:] if m["role"] == "assistant") + 2
-    if SCEN == "notools" : return reply(None, "I think it's fine")
-    if SCEN == "badjson" and n_assist == 0:
+    if SCEN == "compact":                         # pad the middle with reads so compaction triggers
+        steps = steps[:2] + [[tc(10 + i, "bash", {"command": f"echo {big}"})] for i in range(6)] + steps[2:]
+        if retry: n += 6
+    if SCEN == "notools": return reply(None, "I think it's fine")
+    if SCEN == "badjson" and n == 0:
         return reply([types.SimpleNamespace(id="z", type="function", function=types.SimpleNamespace(name="bash", arguments="{not json"))])
-    if SCEN == "badjson": n_assist -= 1
-    return reply(steps[min(n_assist, 3)])
+    if SCEN == "badjson": n -= 1
+    return reply(steps[min(n, len(steps) - 1)])
 
 class FakeCompletions:
     calls = 0
     def create(self, model, messages, **kw):
-        assert kw.get("tools"), "tools not passed"
         FakeCompletions.calls += 1
         if SCEN == "flaky" and FakeCompletions.calls % 3 == 1: raise TimeoutError("proxy hiccup")
         json.dumps(messages); time.sleep(0.2)
+        if not kw.get("tools"):                   # compaction or playbook request
+            if "playbook" in messages[0]["content"]:
+                assert model == "expert", model
+                STATS["playbook"] += 1
+                return reply(None, "- PLAYBOOK-LESSON: grep for every name in the interface first.")
+            STATS["compact"] += 1
+            return reply(None, "SUMMARY: calc.py has add(); it subtracts. Nothing edited yet.")
         return script(messages)
 
 from src import agentic_loop
@@ -125,10 +153,17 @@ for k in range(N_TASKS):
     print(f"task {k}: final={d.finals.get(k)} evals={evs} repo_status={status!r}")
     print("   patch files:", [l for l in (d.evals[k][-1][1] if d.evals[k] else "").splitlines() if l.startswith("diff --git")])
     print("   trace events:", sorted({e for e, _ in d.loggers[k].events}), len(d.loggers[k].events))
-print("max live:", d.max_live, "model calls:", FakeCompletions.calls)
+print("max live:", d.max_live, "model calls:", FakeCompletions.calls, "stats:", STATS)
+print("playbook in system prompt:", {k: "PLAYBOOK-LESSON" in v for k, v in sorted(SYSTEMS.items())})
 for s in servers: s.terminate()
 expect_solved = SCEN != "notools"
 ok = all(((d.finals[k][2] or {}).get("tests_failed") == 0) == expect_solved for k in range(N_TASKS))
 ok = ok and all(not d.evals[k] or [l for l in d.evals[k][-1][1].splitlines() if l.startswith("diff --git")] == ["diff --git a/calc.py b/calc.py"] for k in range(N_TASKS))
+if SCEN == "compact":
+    ok = ok and STATS["compact"] >= N_TASKS
+if SCEN == "playbook":
+    ok = ok and [("PLAYBOOK-LESSON" in SYSTEMS[k]) for k in range(N_TASKS)] == [False, True, True]
+if SCEN != "notools":
+    ok = ok and STATS["playbook"] >= 1
 print("PASS" if ok else "FAIL")
 sys.exit(0 if ok else 1)

@@ -220,6 +220,8 @@ def main():
     ap.add_argument("--tasks", default="0", help="comma-separated task indices (default 0)")
     ap.add_argument("--input", default=os.path.join(ROOT, "evaluation_scripts", "agent_task_input.json"))
     ap.add_argument("--fail-first", action="store_true", help="report the first grading as failing")
+    ap.add_argument("--workers", type=int, help="override config.NUM_WORKERS (1 = tasks in order, so "
+                    "later tasks get the playbook written after earlier ones)")
     args = ap.parse_args()
 
     if not os.environ.get("CS2680_API_KEY"):
@@ -256,12 +258,17 @@ def main():
                           "sandbox_url": url, "workdir": path})
             log(f"task {k}: {e['repo']} @ {e['base_commit'][:10]} served at {url}")
 
+        from src import config
         from src.agentic_loop import Agent
+        if args.workers:
+            config.NUM_WORKERS = args.workers
         d = LocalDispatcher(tasks, args.fail_first)
-        Agent(d).run()
+        agent = Agent(d)
+        agent.run()
         for k in ks:
             if k in d.results:
                 summarize(k, d.results[k])
+        print(f"\n== playbook at the end of the run:\n{agent.playbook or '(empty)'}")
     finally:
         for p in procs:
             p.terminate()

@@ -9,6 +9,10 @@ Design of this first version:
   task's Sandbox, then extract_patch() + evaluate();
 - if hidden tests still fail and time allows, continue_task() and one more attempt with the
   grading result as feedback; if the retry scores worse, the better patch is graded again;
+- once the conversation passes COMPACT_AT_CHARS, the older turns are summarized by a model and
+  replaced by that summary (the recent turns stay verbatim);
+- after each task, the expert model rewrites a shared playbook of lessons from the task's outcome
+  and actions; tasks opened later get it in their system prompt;
 - every model call and tool call goes to the task's trace (dispatcher.logger(k)).
 """
 
@@ -61,11 +65,37 @@ def _assistant_dict(msg) -> dict:
     return d
 
 
+def _size(messages: list) -> int:
+    return sum(len(m.get("content") or "") + len(str(m.get("tool_calls") or "")) for m in messages)
+
+
+def _clip(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return f"{text[:limit * 2 // 3]}\n[... {len(text) - limit} characters cut ...]\n{text[-(limit // 3):]}"
+
+
+def _render_transcript(messages: list, limit: int) -> str:
+    """Messages as plain text for a summarizer: tool calls and results, shortened."""
+    lines = []
+    for m in messages:
+        if m["role"] == "assistant":
+            if m.get("content"):
+                lines.append(f"AGENT: {_clip(m['content'], 1500)}")
+            for tc in m.get("tool_calls") or []:
+                lines.append(f"CALL {tc['function']['name']}: {_clip(tc['function']['arguments'], 1200)}")
+        elif m["role"] == "tool":
+            lines.append(f"RESULT: {_clip(m.get('content') or '', 2000)}")
+        else:
+            lines.append(f"{m['role'].upper()}: {_clip(m.get('content') or '', 2000)}")
+    return _clip("\n".join(lines), limit)
+
+
 def _trim_context(messages: list, keep_recent: int):
     """Replace the content of all but the last `keep_recent` tool results with a short note.
     Done in one sweep only when the conversation is too long, so the cached prefix survives
     between sweeps."""
-    size = sum(len(m.get("content") or "") + len(str(m.get("tool_calls") or "")) for m in messages)
+    size = _size(messages)
     if size <= config.CONTEXT_CHAR_LIMIT and keep_recent == config.KEEP_RECENT_TOOL_RESULTS:
         return
     tool_idx = [i for i, m in enumerate(messages) if m["role"] == "tool"]
@@ -75,7 +105,7 @@ def _trim_context(messages: list, keep_recent: int):
 
 
 class TaskState:
-    def __init__(self, task: dict, dispatcher):
+    def __init__(self, task: dict, dispatcher, playbook: str = ""):
         self.k = task["task"]
         self.task = task
         self.logger = dispatcher.logger(self.k)
@@ -83,12 +113,19 @@ class TaskState:
         self.tools = ToolBox(self.sb)
         self.iterations = 0
         self.started = time.time()
+        self.summary = ""                               # latest compaction summary
+        self.actions = []                               # short log of tool calls, for the playbook report
+        self.attempts = []                              # (loop end reason, evaluation) per attempt
+        system = prompts.SYSTEM_PROMPT.format(workdir=task["workdir"])
+        if playbook:
+            system += prompts.PLAYBOOK_NOTE.format(playbook=playbook)
+        self.task_prompt = prompts.TASK_PROMPT.format(
+            problem_statement=task.get("problem_statement") or "",
+            requirements=task.get("requirements") or "(none given)",
+            interface=task.get("interface") or "(none given)")
         self.messages = [
-            {"role": "system", "content": prompts.SYSTEM_PROMPT.format(workdir=task["workdir"])},
-            {"role": "user", "content": prompts.TASK_PROMPT.format(
-                problem_statement=task.get("problem_statement") or "",
-                requirements=task.get("requirements") or "(none given)",
-                interface=task.get("interface") or "(none given)")},
+            {"role": "system", "content": system},
+            {"role": "user", "content": self.task_prompt},
         ]
 
 
@@ -101,6 +138,11 @@ class Agent:
                              max_retries=0, timeout=600)
         self.model_id = os.environ[f"CS2680_MODEL_{config.MODEL_TIER}"]
         self.retry_model_id = os.environ[f"CS2680_MODEL_{config.RETRY_MODEL_TIER}"]
+        self.compact_model_id = os.environ[f"CS2680_MODEL_{config.COMPACT_MODEL_TIER}"]
+        self.playbook_model_id = os.environ[f"CS2680_MODEL_{config.PLAYBOOK_MODEL_TIER}"]
+        self.playbook = ""
+        self._playbook_lock = threading.Lock()
+        self._pending_reports = []                      # reports queued while another update ran
         self.run_started = None
         self._lock = threading.Lock()
         self._stop = threading.Event()                  # set on DispatcherShutdown or no tasks left
@@ -169,7 +211,7 @@ class Agent:
 
     def solve(self, task: dict):
         from dispatcher import DispatcherError
-        st = TaskState(task, self.dispatcher)
+        st = TaskState(task, self.dispatcher, self.playbook)
         k = st.k
         best_ev, best_patch, last_ev = None, None, None
         reason = "done"
@@ -183,6 +225,7 @@ class Agent:
                 turns, model = config.RETRY_TURNS, self.retry_model_id
                 deadline = min(time.time() + config.TASK_WALL_S // 2, self._soft_deadline())
             reason = self._agent_loop(st, model, turns, deadline)
+            st.attempts.append([reason, None])
 
             cleanup = clean_repo_for_patch(st.sb)
             _debug(f"task {k} attempt {attempt}: loop ended ({reason}); changed files:\n{cleanup}")
@@ -198,6 +241,7 @@ class Agent:
             except DispatcherError as e:
                 _debug(f"task {k}: evaluate refused: {e}")
                 break
+            st.attempts[-1][1] = last_ev
             if best_ev is None or _score(last_ev) > _score(best_ev):
                 best_ev, best_patch = last_ev, patch
             if _solved(last_ev):
@@ -223,9 +267,12 @@ class Agent:
                 if last_ev is not None:
                     self.dispatcher.continue_task(k)
                 self.dispatcher.submit_patch(k, best_patch)
-                self.dispatcher.evaluate(k)
+                last_ev = self.dispatcher.evaluate(k)
+                st.attempts.append(["regrade of the best patch", last_ev])
             except DispatcherError as e:
                 _debug(f"task {k}: regrade failed: {e}")
+        if config.PLAYBOOK_ENABLED:
+            self._update_playbook(st, last_ev, best_patch)  # before done(): the trace closes there
         self.dispatcher.done(k, reason, st.iterations)
 
     def _read_patch(self, k: int):
@@ -244,6 +291,8 @@ class Agent:
             left = max_turns - turn
             if left == 3:
                 st.messages.append({"role": "user", "content": prompts.LAST_TURNS_WARNING.format(left=left)})
+            if _size(st.messages) > config.COMPACT_AT_CHARS:
+                self._compact(st)
             _trim_context(st.messages, config.KEEP_RECENT_TOOL_RESULTS)
 
             response = self._call_with_retries(st, model_id)
@@ -269,6 +318,8 @@ class Agent:
                 st.logger.tool_call(st.iterations, name, raw)
                 result, is_error = st.tools.run(name, raw)
                 st.logger.tool_result(st.iterations, name, result, is_error)
+                st.actions.append(f"{name}({_clip(raw, 160)}) -> {'ERROR ' if is_error else ''}"
+                                  f"{_clip(result, 160)}".replace("\n", " "))
                 st.messages.append({"role": "tool", "tool_call_id": tc.id, "content": result})
                 if name == "finish":
                     finished = True
@@ -276,20 +327,108 @@ class Agent:
                 return "finish"
         return "turn limit"
 
-    def _call_with_retries(self, st: TaskState, model_id: str):
+    # -- context compaction -----------------------------------------------------------------
+
+    def _compact(self, st: TaskState):
+        """Summarize everything between the task prompt and the last COMPACT_KEEP_MESSAGES messages,
+        and replace it with the summary (appended to the task prompt). The kept tail starts at an
+        assistant message, so no tool result loses its tool call."""
+        msgs = st.messages
+        cut = max(2, len(msgs) - config.COMPACT_KEEP_MESSAGES)
+        while cut > 2 and msgs[cut]["role"] != "assistant":
+            cut -= 1
+        head = msgs[2:cut]
+        if len(head) < 4:                               # too little to summarize: the safety net handles it
+            return
+        previous = f"Summary of the turns before these:\n{st.summary}\n\n" if st.summary else ""
+        request = [{"role": "system", "content": prompts.COMPACT_SYSTEM},
+                   {"role": "user", "content": prompts.COMPACT_REQUEST.format(
+                       previous=previous,
+                       transcript=_render_transcript(head, config.COMPACT_INPUT_CHARS))}]
+        response = self._call_with_retries(st, self.compact_model_id, messages=request, tools=False)
+        summary = (response.choices[0].message.content or "").strip() if response and response.choices else ""
+        if not summary:
+            _debug(f"task {st.k}: compaction failed; dropping old tool outputs instead")
+            _trim_context(msgs, keep_recent=4)
+            return
+        before = _size(msgs)
+        st.summary = summary
+        task_msg = {"role": "user", "content": st.task_prompt + prompts.COMPACTED_NOTE.format(summary=summary)}
+        st.messages = [msgs[0], task_msg] + msgs[cut:]
+        if _size(st.messages) > config.COMPACT_AT_CHARS * 0.6:     # the kept turns hold big outputs
+            _trim_context(st.messages, keep_recent=4)
+        _debug(f"task {st.k}: compacted {len(head)} messages, {before:,} -> {_size(st.messages):,} chars")
+
+    # -- playbook ---------------------------------------------------------------------------
+
+    def _report(self, st: TaskState, final_ev, patch) -> str:
+        if _solved(final_ev):
+            outcome = "SOLVED (all hidden tests pass)"
+        elif final_ev and final_ev.get("tests_total"):
+            outcome = f"FAILED: {final_ev['tests_failed']} of {final_ev['tests_total']} hidden tests fail"
+        elif final_ev:
+            outcome = "FAILED: the tests did not run (syntax/import error or broken build)"
+        else:
+            outcome = "FAILED: no patch"
+        attempts = "; ".join(f"attempt {i + 1}: loop ended by {r}, grading "
+                             f"{'-' if ev is None else str(ev.get('tests_failed')) + '/' + str(ev.get('tests_total')) + ' failing'}"
+                             for i, (r, ev) in enumerate(st.attempts))
+        files = [l.split(" b/", 1)[1] for l in (patch or "").splitlines() if l.startswith("diff --git")]
+        actions = _clip("\n".join(st.actions), config.PLAYBOOK_DIGEST_CHARS - 2500)
+        return (f"## Report on one task\nIssue (start): {_clip(st.task.get('problem_statement') or '', 1200)}\n"
+                f"Outcome: {outcome}\nAttempts: {attempts}\nModel turns: {st.iterations}\n"
+                f"Files in the patch: {', '.join(files) or 'none'}\nActions:\n{actions}")
+
+    def _update_playbook(self, st: TaskState, final_ev, patch):
+        """Let the expert model rewrite the playbook from this task's report (and any reports
+        queued while another task was updating it). Never blocks a task for long."""
+        try:
+            report = self._report(st, final_ev, patch)
+        except Exception as e:
+            _debug(f"task {st.k}: no playbook report ({e})")
+            return
+        if config.RUN_LIMIT_S - self._run_elapsed() < config.PLAYBOOK_MIN_RUN_LEFT_S:
+            return
+        if not self._playbook_lock.acquire(timeout=config.PLAYBOOK_LOCK_WAIT_S):
+            with self._lock:
+                self._pending_reports.append(report)
+            return
+        try:
+            with self._lock:
+                reports = self._pending_reports[-3:] + [report]
+                self._pending_reports = []
+            request = [{"role": "system", "content": prompts.PLAYBOOK_SYSTEM},
+                       {"role": "user", "content": prompts.PLAYBOOK_REQUEST.format(
+                           playbook=self.playbook or "(empty: this is the first report)",
+                           reports="\n\n".join(reports))}]
+            response = self._call_with_retries(st, self.playbook_model_id, messages=request, tools=False)
+            text = (response.choices[0].message.content or "").strip() if response and response.choices else ""
+            if text:
+                if len(text) > config.PLAYBOOK_MAX_CHARS:            # keep whole bullets from the top
+                    text = text[:config.PLAYBOOK_MAX_CHARS].rsplit("\n", 1)[0]
+                self.playbook = text
+                _debug(f"task {st.k}: playbook updated ({len(self.playbook)} chars)")
+        finally:
+            self._playbook_lock.release()
+
+    # -- model calls --------------------------------------------------------------------------
+
+    def _call_with_retries(self, st: TaskState, model_id: str, messages: list = None, tools: bool = True):
+        """A logged model call with retries. Default: the task's conversation with the tools."""
         import openai
         backoff = config.API_BACKOFF_S
+        extra = {"tools": TOOL_SPECS} if tools else {}
         for attempt in range(config.API_RETRIES):
             try:
-                return call_model(self.client, model_id, st.messages, st.logger, st.iterations,
-                                  tools=TOOL_SPECS, **config.EXTRA_MODEL_ARGS)
+                return call_model(self.client, model_id, st.messages if messages is None else messages,
+                                  st.logger, st.iterations, **extra, **config.EXTRA_MODEL_ARGS)
             except (openai.AuthenticationError, openai.PermissionDeniedError) as e:   # retrying cannot help
                 st.logger.api_retry(st.iterations, f"{type(e).__name__}: {e}", 0)
                 _debug(f"task {st.k}: API refused the key: {e}")
                 return None
             except openai.BadRequestError as e:          # most likely the context is too long
                 st.logger.api_retry(st.iterations, f"BadRequestError: {e}", 0)
-                if attempt >= 1:
+                if attempt >= 1 or messages is not None:
                     _debug(f"task {st.k}: bad request: {e}")
                     return None
                 _trim_context(st.messages, keep_recent=2)

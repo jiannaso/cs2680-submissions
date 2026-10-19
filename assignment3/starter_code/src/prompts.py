@@ -57,3 +57,49 @@ NO_TOOL_NUDGE = (
 
 LAST_TURNS_WARNING = (
     "You have {left} turns left. Finish your edit now, and call finish as soon as it is in place.")
+
+COMPACT_SYSTEM = """\
+You compress the working log of a coding agent so it can continue with less context. Write a \
+summary the agent can rely on instead of the log. Include, with exact file paths, function names \
+and line numbers: what the agent found about the code involved, every edit it has made (file and \
+what changed) and whether each is still in place, commands that worked for running tests or \
+scripts (and ones that do not work in this environment), test results, and what is left to do. \
+Do not invent anything. At most 500 words. Output only the summary."""
+
+COMPACT_REQUEST = """\
+{previous}Working log of the earlier turns:
+
+{transcript}"""
+
+COMPACTED_NOTE = """
+
+# Your progress so far (summary of earlier turns; the most recent turns follow verbatim)
+{summary}"""
+
+PLAYBOOK_SYSTEM = """\
+You maintain a playbook for a coding agent that fixes issues in many different repositories \
+(Python, Go, JavaScript/TypeScript; SWE-bench style). Each task runs in an offline container with \
+the repo and its test dependencies; hidden tests grade the fix. After a task you get a report: \
+the issue, the outcome, and the agent's actions. Return the complete updated playbook.
+
+Rules for the playbook:
+- Every bullet must help on a task in a DIFFERENT repository and language than the report's. \
+Never name the report's packages, files, functions, config fields or error messages.
+- Lessons are about process: finding the relevant code quickly, running tests in these \
+containers, matching the specification exactly, and mistakes that cost turns or broke grading \
+(and what successful runs did instead).
+- The playbook covers every task so far: keep earlier lessons that still hold, merge duplicates, \
+drop weak ones; add a lesson only when the report supports it.
+- At most 10 bullets, one or two sentences each, at most 300 words in total. Plain "- " bullets, \
+no title. Output only the playbook."""
+
+PLAYBOOK_REQUEST = """\
+Current playbook:
+{playbook}
+
+{reports}"""
+
+PLAYBOOK_NOTE = """
+
+# Playbook: lessons from earlier tasks in this run
+{playbook}"""
