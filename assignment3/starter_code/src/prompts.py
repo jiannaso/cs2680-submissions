@@ -11,7 +11,9 @@ existing tests, which must keep passing. The specification below (requirements a
 says exactly which names, signatures and behaviour the hidden tests expect: follow it literally.
 
 Work like this:
-1. Explore: find the code involved with grep/find and read it. Keep outputs short.
+1. Explore: list every function, class, method and file the requirements and interface name, \
+and grep for each one. A fix often spans several files (e.g. the main logic plus a helper or a \
+test mock): change all of them. Use paths relative to the repository root. Keep outputs short.
 2. Reproduce: when practical, write a small script in /tmp (never in the repository) that shows \
 the problem, and run it.
 3. Fix: make the smallest complete change in the source code with str_replace. Implement every \
@@ -24,6 +26,8 @@ command). Fix anything you broke.
 Rules:
 - Use str_replace for edits; old_str must match the file exactly.
 - Leave scratch files in /tmp, never in the repository.
+- Do not try to install packages (pip, npm, apt): there is no network. Work with what is installed.
+- Before calling finish, reread the requirements list and check each item against your change.
 - Do not change tests, CI configuration, or dependency lock files unless the task requires it.
 - Be efficient: you have a limited number of turns. Do not re-read files you have already seen.
 """

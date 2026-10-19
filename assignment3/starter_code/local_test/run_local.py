@@ -84,7 +84,11 @@ def start_sandbox(repo_path, work_root):
             f"sys.argv = ['sandbox_server.py', '--root', {repo_path!r}, '--port', '{port}']; "
             f"g = runpy.run_path({os.path.join(ROOT, 'src', 'sandbox_server.py')!r}, run_name='lib'); "
             f"g['main'].__globals__['WORK_ROOT'] = {work_root!r}; sys.exit(g['main']())")
-    proc = subprocess.Popen([sys.executable, "-c", code], stderr=subprocess.DEVNULL)
+    # The agent's commands run on this machine: keep pip off the network and out of your Python
+    # environments, as in the offline task containers.
+    env = dict(os.environ, PIP_NO_INDEX="1", PIP_REQUIRE_VIRTUALENV="1", PIP_CONFIG_FILE=os.devnull)
+    env.pop("CS2680_API_KEY", None)
+    proc = subprocess.Popen([sys.executable, "-c", code], stderr=subprocess.DEVNULL, env=env)
     url = f"http://127.0.0.1:{port}"
     if not wait_http(url + "/health"):
         proc.kill()
@@ -201,7 +205,7 @@ def summarize(k, result):
     patch = os.path.join(OUT, str(k), "patch.diff")
     files = []
     if os.path.exists(patch):
-        files = [l.split(" b/", 1)[1] for l in open(patch) if l.startswith("diff --git")]
+        files = [l.split(" b/", 1)[1].strip() for l in open(patch) if l.startswith("diff --git")]
     print(f"\n== task {k}: {result.get('reason')}  ({result.get('seconds', 0):.0f}s, "
           f"{result.get('attempts')} grading(s))")
     print(f"   model calls {calls}, tokens in {tok_in:,} / out {tok_out:,}, est. cost ${cost:.3f} "

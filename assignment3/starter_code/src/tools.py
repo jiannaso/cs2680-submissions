@@ -1,5 +1,6 @@
 """The tools the model can call. Every tool works on the task repository through the Sandbox."""
 
+import base64
 import json
 import shlex
 
@@ -147,8 +148,35 @@ class ToolBox:
             note = f"[timed out after {timeout_s}s]"
         return f"{out}\n{note}" if out else note, bool(r.get("timed_out"))
 
+    def _read(self, path: str) -> str:
+        """read_text, but files outside the repository (e.g. /tmp) are read with cat."""
+        try:
+            return self.sb.read_text(path)
+        except SandboxPathError:
+            if not path.startswith("/"):
+                raise
+            r = self.sb.exec(f"cat -- {shlex.quote(path)}", timeout_s=30)
+            if r.get("exit_code"):
+                raise SandboxPathError(r.get("output", "").strip() or f"cannot read {path}")
+            return r.get("output", "")
+
+    def _write(self, path: str, content: str) -> bool:
+        """write_text, but files outside the repository (e.g. /tmp) are written through the shell."""
+        try:
+            return self.sb.write_text(path, content)
+        except SandboxPathError:
+            if not path.startswith("/"):
+                raise
+            q = shlex.quote(path)
+            b64 = base64.b64encode(content.encode()).decode()
+            r = self.sb.exec(f"existed=0; [ -e {q} ] && existed=1; mkdir -p \"$(dirname {q})\" && "
+                             f"printf %s {b64} | base64 -d > {q} && echo $existed", timeout_s=60)
+            if r.get("exit_code"):
+                raise SandboxPathError(r.get("output", "").strip() or f"cannot write {path}")
+            return r.get("output", "").strip().endswith("1")
+
     def _tool_view_file(self, path: str, start_line: int = None, end_line: int = None):
-        text = self.sb.read_text(path)
+        text = self._read(path)
         lines = text.splitlines()
         start = max(1, int(start_line or 1))
         end = int(end_line or start + config.VIEW_MAX_LINES - 1)
@@ -160,7 +188,7 @@ class ToolBox:
         return truncate(body) + more, False
 
     def _tool_str_replace(self, path: str, old_str: str, new_str: str):
-        text = self.sb.read_text(path)
+        text = self._read(path)
         count = text.count(old_str)
         if not old_str:
             return "Error: old_str is empty.", True
@@ -169,12 +197,12 @@ class ToolBox:
                     "exactly, including indentation."), True
         if count > 1:
             return f"Error: old_str occurs {count} times in {path}; include more context.", True
-        self.sb.write_text(path, text.replace(old_str, new_str, 1))
+        self._write(path, text.replace(old_str, new_str, 1))
         line = text[:text.index(old_str)].count("\n") + 1
         return f"Edited {path} (replacement starts at line {line}).", False
 
     def _tool_create_file(self, path: str, content: str):
-        existed = self.sb.write_text(path, content)
+        existed = self._write(path, content)
         return f"{'Overwrote' if existed else 'Created'} {path}.", False
 
     def _tool_finish(self, summary: str = ""):
