@@ -466,3 +466,126 @@ def repo_diff(sb) -> str:
     except Exception:
         return ""
     return r.get("output", "") if not r.get("exit_code") else ""
+
+
+# -- reconnaissance: the searches every candidate starts with, done once by the harness ---------------
+
+_RECON_STOP = {
+    "None", "True", "False", "self", "cls", "this", "string", "error", "errors", "return", "returns",
+    "func", "def", "class", "type", "types", "interface", "bool", "boolean", "int", "str", "dict", "list",
+    "float", "bytes", "object", "context", "Context", "nil", "null", "undefined", "void", "async",
+    "await", "const", "static", "public", "private", "method", "function", "struct", "Input", "Output",
+    "Description", "Path", "Name", "Type", "value", "values", "data", "name", "path", "file", "test",
+    "tests", "true", "false", "string[]", "Promise", "Optional", "Any", "Union", "Exception",
+}
+_PATH_RE = re.compile(r"(?<![\w/.-])((?:[\w.-]+/)+[\w.-]+\.[A-Za-z0-9]{1,5})\b")
+_IDENT_RE = re.compile(r"[A-Za-z_]\w*")
+
+
+def spec_names(interface, *texts, limit: int = 12):
+    """Code-like identifiers and repository paths a specification mentions, the interface's own names
+    first, then by frequency."""
+    interface = interface or ""
+    text = "\n".join([interface] + [t or "" for t in texts])
+    paths = list(dict.fromkeys(re.findall(r"Path\s*:\s*`?([\w./-]+\.[A-Za-z0-9]{1,5})\b", interface)
+                               + _PATH_RE.findall(text)))
+    declared = []                                       # names the interface declares outright
+    for m in re.findall(r"(?:Name|Function|Method|Class|Type|Struct|Interface)\s*:\s*`?([\w.]+)", interface):
+        declared += [i for i in m.split(".") if len(i) >= 3 and i not in _RECON_STOP]
+    counts = {}
+    for ident in _IDENT_RE.findall(text):
+        code_like = ("_" in ident.strip("_") or re.search(r"[a-z][A-Z]", ident)
+                     or (ident[0].isupper() and re.search(r"[a-z]", ident) and ident in interface and len(ident) >= 6))
+        noise = (re.search(r"\d_\d", ident)                                  # x86_64, el8_9
+                 or not re.search(r"(?<!Description: )(?<!Description:)\b" + re.escape(ident) + r"\b", text))
+        if code_like and not noise and len(ident) >= 4 and ident not in _RECON_STOP and not ident.isupper():
+            counts[ident] = counts.get(ident, 0) + 1
+    names = list(dict.fromkeys(declared))
+    names += [n for n in sorted(counts, key=lambda n: (-counts[n], text.find(n))) if n not in names]
+    return names[:limit], paths[:10]
+
+
+def recon(sb, task: dict) -> str:
+    """A short map of where the specification's names live in the repository, the test files next to
+    them and how to run tests: the searches every candidate would otherwise spend its first turns on."""
+    names, paths = spec_names(task.get("interface"), task.get("requirements"), task.get("problem_statement"))
+    if not names and not paths:
+        return ""
+    script = []
+    for p in paths:
+        script.append(f"echo '@@path {p}'; git ls-files --error-unmatch -- {shlex.quote(p)} >/dev/null 2>&1 "
+                      f"&& echo exists || echo missing")
+    for n in names:
+        script.append(f"echo '@@name {n}'; git grep -I -c -w -F -e {shlex.quote(n)} 2>/dev/null "
+                      "| grep -v -E '(^|/)(vendor|node_modules|third_party|dist|build)/' "
+                      "| grep -v -E '\\.(md|rst|txt|json|lock|pg_dump|sql|csv|ya?ml|html|svg|po|pot|snap)?:[0-9]+$' "
+                      "| sort -t: -k2 -nr | head -5")
+    script.append("echo '@@lang'; for f in go.mod package.json pyproject.toml setup.cfg pytest.ini tox.ini setup.py; do "
+                  "[ -f $f ] && echo $f; done; [ -f package.json ] && grep -E '\"test[^\"]*\"\\s*:' package.json | head -3")
+    try:
+        r = sb.exec("; ".join(script), timeout_s=120)
+    except Exception:
+        return ""
+    sections, cur = {}, None
+    for line in r.get("output", "").splitlines():
+        if line.startswith("@@"):
+            cur = line[2:]
+            sections[cur] = []
+        elif cur is not None and line.strip():
+            sections[cur].append(line.strip())
+
+    out, files, spread = [], {}, {}
+    for p in paths:
+        state = (sections.get(f"path {p}") or ["?"])[0]
+        out.append(f"- {p}: {'exists' if state == 'exists' else 'does not exist yet (to create)'}")
+    for n in names:
+        hits = []
+        for line in sections.get(f"name {n}", []):
+            f, _, c = line.rpartition(":")
+            if f and c.isdigit():
+                hits.append(f"{f} ({c})")
+                files[f] = files.get(f, 0) + int(c)
+                spread[f] = spread.get(f, 0) + 1                # distinct names the file mentions
+        out.append(f"- {n}: {', '.join(hits) if hits else 'not found in the repository (new code)'}")
+    test_re = re.compile(TEST_PATH_GREP)
+    # test files next to the source files that hold the specific names (those found in few files)
+    specific_src = []
+    for n in names:
+        found = [l.rpartition(":")[0] for l in sections.get(f"name {n}", []) if l.rpartition(":")[2].isdigit()]
+        if 0 < len(found) <= 3:
+            specific_src += [f for f in found if not test_re.search(f)]
+    dirs = list(dict.fromkeys(f.rsplit("/", 1)[0] if "/" in f else "." for f in specific_src))[:4]
+    near = []
+    if dirs:
+        try:
+            r = sb.exec("git ls-files -- " + " ".join(shlex.quote(d + "/") for d in dirs)
+                        + " | grep -E " + shlex.quote(TEST_PATH_GREP) + " | head -40", timeout_s=60)
+            listed = [f for f in r.get("output", "").split()
+                      if f.rsplit("/", 1)[-1] not in ("__init__.py", "conftest.py")
+                      and re.search(r"\.(py|go|[jt]sx?|java|rb|rs)$", f)]
+            stems = {f.rsplit("/", 1)[-1].split(".")[0] for f in specific_src}
+            named = [f for f in listed if any(st and st in f.rsplit("/", 1)[-1] for st in stems)]
+            near = named[:4]                            # test_load_book.py for load_book.py, ...
+            for d in dirs:                              # then the nearest others
+                near += [f for f in listed if f.rsplit("/", 1)[0] == d or f.startswith(d + "/")][:2]
+        except Exception:
+            pass
+    ranked = [f for f in sorted(files, key=lambda f: (-spread[f], -files[f])) if test_re.search(f)]
+    tests = list(dict.fromkeys(near + ranked))[:6]
+    lang = sections.get("lang", [])
+    hints = []
+    if "go.mod" in lang:
+        hints.append("Go: `go build ./<pkg>/` and `go test ./<pkg>/ -run <TestName>`")
+    if any(x in lang for x in ("pyproject.toml", "setup.cfg", "pytest.ini", "tox.ini", "setup.py")):
+        hints.append("Python: `python -m pytest <file>::<test> -q -x`")
+    if "package.json" in lang:
+        scripts = [l for l in lang if l.startswith('"test')]
+        hints.append("JS/TS: `npx jest <path>`" + (f" (package.json: {'; '.join(scripts)})" if scripts else ""))
+    text = ("# Repository map (collected by the harness before you started: start from these locations "
+            "instead of repeating these searches)\n"
+            "Where the names in the specification occur (file and number of matching lines):\n" + "\n".join(out))
+    if tests:
+        text += "\nExisting test files that mention them:\n" + "\n".join(f"- {t}" for t in tests)
+    if hints:
+        text += "\nRunning tests: " + "; ".join(hints)
+    return truncate(text, 4000)

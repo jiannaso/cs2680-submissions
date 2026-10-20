@@ -73,3 +73,7 @@ REVIEW_DIFF_CHARS = 40_000      # longest diff sent to the reviewer (head + tail
 CANDIDATES = 2                  # independent first attempts per task, each in its own copy of the repo
 CANDIDATE_ROOT = "/work"        # where the copies (git worktrees) go; the sandbox allows writes there
 CANDIDATES_MIN_RUN_LEFT_S = 30 * 60   # near the end of the run, one candidate only
+
+# -- deterministic work done by the harness instead of the model ------------------------------------
+RECON_ENABLED = True            # grep the spec's names, find nearby tests, add the map to the first message
+BUDGET_NOTE = True              # "[turn 12/60, ~14 min left]" on the newest tool result every turn

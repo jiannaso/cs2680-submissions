@@ -33,7 +33,7 @@ import traceback
 
 from . import config, prompts
 from .sandbox import Sandbox
-from .tools import TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch, make_candidate_dir, repo_diff
+from .tools import TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch, make_candidate_dir, recon, repo_diff
 
 
 def _debug(msg: str):
@@ -134,7 +134,8 @@ class _LockedLogger:
 class TaskState:
     """One candidate's work on a task: its copy of the repository, conversation and counters."""
 
-    def __init__(self, task: dict, logger, playbook: str = "", workdir: str = None, name: str = "c0"):
+    def __init__(self, task: dict, logger, playbook: str = "", workdir: str = None, name: str = "c0",
+                 repo_map: str = ""):
         self.k = task["task"]
         self.task = task
         self.name = name
@@ -167,9 +168,10 @@ class TaskState:
             problem_statement=task.get("problem_statement") or "",
             requirements=task.get("requirements") or "(none given)",
             interface=task.get("interface") or "(none given)")
+        self.repo_map = repo_map                        # the harness's reconnaissance, kept through compaction
         self.messages = [
             {"role": "system", "content": system},
-            {"role": "user", "content": self.task_prompt},
+            {"role": "user", "content": self.task_prompt + (f"\n\n{repo_map}" if repo_map else "")},
         ]
 
 
@@ -260,7 +262,13 @@ class Agent:
         from dispatcher import DispatcherError
         k = task["task"]
         logger = _LockedLogger(self.dispatcher.logger(k))
-        cands = [TaskState(task, logger, self.playbook)]
+        repo_map = ""
+        if config.RECON_ENABLED and task.get("sandbox_url"):
+            try:                                        # once per task, shared by every candidate
+                repo_map = recon(Sandbox(task["sandbox_url"], task["workdir"]), task)
+            except Exception as e:
+                _debug(f"task {k}: reconnaissance failed: {e}")
+        cands = [TaskState(task, logger, self.playbook, repo_map=repo_map)]
         cands += self._extra_candidates(task, logger, cands[0])
 
         # attempt 1: every candidate works on its own copy at the same time
@@ -377,7 +385,8 @@ class Agent:
             if not workdir:
                 _debug(f"task {main.k}: could not make a copy for candidate {i}")
                 break
-            extra.append(TaskState(task, logger, self.playbook, workdir=workdir, name=f"c{i}"))
+            extra.append(TaskState(task, logger, self.playbook, workdir=workdir, name=f"c{i}",
+                                   repo_map=main.repo_map))
         return extra
 
     def _first_attempt(self, st: TaskState):
@@ -548,6 +557,10 @@ class Agent:
                     finished = True
             if finished:
                 return "finish"
+            if config.BUDGET_NOTE and st.messages[-1]["role"] == "tool":
+                # the remaining budget rides on the newest message only, so the cached prefix is untouched
+                st.messages[-1]["content"] += prompts.BUDGET_NOTE.format(
+                    turn=turn + 1, turns=max_turns, minutes=max(0, round((deadline - time.time()) / 60)))
         return "turn limit"
 
     # -- context compaction -----------------------------------------------------------------
@@ -576,7 +589,8 @@ class Agent:
             return
         before = _size(msgs)
         st.summary = summary
-        task_msg = {"role": "user", "content": st.task_prompt + prompts.COMPACTED_NOTE.format(summary=summary)}
+        task_msg = {"role": "user", "content": st.task_prompt + (f"\n\n{st.repo_map}" if st.repo_map else "")
+                    + prompts.COMPACTED_NOTE.format(summary=summary)}
         st.messages = [msgs[0], task_msg] + msgs[cut:]
         if _size(st.messages) > config.COMPACT_AT_CHARS * 0.6:     # the kept turns hold big outputs
             _trim_context(st.messages, keep_recent=4)

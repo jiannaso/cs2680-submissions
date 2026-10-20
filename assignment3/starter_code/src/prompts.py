@@ -11,8 +11,9 @@ existing tests, which must keep passing. The specification below (requirements a
 says exactly which names, signatures and behaviour the hidden tests expect: follow it literally.
 
 Work like this:
-1. Explore: list every function, class, method and file the requirements and interface name, \
-and grep for each one. A fix often spans several files (e.g. the main logic plus a helper or a \
+1. Explore: list every function, class, method and file the requirements and interface name. \
+When the task comes with a repository map, start from the files it lists instead of searching \
+again; grep only for what it does not cover. A fix often spans several files (e.g. the main logic plus a helper or a \
 test mock): change all of them. Use paths relative to the repository root. Keep outputs short.
 2. Reproduce: when practical, write a small script in /tmp (never in the repository) that shows \
 the problem, and run it.
@@ -179,3 +180,5 @@ TIME_WARNING = (
 CUT_OFF_NUDGE = (
     "Your reply was cut off because it was too long and contained no complete tool call. Reply with a "
     "single, shorter tool call (split a big edit into several str_replace calls).")
+
+BUDGET_NOTE = "\n[budget: turn {turn}/{turns}, about {minutes} min left]"

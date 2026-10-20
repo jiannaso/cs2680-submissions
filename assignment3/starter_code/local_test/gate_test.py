@@ -36,7 +36,7 @@ config.CANDIDATES = 1                              # the cands/dedup scenarios t
 config.API_BACKOFF_S = 0.01
 from src import agentic_loop
 from src.sandbox import Sandbox
-from src.tools import ToolBox, check_build, clean_repo_for_patch, repo_diff
+from src.tools import ToolBox, check_build, clean_repo_for_patch, recon, repo_diff
 
 work = os.path.realpath(tempfile.mkdtemp())
 CALC = "import os\n\ndef helper(x):\n    return x\n\ndef add(a, b):\n    return a - b\n\ndef legacy():\n    return OLD_GLOBAL\n"
@@ -142,6 +142,10 @@ clean_repo_for_patch(sb, start)
 results["tools: sneaky commit undone before the diff"] = "return a + b" in repo_diff(sb)
 subprocess.run("git checkout -q -- calc.py", shell=True, cwd=repo)
 
+m = recon(sb, {"interface": "- Path: `calc.py`\n- Name: helper_fn\n- Name: add_numbers", "requirements": "use `helper` in `legacy`",
+              "problem_statement": ""})
+results["recon: map lists paths and names"] = "calc.py: exists" in m and "add_numbers: not found" in m
+
 # -- gate --------------------------------------------------------------------------------------
 repo, proc, url = make_repo("gate", 18811); procs.append(proc); time.sleep(1.5)
 seen = {"gate_prompt": False}
@@ -161,9 +165,10 @@ results["gate: only the fixed patch was graded"] = (len(d.evals) == 1 and d.eval
 
 # -- nudge -------------------------------------------------------------------------------------
 repo, proc, url = make_repo("nudge", 18812); procs.append(proc); time.sleep(1.5)
-nudge = {"turn": None, "n": 0}
+nudge = {"turn": None, "n": 0, "budget": False}
 def nudge_model(messages):
     nudge["n"] += 1
+    nudge["budget"] |= any(m["role"] == "tool" and "[budget: turn" in m["content"] for m in messages)
     if "still has no changes" in last_user(messages) and nudge["turn"] is None:
         nudge["turn"] = nudge["n"]
         return reply(tc(2, "str_replace", {"path": "calc.py", "old_str": "return a - b", "new_str": "return a + b"}),
@@ -172,6 +177,7 @@ def nudge_model(messages):
 d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "", "interface": "",
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, nudge_model)
 results["nudge: sent at the first threshold"] = nudge["turn"] == config.NO_EDIT_NUDGE_AT[0] + 1
+results["budget: note reaches the model"] = nudge["budget"]
 results["nudge: task solved after it"] = d.final and d.final[1] and d.final[1]["tests_failed"] == 0
 
 # -- same --------------------------------------------------------------------------------------
