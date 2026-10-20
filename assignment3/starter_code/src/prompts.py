@@ -103,3 +103,17 @@ PLAYBOOK_NOTE = """
 
 # Playbook: lessons from earlier tasks in this run
 {playbook}"""
+
+BUILD_GATE_PROMPT = """\
+Before grading, an automatic check of the files you changed found problems:
+
+{errors}
+
+The hidden tests cannot pass while the code does not compile or uses undefined names. Fix these \
+problems (keep the rest of your change), rerun the check yourself, and call finish again. If an \
+error clearly existed before your change and is unrelated to it, ignore it and call finish."""
+
+NO_EDIT_NUDGE = """\
+You have used {used} turns and the repository still has no changes. Stop exploring now: you know \
+enough to make a first version of the fix. Edit the source files with str_replace now, then verify \
+and call finish. You have at most {left} turns left."""

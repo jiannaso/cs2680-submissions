@@ -232,3 +232,108 @@ def clean_repo_for_patch(sb):
         return sb.exec(script, timeout_s=60).get("output", "")
     except Exception as e:  # never let cleanup stop the submission
         return f"cleanup failed: {e}"
+
+
+# -- build/lint gate: run by the harness (not the model) before a patch is graded ------------------
+
+# Reports names a changed .py file uses but never defines, imports or binds anywhere, and that the
+# file at HEAD did not already use undefined (so dynamic tricks that were there before are ignored).
+# Conservative on purpose: any binding of a name anywhere in the file counts as a definition.
+PY_UNDEFINED_CHECK = r'''
+import ast, builtins, subprocess, sys
+EXTRA = {"__file__", "__name__", "__doc__", "__builtins__", "__spec__", "__loader__", "__package__",
+         "__path__", "__annotations__", "__class__", "__qualname__", "__module__", "__dict__", "__debug__"}
+def undefined(src):
+    tree = ast.parse(src)
+    defined = set(dir(builtins)) | EXTRA
+    for n in ast.walk(tree):
+        if isinstance(n, ast.ImportFrom) and any(a.name == "*" for a in n.names):
+            return {}
+        if isinstance(n, (ast.Import, ast.ImportFrom)):
+            defined.update((a.asname or a.name).split(".")[0] for a in n.names)
+        elif isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            defined.add(n.name)
+        elif isinstance(n, ast.Name) and not isinstance(n.ctx, ast.Load):
+            defined.add(n.id)
+        elif isinstance(n, ast.arg):
+            defined.add(n.arg)
+        elif isinstance(n, ast.ExceptHandler) and n.name:
+            defined.add(n.name)
+        elif isinstance(n, (ast.Global, ast.Nonlocal)):
+            defined.update(n.names)
+        elif type(n).__name__ in ("MatchAs", "MatchStar", "TypeVar", "ParamSpec", "TypeVarTuple") and getattr(n, "name", None):
+            defined.add(n.name)
+        elif type(n).__name__ == "MatchMapping" and getattr(n, "rest", None):
+            defined.add(n.rest)
+    used = {}
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load) and n.id not in defined:
+            used.setdefault(n.id, n.lineno)
+    return used
+bad = 0
+for path in sys.argv[1:]:
+    try:
+        new = open(path, encoding="utf-8", errors="replace").read()
+        now = undefined(new)
+    except SyntaxError as e:
+        print("%s:%s: syntax error: %s" % (path, e.lineno, e.msg)); bad = 1; continue
+    except Exception:
+        continue
+    try:
+        old = subprocess.run(["git", "show", "HEAD:" + path], stdout=subprocess.PIPE,
+                             stderr=subprocess.DEVNULL).stdout.decode("utf-8", "replace")
+        before = undefined(old) if old else {}
+    except Exception:
+        before = {}
+    for name, line in sorted(now.items(), key=lambda x: x[1]):
+        if name not in before:
+            print("%s:%s: undefined name '%s' (not defined, imported or assigned anywhere in the file)" % (path, line, name)); bad = 1
+sys.exit(bad)
+'''
+
+
+def _changed_files(sb) -> list:
+    """Paths (relative to the repository root) of modified and new files, deleted ones left out."""
+    r = sb.exec("git add -N . >/dev/null 2>&1; git diff --name-only --diff-filter=d", timeout_s=60)
+    return [l.strip() for l in r.get("output", "").splitlines() if l.strip()]
+
+
+def check_build(sb) -> str:
+    """Cheap compile/lint checks on the files the patch changes. Returns the problems found as
+    text for the model, or "" when everything checked is fine (or nothing could be checked)."""
+    try:
+        files = _changed_files(sb)
+    except Exception:
+        return ""
+    problems = []
+    py = [f for f in files if f.endswith(".py")]
+    if py:
+        b64 = base64.b64encode(PY_UNDEFINED_CHECK.encode()).decode()
+        script = (f"PY=$(command -v python3 || command -v python) || exit 0; "
+                  f"printf %s {b64} | base64 -d > /tmp/.a3_pycheck.py && "
+                  f"\"$PY\" /tmp/.a3_pycheck.py {' '.join(shlex.quote(f) for f in py)}")
+        try:
+            r = sb.exec(script, timeout_s=120)
+            if r.get("exit_code") and r.get("output", "").strip():
+                problems.append("Python check (syntax and undefined names in the files you changed):\n"
+                                + truncate(r["output"].strip(), 3000))
+        except Exception:
+            pass
+    go_dirs = sorted({"./" + (f.rsplit("/", 1)[0] if "/" in f else ".")
+                      for f in files if f.endswith(".go")})
+    if go_dirs:
+        # compiles each changed package and its tests without running any test (also runs go vet's
+        # checks that `go test` itself fails on)
+        cmd = (f"go test -count=1 -run '^$' {' '.join(shlex.quote(d) for d in go_dirs)} > /tmp/.a3_go.txt 2>&1; "
+               f"rc=$?; grep -v '^ok \\|no test files' /tmp/.a3_go.txt | tail -60; exit $rc")
+        try:
+            r = sb.exec(cmd, timeout_s=config.BUILD_GATE_TIMEOUT_S)
+            out = r.get("output", "").strip()
+            if r.get("timed_out"):
+                pass                                    # too slow to tell: do not block on it
+            elif r.get("exit_code") and out:
+                problems.append(f"Go build of the changed packages ({' '.join(go_dirs)}) failed:\n"
+                                + truncate(out, 3000))
+        except Exception:
+            pass
+    return "\n\n".join(problems)

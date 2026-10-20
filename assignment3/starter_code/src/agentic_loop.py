@@ -13,6 +13,10 @@ Design of this first version:
   replaced by that summary (the recent turns stay verbatim);
 - after each task, the expert model rewrites a shared playbook of lessons from the task's outcome
   and actions; tasks opened later get it in their system prompt;
+- before every evaluate(), a build/lint gate compiles the changed files (Go packages, Python
+  syntax and undefined names) and gives the model a few turns to fix what it finds;
+- a model that explores for NO_EDIT_NUDGE_AT turns without changing anything is told to edit;
+- a retry that ends with the same patch as the graded one is not graded again;
 - every model call and tool call goes to the task's trace (dispatcher.logger(k)).
 """
 
@@ -24,7 +28,7 @@ import traceback
 
 from . import config, prompts
 from .sandbox import Sandbox
-from .tools import TOOL_SPECS, ToolBox, clean_repo_for_patch
+from .tools import TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch
 
 
 def _debug(msg: str):
@@ -116,6 +120,7 @@ class TaskState:
         self.summary = ""                               # latest compaction summary
         self.actions = []                               # short log of tool calls, for the playbook report
         self.attempts = []                              # (loop end reason, evaluation) per attempt
+        self.nudged = set()                             # NO_EDIT_NUDGE_AT thresholds already used
         system = prompts.SYSTEM_PROMPT.format(workdir=task["workdir"])
         if playbook:
             system += prompts.PLAYBOOK_NOTE.format(playbook=playbook)
@@ -214,6 +219,7 @@ class Agent:
         st = TaskState(task, self.dispatcher, self.playbook)
         k = st.k
         best_ev, best_patch, last_ev = None, None, None
+        graded_patch, prev_ev = None, None             # the last graded patch and its evaluation
         reason = "done"
 
         attempt = 1
@@ -225,6 +231,7 @@ class Agent:
                 turns, model = config.RETRY_TURNS, self.retry_model_id
                 deadline = min(time.time() + config.TASK_WALL_S // 2, self._soft_deadline())
             reason = self._agent_loop(st, model, turns, deadline)
+            reason = self._build_gate(st, model, reason)
             st.attempts.append([reason, None])
 
             cleanup = clean_repo_for_patch(st.sb)
@@ -236,12 +243,21 @@ class Agent:
                     reason = f"{reason}; empty patch"
                 break
             patch = self._read_patch(k)
+            if graded_patch is not None and patch == graded_patch:
+                # grading it again would only repeat the last result: drop the copy (the last
+                # evaluation stays the task's result) and stop
+                _debug(f"task {k}: attempt {attempt} left the patch unchanged; not grading it again")
+                st.attempts[-1][0] = f"{reason}; patch unchanged"
+                self.dispatcher.continue_task(k)
+                last_ev = prev_ev
+                break
             try:
                 last_ev = self.dispatcher.evaluate(k)
             except DispatcherError as e:
                 _debug(f"task {k}: evaluate refused: {e}")
                 break
             st.attempts[-1][1] = last_ev
+            graded_patch, prev_ev = patch, last_ev
             if best_ev is None or _score(last_ev) > _score(best_ev):
                 best_ev, best_patch = last_ev, patch
             if _solved(last_ev):
@@ -282,7 +298,43 @@ class Agent:
         except OSError:
             return None
 
-    def _agent_loop(self, st: TaskState, model_id: str, max_turns: int, deadline: float) -> str:
+    def _build_gate(self, st: TaskState, model_id: str, reason: str) -> str:
+        """Compile/lint the changed files; on problems, give the model a few turns to fix them."""
+        if not config.BUILD_GATE_ENABLED or reason == "api error":
+            return reason
+        for _ in range(config.BUILD_GATE_ROUNDS):
+            clean_repo_for_patch(st.sb)
+            errors = check_build(st.sb)
+            if not errors:
+                return reason
+            _debug(f"task {st.k}: build gate found problems:\n{errors[:1500]}")
+            st.actions.append(f"BUILD GATE: {_clip(errors, 300)}".replace("\n", " "))
+            deadline = min(time.time() + config.BUILD_GATE_WALL_S, self._soft_deadline())
+            if time.time() > deadline - 60:
+                return reason
+            st.messages.append({"role": "user", "content": prompts.BUILD_GATE_PROMPT.format(errors=errors)})
+            reason = self._agent_loop(st, model_id, config.BUILD_GATE_TURNS, deadline, nudge=False)
+            if reason == "api error":
+                return reason
+        return reason
+
+    def _no_edit_nudge(self, st: TaskState, turn: int, max_turns: int):
+        """At each NO_EDIT_NUDGE_AT turn, tell a model that has changed nothing yet to start editing."""
+        due = [t for t in config.NO_EDIT_NUDGE_AT if turn >= t and t not in st.nudged]
+        if not due:
+            return
+        st.nudged.update(due)
+        try:
+            changed = st.sb.exec("git status --porcelain | head -5", timeout_s=30).get("output", "").strip()
+        except Exception:
+            return
+        if not changed:
+            _debug(f"task {st.k}: no edits after {turn} turns; nudging")
+            st.messages.append({"role": "user", "content": prompts.NO_EDIT_NUDGE.format(
+                used=turn, left=max_turns - turn)})
+
+    def _agent_loop(self, st: TaskState, model_id: str, max_turns: int, deadline: float,
+                    nudge: bool = True) -> str:
         """Run the model with tools until it calls finish, runs out of turns or time. Returns why it stopped."""
         idle = 0
         for turn in range(max_turns):
@@ -291,6 +343,8 @@ class Agent:
             left = max_turns - turn
             if left == 3:
                 st.messages.append({"role": "user", "content": prompts.LAST_TURNS_WARNING.format(left=left)})
+            elif nudge:
+                self._no_edit_nudge(st, turn, max_turns)
             if _size(st.messages) > config.COMPACT_AT_CHARS:
                 self._compact(st)
             _trim_context(st.messages, config.KEEP_RECENT_TOOL_RESULTS)

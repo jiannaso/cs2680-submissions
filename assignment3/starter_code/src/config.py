@@ -47,3 +47,13 @@ PLAYBOOK_MAX_CHARS = 2500       # longest playbook put into later tasks' system 
 PLAYBOOK_DIGEST_CHARS = 10_000  # report on one task sent to the expert
 PLAYBOOK_LOCK_WAIT_S = 60       # if another task is updating it, queue this report and move on
 PLAYBOOK_MIN_RUN_LEFT_S = 15 * 60   # stop updating near the end of the run
+
+# -- build/lint gate before grading ---------------------------------------------------------------
+BUILD_GATE_ENABLED = True       # compile/lint the changed files before every evaluate()
+BUILD_GATE_ROUNDS = 2           # times the model gets the errors back to fix them
+BUILD_GATE_TURNS = 12           # model calls per fixing round
+BUILD_GATE_WALL_S = 8 * 60      # agent-side time per fixing round
+BUILD_GATE_TIMEOUT_S = 300      # one check (e.g. go test -run '^$' on the changed packages)
+
+# -- exploring without editing ----------------------------------------------------------------------
+NO_EDIT_NUDGE_AT = (30, 50)     # model turns at which a repository with no changes gets a nudge
