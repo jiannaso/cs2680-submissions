@@ -17,12 +17,12 @@ MODEL_TIER = "STANDARD"         # CS2680_MODEL_<tier> used for the first attempt
 RETRY_MODEL_TIER = "STANDARD"   # model for attempts after a failed evaluation
 MAX_TURNS = 80                  # model calls in the first attempt
 RETRY_TURNS = 25                # model calls in each later attempt
-MAX_ATTEMPTS = 2                # evaluations per task (each grading can take up to 35 min)
+MAX_ATTEMPTS = 3                # evaluations per task (gradings took 7-50 s in run 2; up to 35 min allowed)
 TASK_WALL_S = 40 * 60           # agent-side work per task, not counting grading
 RETRY_MIN_RUN_LEFT_S = 50 * 60  # only retry when at least this much run time is left
 
 # -- model calls ------------------------------------------------------------------------------
-API_RETRIES = 5
+API_RETRIES = 7                 # with the doubling backoff: about 8 minutes of 503s before giving up
 API_BACKOFF_S = 4               # doubled after every failed attempt
 EXTRA_MODEL_ARGS = {}            # e.g. {"temperature": 0.2}; empty = the API's defaults
 
@@ -33,11 +33,11 @@ TOOL_OUTPUT_LIMIT = 10_000      # chars of one tool result the model sees (head 
 VIEW_MAX_LINES = 400            # lines one view_file call returns
 
 # -- context management -----------------------------------------------------------------------
-COMPACT_AT_CHARS = 100_000      # compact once the conversation is longer than this (~25k tokens)
-COMPACT_KEEP_MESSAGES = 10      # the most recent messages kept verbatim; older ones are summarized
+COMPACT_AT_CHARS = 160_000      # compact once the conversation is longer than this (~40k tokens)
+COMPACT_KEEP_MESSAGES = 14      # the most recent messages kept verbatim; older ones are summarized
 COMPACT_MODEL_TIER = "STANDARD" # model that writes the summary
 COMPACT_INPUT_CHARS = 80_000    # transcript sent to the summarizer (head + tail kept)
-CONTEXT_CHAR_LIMIT = 240_000    # safety net if compaction fails: older tool results are dropped ...
+CONTEXT_CHAR_LIMIT = 300_000    # safety net if compaction fails: older tool results are dropped ...
 KEEP_RECENT_TOOL_RESULTS = 8    # ... except the most recent ones
 
 # -- playbook: lessons carried from one task to the next ------------------------------------------
@@ -57,3 +57,6 @@ BUILD_GATE_TIMEOUT_S = 300      # one check (e.g. go test -run '^$' on the chang
 
 # -- exploring without editing ----------------------------------------------------------------------
 NO_EDIT_NUDGE_AT = (30, 50)     # model turns at which a repository with no changes gets a nudge
+
+# -- cost report in run_logs/agent.log (estimate; $ per 1M tokens: input, cached input, output) --
+PRICES = {"expert": (2.00, 0.10, 10.00), "standard": (0.08, 0.004, 0.28), "starter": (0.01, 0.0005, 0.04)}

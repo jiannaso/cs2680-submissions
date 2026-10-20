@@ -121,6 +121,7 @@ class TaskState:
         self.actions = []                               # short log of tool calls, for the playbook report
         self.attempts = []                              # (loop end reason, evaluation) per attempt
         self.nudged = set()                             # NO_EDIT_NUDGE_AT thresholds already used
+        self.usage = {}                                 # model id -> [input, cached input, output] tokens
         system = prompts.SYSTEM_PROMPT.format(workdir=task["workdir"])
         if playbook:
             system += prompts.PLAYBOOK_NOTE.format(playbook=playbook)
@@ -149,6 +150,7 @@ class Agent:
         self._playbook_lock = threading.Lock()
         self._pending_reports = []                      # reports queued while another update ran
         self.run_started = None
+        self.cost = 0.0                                 # estimated $ of the whole run so far
         self._lock = threading.Lock()
         self._stop = threading.Event()                  # set on DispatcherShutdown or no tasks left
 
@@ -170,6 +172,7 @@ class Agent:
             time.sleep(1)                               # stagger the first next_task() calls
         for w in workers:
             w.join()
+        _debug(f"run done: estimated cost ${self.cost:.2f}")
 
     def _worker(self):
         from dispatcher import DispatcherError, DispatcherShutdown
@@ -289,7 +292,22 @@ class Agent:
                 _debug(f"task {k}: regrade failed: {e}")
         if config.PLAYBOOK_ENABLED:
             self._update_playbook(st, last_ev, best_patch)  # before done(): the trace closes there
+        self._report_cost(st, last_ev)
         self.dispatcher.done(k, reason, st.iterations)
+
+    def _report_cost(self, st: TaskState, ev):
+        cost = 0.0
+        parts = []
+        for model_id, (inp, cached, out) in st.usage.items():
+            price = config.PRICES.get(model_id, config.PRICES["expert"])
+            cost += ((inp - cached) * price[0] + cached * price[1] + out * price[2]) / 1e6
+            parts.append(f"{model_id} {inp:,} in ({cached:,} cached) {out:,} out")
+        with self._lock:
+            self.cost += cost
+            total = self.cost
+        result = "-" if not ev else f"{ev.get('tests_failed')}/{ev.get('tests_total')} failing"
+        _debug(f"task {st.k}: {result}, {st.iterations} turns, {(time.time() - st.started) / 60:.1f} min, "
+               f"~${cost:.3f} ({'; '.join(parts)}); run so far ~${total:.2f}")
 
     def _read_patch(self, k: int):
         try:
@@ -467,6 +485,17 @@ class Agent:
 
     # -- model calls --------------------------------------------------------------------------
 
+    @staticmethod
+    def _count_usage(st: TaskState, model_id: str, usage):
+        if usage is None:
+            return
+        details = getattr(usage, "prompt_tokens_details", None)
+        cached = (getattr(details, "cached_tokens", None) if details is not None else None) or 0
+        u = st.usage.setdefault(model_id, [0, 0, 0])
+        u[0] += getattr(usage, "prompt_tokens", 0) or 0
+        u[1] += cached if isinstance(cached, int) else 0
+        u[2] += getattr(usage, "completion_tokens", 0) or 0
+
     def _call_with_retries(self, st: TaskState, model_id: str, messages: list = None, tools: bool = True):
         """A logged model call with retries. Default: the task's conversation with the tools."""
         import openai
@@ -474,8 +503,10 @@ class Agent:
         extra = {"tools": TOOL_SPECS} if tools else {}
         for attempt in range(config.API_RETRIES):
             try:
-                return call_model(self.client, model_id, st.messages if messages is None else messages,
-                                  st.logger, st.iterations, **extra, **config.EXTRA_MODEL_ARGS)
+                response = call_model(self.client, model_id, st.messages if messages is None else messages,
+                                      st.logger, st.iterations, **extra, **config.EXTRA_MODEL_ARGS)
+                self._count_usage(st, model_id, getattr(response, "usage", None))
+                return response
             except (openai.AuthenticationError, openai.PermissionDeniedError) as e:   # retrying cannot help
                 st.logger.api_retry(st.iterations, f"{type(e).__name__}: {e}", 0)
                 _debug(f"task {st.k}: API refused the key: {e}")

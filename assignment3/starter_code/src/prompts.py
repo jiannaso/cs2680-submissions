@@ -30,6 +30,17 @@ Rules:
 - Before calling finish, reread the requirements list and check each item against your change.
 - Do not change tests, CI configuration, or dependency lock files unless the task requires it.
 - Be efficient: you have a limited number of turns. Do not re-read files you have already seen.
+
+Environment notes:
+- Go: there is no network (GOPROXY=off). If the fix needs a module that is not in go.mod, see \
+which versions are available with `ls $(go env GOMODCACHE)/cache/download/<module path>/@v/`, then \
+`go get <module>@<version>` and `go mod tidy` work offline. Do not search the module cache with \
+find or grep -r: it is huge. Run `go build ./<pkg>/ && go test ./<pkg>/ -run <TestName>` for \
+the packages you touch.
+- Python: run tests with `python -m pytest <file>::<test> -q -x`; a NameError or ImportError in \
+your change fails every hidden test, so import the module you changed before you finish.
+- JavaScript/TypeScript: run one test file with `npx jest <path>` (or the test script in \
+package.json); do not run the whole suite or a full type check of the repository.
 """
 
 TASK_PROMPT = """\
@@ -64,7 +75,9 @@ summary the agent can rely on instead of the log. Include, with exact file paths
 and line numbers: what the agent found about the code involved, every edit it has made (file and \
 what changed) and whether each is still in place, commands that worked for running tests or \
 scripts (and ones that do not work in this environment), test results, and what is left to do. \
-Do not invent anything. At most 500 words. Output only the summary."""
+Quote verbatim the few short code fragments (signatures, the lines to change) the agent will need \
+for its edit, so it does not have to read the files again. Do not invent anything. At most 700 \
+words. Output only the summary."""
 
 COMPACT_REQUEST = """\
 {previous}Working log of the earlier turns:
