@@ -1,7 +1,7 @@
 # A3 reference notes (facts for the write-up and video, prepared by Claude; not the write-up)
 
 The write-up must be your own words. These are only the facts, numbers and file locations behind it.
-Line numbers refer to `starter_code/src/` as committed (the `src_iface.zip` version: fail-fast + interface check).
+Links open `starter_code/src/` at the line; line numbers are for the version committed (the `src_iface.zip` version: fail-fast + interface check).
 
 ## Leaderboard submissions
 
@@ -24,25 +24,25 @@ Line numbers refer to `starter_code/src/` as committed (the `src_iface.zip` vers
 
 | component | file:line | what it does |
 |---|---|---|
-| worker threads, 5 tasks live | `agentic_loop.py:223` (`run`), `:233` (`_worker`) | NUM_WORKERS = 5 = dispatcher maximum |
-| per-task flow | `agentic_loop.py:276` (`solve`) | recon → candidates → grading → retries → regrade best |
-| parallel candidates | `agentic_loop.py:299`, `:388` (`_extra_candidates`) | 2 candidates; candidate 1 in a git worktree under /work (`tools.py:434`) |
-| path redirect for candidate 1 | `tools.py:142` (`_remap_command`) | `/app/...` paths rewritten to its own copy |
-| grade as each candidate finishes, early stop | `agentic_loop.py:325`, `:338` | first passing patch stops the others |
-| near-miss retry policy | `agentic_loop.py:67` (`_worth_retry`), `:351` | retry only if ≤2 or ≤10 % tests fail, or tests did not run |
-| regrade best | `agentic_loop.py:380` | last evaluation counts, so the best patch is regraded if needed |
-| tool loop | `agentic_loop.py:531` (`_agent_loop`) | bash / view_file / str_replace / create_file / finish |
-| no-edit nudge, time warning | `agentic_loop.py:516`, `prompts.py:134`, `:177` | nudge at turns 20/40 if nothing changed; warn at 80 % of time |
-| build/lint gate + interface check | `agentic_loop.py:454`, `tools.py:391`, `:332`, `:619` | go build of changed pkgs; Python syntax + new undefined names; interface names present |
-| expert review | `agentic_loop.py:483`, `prompts.py:139` | one Expert call on the diff vs spec |
-| context compaction | `agentic_loop.py:595` | summarize at 160k chars, keep last 14 messages |
-| playbook across tasks | `agentic_loop.py:646` | Expert rewrites ≤10 lessons after each task |
-| API concurrency cap, 429 handling | `agentic_loop.py:209`, `:691` | ≤7 calls in flight (account limit 8); 429s waited out |
-| cost ledger | `agentic_loop.py:426` | per-task tokens, cached tokens, $ estimate in agent.log |
-| recon (scripted search) | `tools.py:508`, `:485` | grep spec names, nearby tests, test command → first message |
-| edit tool (from A2) | `tools.py:225`, `:275` | closest-match on miss, strip line numbers, show edited region |
-| git guard (from A2) | `tools.py:15`, `:302` | refuse commit/stash/reset…; restore HEAD before diff |
-| model tiers | `config.py` | Standard: all agent turns; Expert: review + playbook only |
+| worker threads, 5 tasks live | [agentic_loop.py:223](starter_code/src/agentic_loop.py:223) (`run`), [:233](starter_code/src/agentic_loop.py:233) (`_worker`) | NUM_WORKERS = 5 = dispatcher maximum |
+| per-task flow | [agentic_loop.py:276](starter_code/src/agentic_loop.py:276) (`solve`) | recon → candidates → grading → retries → regrade best |
+| parallel candidates | [agentic_loop.py:299](starter_code/src/agentic_loop.py:299), [:388](starter_code/src/agentic_loop.py:388) (`_extra_candidates`) | 2 candidates; candidate 1 in a git worktree under /work ([tools.py:434](starter_code/src/tools.py:434)) |
+| path redirect for candidate 1 | [tools.py:142](starter_code/src/tools.py:142) (`_remap_command`) | `/app/...` paths rewritten to its own copy |
+| grade as each candidate finishes, early stop | [agentic_loop.py:325](starter_code/src/agentic_loop.py:325), [:338](starter_code/src/agentic_loop.py:338) | first passing patch stops the others |
+| near-miss retry policy | [agentic_loop.py:67](starter_code/src/agentic_loop.py:67) (`_worth_retry`), [:351](starter_code/src/agentic_loop.py:351) | retry only if ≤2 or ≤10 % tests fail, or tests did not run |
+| regrade best | [agentic_loop.py:380](starter_code/src/agentic_loop.py:380) | last evaluation counts, so the best patch is regraded if needed |
+| tool loop | [agentic_loop.py:531](starter_code/src/agentic_loop.py:531) (`_agent_loop`) | bash / view_file / str_replace / create_file / finish |
+| no-edit nudge, time warning | [agentic_loop.py:516](starter_code/src/agentic_loop.py:516), [prompts.py:134](starter_code/src/prompts.py:134), [:177](starter_code/src/prompts.py:177) | nudge at turns 20/40 if nothing changed; warn at 80 % of time |
+| build/lint gate + interface check | [agentic_loop.py:454](starter_code/src/agentic_loop.py:454), [tools.py:391](starter_code/src/tools.py:391), [:332](starter_code/src/tools.py:332), [:619](starter_code/src/tools.py:619) | go build of changed pkgs; Python syntax + new undefined names; interface names present |
+| expert review | [agentic_loop.py:483](starter_code/src/agentic_loop.py:483), [prompts.py:139](starter_code/src/prompts.py:139) | one Expert call on the diff vs spec |
+| context compaction | [agentic_loop.py:595](starter_code/src/agentic_loop.py:595) | summarize at 160k chars, keep last 14 messages |
+| playbook across tasks | [agentic_loop.py:646](starter_code/src/agentic_loop.py:646) | Expert rewrites ≤10 lessons after each task |
+| API concurrency cap, 429 handling | [agentic_loop.py:209](starter_code/src/agentic_loop.py:209), [:691](starter_code/src/agentic_loop.py:691) | ≤7 calls in flight (account limit 8); 429s waited out |
+| cost ledger | [agentic_loop.py:426](starter_code/src/agentic_loop.py:426) | per-task tokens, cached tokens, $ estimate in agent.log |
+| recon (scripted search) | [tools.py:508](starter_code/src/tools.py:508), [:485](starter_code/src/tools.py:485) | grep spec names, nearby tests, test command → first message |
+| edit tool (from A2) | [tools.py:225](starter_code/src/tools.py:225), [:275](starter_code/src/tools.py:275) | closest-match on miss, strip line numbers, show edited region |
+| git guard (from A2) | [tools.py:15](starter_code/src/tools.py:15), [:302](starter_code/src/tools.py:302) | refuse commit/stash/reset…; restore HEAD before diff |
+| model tiers | [config.py](starter_code/src/config.py) | Standard: all agent turns; Expert: review + playbook only |
 
 ## Changes, the problem behind each, and the evidence
 
@@ -80,7 +80,7 @@ Line numbers refer to `starter_code/src/` as committed (the `src_iface.zip` vers
 ## Video outline (3 min)
 
 1. (0:00–0:20) Result arc: 8 → 10 → 7 → 10 solved; best 10 at $0.32 and 19:11 per solve (rank #60).
-2. (0:20–1:10) Architecture: open `agentic_loop.py:276` `solve` → candidates `:299` and worktree `tools.py:434` → grade as finished / early stop `:325–338` → near-miss retries `:67`.
-3. (1:10–1:50) Deterministic pieces instead of model turns: recon `tools.py:508`, gate `tools.py:391` + interface check `:619`, edit tool `:225/:275`, git guard `:15`.
-4. (1:50–2:30) Pitfalls: gate false alarm (vuls), 429 limit → cap `agentic_loop.py:209`, tight limits (7/26), one-shot negative result.
+2. (0:20–1:10) Architecture: open [agentic_loop.py:276](starter_code/src/agentic_loop.py:276) `solve` → candidates [:299](starter_code/src/agentic_loop.py:299) and worktree [tools.py:434](starter_code/src/tools.py:434) → grade as finished / early stop [agentic_loop.py:325–338](starter_code/src/agentic_loop.py:325) → near-miss retries [agentic_loop.py:67](starter_code/src/agentic_loop.py:67).
+3. (1:10–1:50) Deterministic pieces instead of model turns: recon [tools.py:508](starter_code/src/tools.py:508), gate [tools.py:391](starter_code/src/tools.py:391) + interface check [:619](starter_code/src/tools.py:619), edit tool [:225](starter_code/src/tools.py:225) / [:275](starter_code/src/tools.py:275), git guard [:15](starter_code/src/tools.py:15).
+4. (1:50–2:30) Pitfalls: gate false alarm (vuls), 429 limit → cap [agentic_loop.py:209](starter_code/src/agentic_loop.py:209), tight limits (7/26), one-shot negative result.
 5. (2:30–3:00) What helped most and what you would do next: fail-fast retries; spec-derived tests for "new tests failed"; one end-to-end time budget per task.
