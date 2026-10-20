@@ -192,6 +192,9 @@ class Agent:
         self._pending_reports = []                      # reports queued while another update ran
         self.run_started = None
         self.cost = 0.0                                 # estimated $ of the whole run so far
+        # the course API refuses more than 8 requests in flight per account (429): every model call of
+        # every task and candidate waits for a slot here
+        self._api_slots = threading.BoundedSemaphore(config.MAX_CONCURRENT_CALLS)
         self._lock = threading.Lock()
         self._stop = threading.Event()                  # set on DispatcherShutdown or no tasks left
 
@@ -666,12 +669,26 @@ class Agent:
         import openai
         backoff = config.API_BACKOFF_S
         extra = {"tools": TOOL_SPECS} if tools else {}
-        for attempt in range(config.API_RETRIES):
+        attempt, rate_limited_s = 0, 0.0
+        while attempt < config.API_RETRIES:
+            attempt += 1
             try:
-                response = call_model(self.client, model_id, st.messages if messages is None else messages,
-                                      st.logger, st.iterations, **extra, **config.EXTRA_MODEL_ARGS)
+                with self._api_slots:
+                    response = call_model(self.client, model_id, st.messages if messages is None else messages,
+                                          st.logger, st.iterations, **extra, **config.EXTRA_MODEL_ARGS)
                 self._count_usage(st, model_id, getattr(response, "usage", None))
                 return response
+            except openai.RateLimitError as e:          # too many requests in flight: wait, keep the retry budget
+                wait = min(config.RATE_LIMIT_WAIT_S * (1 + rate_limited_s // 60), 30)
+                st.logger.api_retry(st.iterations, f"RateLimitError: {e}", wait)
+                if rate_limited_s >= config.RATE_LIMIT_MAX_WAIT_S:
+                    _debug(f"task {st.k}: rate limited for {rate_limited_s:.0f}s; giving up this call")
+                    return None
+                _debug(f"task {st.k}: rate limited; waiting {wait:.0f}s")
+                time.sleep(wait)
+                rate_limited_s += wait
+                attempt -= 1
+                continue
             except (openai.AuthenticationError, openai.PermissionDeniedError) as e:   # retrying cannot help
                 st.logger.api_retry(st.iterations, f"{type(e).__name__}: {e}", 0)
                 _debug(f"task {st.k}: API refused the key: {e}")

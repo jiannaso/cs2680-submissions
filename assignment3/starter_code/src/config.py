@@ -22,6 +22,9 @@ TASK_WALL_S = 25 * 60           # agent-side work per candidate's first attempt 
 RETRY_MIN_RUN_LEFT_S = 50 * 60  # only retry when at least this much run time is left
 
 # -- model calls ------------------------------------------------------------------------------
+MAX_CONCURRENT_CALLS = 7        # model calls in flight across all tasks and candidates (the API allows 8)
+RATE_LIMIT_WAIT_S = 3           # wait after a 429 (grows slowly), not counted against API_RETRIES
+RATE_LIMIT_MAX_WAIT_S = 15 * 60 # total 429 waiting per call before giving up
 API_RETRIES = 7                 # with the doubling backoff: about 8 minutes of 503s before giving up
 API_BACKOFF_S = 4               # doubled after every failed attempt
 EXTRA_MODEL_ARGS = {}            # e.g. {"temperature": 0.2}; empty = the API's defaults

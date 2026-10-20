@@ -16,6 +16,7 @@ cands     two candidates in parallel: the copy is a git worktree with ignored no
           by candidate 1, and grading (as each candidate finishes) stops at the first passing patch
 dedup     two candidates with the same patch: it is graded once
 early     candidate 0 passes quickly: candidate 1 is stopped instead of running to its turn limit
+api       at most MAX_CONCURRENT_CALLS model calls in flight; 429s are waited out without using retries
 tools     str_replace shows the closest region on a miss, strips view_file line numbers, shows the
           edited region; state-changing git is refused; a commit made anyway is undone before the diff
 Go packages are not covered here (no go toolchain needed): try check_build on a Go task image.
@@ -283,6 +284,36 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, early_model)
 results["early: one grading, passes"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
 results["early: candidate 1 stopped well before its turn limit"] = slow["calls"] < config.MAX_TURNS // 2
+
+# -- api -----------------------------------------------------------------------------------------
+import httpx, openai
+live = {"now": 0, "max": 0, "n429": 0}
+live_lock = threading.Lock()
+def slow_create(model=None, messages=None, **kw):
+    with live_lock:
+        live["now"] += 1; live["max"] = max(live["max"], live["now"])
+    try:
+        time.sleep(0.2)
+        if messages and messages[0]["content"] == "429" and live["n429"] < 4:
+            live["n429"] += 1
+            raise openai.RateLimitError("Too many concurrent requests (limit: 8)",
+                                        response=httpx.Response(429, request=httpx.Request("POST", "http://x")), body=None)
+        return reply(content="ok")
+    finally:
+        with live_lock:
+            live["now"] -= 1
+agent = agentic_loop.Agent(FakeDispatcher({}, None))
+agent.client = types.SimpleNamespace(chat=types.SimpleNamespace(completions=types.SimpleNamespace(create=slow_create)))
+fake_st = types.SimpleNamespace(k=0, messages=[], logger=Logger(), iterations=0, usage={})
+got = []
+ths = [threading.Thread(target=lambda: got.append(agent._call_with_retries(fake_st, "standard", messages=[{"role": "user", "content": "hi"}], tools=False)))
+       for _ in range(12)]
+for t in ths: t.start()
+for t in ths: t.join()
+results["api: never more than MAX_CONCURRENT_CALLS in flight"] = live["max"] <= config.MAX_CONCURRENT_CALLS and len(got) == 12 and all(got)
+config.RATE_LIMIT_WAIT_S, config.API_RETRIES = 0.01, 2
+r = agent._call_with_retries(fake_st, "standard", messages=[{"role": "system", "content": "429"}], tools=False)
+results["api: 429s waited out without using retries"] = r is not None and live["n429"] == 4
 
 for p in procs: p.terminate()
 for name, ok in results.items():
