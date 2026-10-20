@@ -145,6 +145,11 @@ class TaskState:
         self.reason = "not run"                         # why the latest loop ended
         self.graded_patch, self.prev_ev = None, None    # this candidate's last graded patch and result
         self.stop = None                                # threading.Event: another candidate has passed
+        try:                                            # HEAD at the start, restored before every diff
+            r = self.sb.exec("git rev-parse HEAD", timeout_s=30)
+            self.start_sha = r.get("output", "").strip() if not r.get("exit_code") else None
+        except Exception:
+            self.start_sha = None
         self.iterations = 0
         self.started = time.time()
         self.summary = ""                               # latest compaction summary
@@ -329,7 +334,7 @@ class Agent:
             reason = self._build_gate(st, self.retry_model_id, reason)
             reason = self._review(st, self.retry_model_id, reason, ev)
             st.attempts.append([reason, None])
-            cleanup = clean_repo_for_patch(st.sb)
+            cleanup = clean_repo_for_patch(st.sb, st.start_sha)
             _debug(f"task {k} candidate {st.name} attempt {attempt}: loop ended ({reason}); changed files:\n{cleanup}")
             patch = repo_diff(st.sb)
             if not patch.strip():
@@ -386,7 +391,7 @@ class Agent:
             _debug(f"task {st.k} candidate {st.name}: {type(e).__name__}: {e}\n{traceback.format_exc()}")
         st.attempts.append([st.reason, None])
         try:
-            cleanup = clean_repo_for_patch(st.sb)
+            cleanup = clean_repo_for_patch(st.sb, st.start_sha)
         except Exception as e:
             cleanup = f"cleanup failed: {e}"
         _debug(f"task {st.k} candidate {st.name} attempt 1: loop ended ({st.reason}); changed files:\n{cleanup}")
@@ -424,7 +429,7 @@ class Agent:
         if not config.BUILD_GATE_ENABLED or reason == "api error" or reason.startswith("stopped"):
             return reason
         for _ in range(config.BUILD_GATE_ROUNDS):
-            clean_repo_for_patch(st.sb)
+            clean_repo_for_patch(st.sb, st.start_sha)
             errors = check_build(st.sb)
             if not errors:
                 return reason
@@ -446,7 +451,7 @@ class Agent:
                 or st.reviews >= config.REVIEW_MAX_PER_TASK
                 or time.time() > self._soft_deadline() - 5 * 60):
             return reason
-        clean_repo_for_patch(st.sb)
+        clean_repo_for_patch(st.sb, st.start_sha)
         try:
             diff = st.sb.exec("git add -N . >/dev/null 2>&1; git diff", timeout_s=60).get("output", "")
         except Exception:
@@ -491,14 +496,20 @@ class Agent:
                     nudge: bool = True) -> str:
         """Run the model with tools until it calls finish, runs out of turns or time. Returns why it stopped."""
         idle = 0
+        started, time_warned = time.time(), False
         for turn in range(max_turns):
             if st.stop is not None and st.stop.is_set():
                 return "stopped: another candidate passed"
-            if time.time() > deadline:
+            now = time.time()
+            if now > deadline:
                 return "time limit"
             left = max_turns - turn
             if left == 3:
                 st.messages.append({"role": "user", "content": prompts.LAST_TURNS_WARNING.format(left=left)})
+            elif not time_warned and left > 3 and now - started > 0.8 * (deadline - started):
+                time_warned = True
+                st.messages.append({"role": "user", "content": prompts.TIME_WARNING.format(
+                    minutes=max(1, round((deadline - now) / 60)))})
             elif nudge:
                 self._no_edit_nudge(st, turn, max_turns)
             if _size(st.messages) > config.COMPACT_AT_CHARS:
@@ -518,7 +529,9 @@ class Agent:
                 idle += 1
                 if idle >= 3:
                     return "model stopped calling tools"
-                st.messages.append({"role": "user", "content": prompts.NO_TOOL_NUDGE})
+                cut_off = getattr(response.choices[0], "finish_reason", None) == "length"
+                st.messages.append({"role": "user",
+                                    "content": prompts.CUT_OFF_NUDGE if cut_off else prompts.NO_TOOL_NUDGE})
                 continue
             idle = 0
 

@@ -1,6 +1,7 @@
 """The tools the model can call. Every tool works on the task repository through the Sandbox."""
 
 import base64
+import difflib
 import json
 import re
 import shlex
@@ -8,6 +9,15 @@ import shlex
 from . import config
 from .sandbox import SandboxError, SandboxPathError
 
+
+# git subcommands that move HEAD, stage, or throw work away: the patch is `git diff` of the working
+# tree against the starting commit, so any of these can silently empty or corrupt it.
+BLOCKED_GIT = re.compile(
+    r"(?:^|[;&|(`]|\$\(|\b(?:then|do|else|sudo|xargs|env|time)\s)\s*git\s+(?:-{1,2}[\w-]+(?:[= ](?!-)\S+)?\s+)*"
+    r"(add|commit|stash|reset|checkout|switch|clean|merge|rebase|cherry-pick|revert|am|pull|push|worktree)\b"
+)
+# view_file's line-number prefix ("    42\t"), sometimes copied into old_str by the model
+LINE_NO_PREFIX = re.compile(r"^ *\d+\t", re.M)
 
 TOOL_SPECS = [
     {
@@ -17,7 +27,9 @@ TOOL_SPECS = [
             "description": (
                 "Run a shell command (sh -c) in the repository root and return stdout+stderr and "
                 "the exit code. No internet. No interactive commands. Long output is truncated, so "
-                "narrow it with grep, head, tail or sed -n."),
+                "narrow it with grep, head, tail or sed -n. git commands that change repository "
+                "state (add, commit, stash, reset, checkout, ...) are refused: leave your fix as "
+                "uncommitted changes."),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -158,6 +170,10 @@ class ToolBox:
     # -- the tools --------------------------------------------------------------------------
 
     def _tool_bash(self, command: str, timeout_s: int = None):
+        blocked = BLOCKED_GIT.search(command)
+        if blocked:
+            return (f"Error: `git {blocked.group(1)}` is not allowed: leave the fix as uncommitted changes in the "
+                    "working tree. Use read-only git (status, diff, log, show) or edit files directly."), True
         timeout_s = int(timeout_s or config.CMD_TIMEOUT_S)
         timeout_s = max(1, min(timeout_s, config.CMD_TIMEOUT_MAX_S))
         r = self.sb.exec(command, timeout_s=timeout_s)
@@ -208,17 +224,28 @@ class ToolBox:
 
     def _tool_str_replace(self, path: str, old_str: str, new_str: str):
         text = self._read(path)
-        count = text.count(old_str)
         if not old_str:
             return "Error: old_str is empty.", True
+        if "\r\n" in text:                              # keep a CRLF file's line endings as they are
+            old_str = old_str.replace("\r\n", "\n").replace("\n", "\r\n")
+            new_str = new_str.replace("\r\n", "\n").replace("\n", "\r\n")
+        count = text.count(old_str)
+        note = ""
+        if count == 0 and LINE_NO_PREFIX.search(old_str):
+            # the model copied view_file's line numbers: strip them from both sides and retry
+            stripped = LINE_NO_PREFIX.sub("", old_str)
+            if text.count(stripped) == 1:
+                old_str, new_str = stripped, LINE_NO_PREFIX.sub("", new_str)
+                count, note = 1, " (removed view_file line-number prefixes from old_str/new_str)"
         if count == 0:
-            return (f"Error: old_str was not found in {path}. View the file again and copy the text "
-                    "exactly, including indentation."), True
+            return (f"Error: old_str was not found in {path}. Copy the text exactly, including indentation, "
+                    f"without line-number prefixes.{_closest(text, old_str)}"), True
         if count > 1:
             return f"Error: old_str occurs {count} times in {path}; include more context.", True
-        self._write(path, text.replace(old_str, new_str, 1))
+        new_text = text.replace(old_str, new_str, 1)
+        self._write(path, new_text)
         line = text[:text.index(old_str)].count("\n") + 1
-        return f"Edited {path} (replacement starts at line {line}).", False
+        return f"Edited {path}{note}. The changed region now reads:\n{_snippet(new_text, line, new_str)}", False
 
     def _tool_create_file(self, path: str, content: str):
         existed = self._write(path, content)
@@ -228,15 +255,59 @@ class ToolBox:
         return "Submitting your changes.", False
 
 
+def _snippet(content: str, first: int, new_str: str, context: int = 3) -> str:
+    """The edited region with a few lines of context, so the model can check the result."""
+    lines = content.splitlines()
+    last = first + new_str.count("\n")
+    lo, hi = max(first - context, 1), min(last + context, len(lines))
+    if hi - lo > 60:                                    # a big edit: its first and last lines are enough
+        keep = list(range(lo, lo + 25)) + list(range(hi - 24, hi + 1))
+        out, prev = [], None
+        for i in keep:
+            if prev is not None and i != prev + 1:
+                out.append("   ...")
+            out.append(f"{i:6d}\t{lines[i - 1]}")
+            prev = i
+        return "\n".join(out)
+    return "\n".join(f"{i:6d}\t{lines[i - 1]}" for i in range(lo, hi + 1))
+
+
+def _closest(content: str, old_str: str) -> str:
+    """The region of the file most like old_str, so the next try needs no extra view_file."""
+    want = old_str.splitlines()
+    lines = content.splitlines()
+    if not want or not lines or len(lines) > 20_000:
+        return ""
+    n = len(want)
+    best, best_i = 0.0, 0
+    keys = [w.strip() for w in want if w.strip()][:1]
+    for i in range(len(lines)):
+        if keys and difflib.SequenceMatcher(None, keys[0], lines[i].strip()).quick_ratio() < 0.6:
+            continue
+        r = difflib.SequenceMatcher(None, "\n".join(want), "\n".join(lines[i:i + n])).ratio()
+        if r > best:
+            best, best_i = r, i
+    if best < 0.5:
+        return " The text does not resemble any part of the file: view the region you want to change first."
+    lo, hi = best_i + 1, min(best_i + n + 2, len(lines))
+    region = "\n".join(f"{j:6d}\t{lines[j - 1]}" for j in range(lo, hi + 1))
+    return f" The closest match is lines {lo}-{hi} (copy from here, without the line numbers):\n{truncate(region, 6000)}"
+
+
 # Test files the hidden tests may replace: our edits to them are dropped before the patch is made,
 # so that the graders' test patch applies cleanly.
 TEST_PATH_GREP = r"(^|/)(tests?|__tests__|testing)/|(^|/)test_[^/]*\.py$|_test\.(py|go)$|\.(test|spec)\.[jt]sx?$"
 
 
-def clean_repo_for_patch(sb):
-    """Undo edits to test files and remove scratch/build files before the diff is taken."""
+def clean_repo_for_patch(sb, start_sha: str = None):
+    """Undo edits to test files and remove scratch/build files before the diff is taken. If HEAD
+    moved (a commit from inside a script the git filter cannot see), point it back at the starting
+    commit, keeping the working tree; and unstage everything."""
     pattern = shlex.quote(TEST_PATH_GREP)
+    restore = (f"[ \"$(git rev-parse HEAD 2>/dev/null)\" = {shlex.quote(start_sha)} ] || "
+               f"git reset -q --soft {shlex.quote(start_sha)} ; " if start_sha else "")
     script = (
+        restore + "git reset -q >/dev/null 2>&1 ; " +
         # restore modified tracked test files
         f"git diff --name-only | grep -E {pattern} | xargs -r git checkout -- ; "
         # delete untracked test files, scratch scripts and large/binary files

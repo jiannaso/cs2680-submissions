@@ -16,6 +16,8 @@ cands     two candidates in parallel: the copy is a git worktree with ignored no
           by candidate 1, and grading (as each candidate finishes) stops at the first passing patch
 dedup     two candidates with the same patch: it is graded once
 early     candidate 0 passes quickly: candidate 1 is stopped instead of running to its turn limit
+tools     str_replace shows the closest region on a miss, strips view_file line numbers, shows the
+          edited region; state-changing git is refused; a commit made anyway is undone before the diff
 Go packages are not covered here (no go toolchain needed): try check_build on a Go task image.
 """
 import json, os, subprocess, sys, tempfile, threading, time, types
@@ -34,7 +36,7 @@ config.CANDIDATES = 1                              # the cands/dedup scenarios t
 config.API_BACKOFF_S = 0.01
 from src import agentic_loop
 from src.sandbox import Sandbox
-from src.tools import check_build
+from src.tools import ToolBox, check_build, clean_repo_for_patch, repo_diff
 
 work = os.path.realpath(tempfile.mkdtemp())
 CALC = "import os\n\ndef helper(x):\n    return x\n\ndef add(a, b):\n    return a - b\n\ndef legacy():\n    return OLD_GLOBAL\n"
@@ -120,6 +122,25 @@ open(os.path.join(repo, "calc.py"), "w").write(CALC.replace("return a - b", "ret
 results["check: syntax error"] = "syntax error" in check_build(sb)
 open(os.path.join(repo, "calc.py"), "w").write(CALC.replace("return a - b", "return helper(a) + b"))
 results["check: fixed"] = check_build(sb) == ""
+
+# -- tools -------------------------------------------------------------------------------------
+open(os.path.join(repo, "calc.py"), "w").write(CALC)
+tb = ToolBox(sb)
+out, err = tb.run("str_replace", json.dumps({"path": "calc.py", "old_str": "def add(a, b):\n    return a + b", "new_str": "x"}))
+results["tools: miss shows the closest region"] = err and "closest match is lines 6-" in out and "return a - b" in out
+out, err = tb.run("str_replace", json.dumps({"path": "calc.py", "old_str": "     7\t    return a - b", "new_str": "     7\t    return a + b"}))
+results["tools: line-number prefixes stripped"] = (not err and "removed view_file line-number" in out
+                                                   and "    return a + b\n" in open(os.path.join(repo, "calc.py")).read())
+results["tools: edited region shown"] = "def add(a, b):" in out
+out, err = tb.run("bash", json.dumps({"command": "git -c user.email=a@b commit -am x"}))
+results["tools: git commit refused"] = err and "not allowed" in out
+out, err = tb.run("bash", json.dumps({"command": "git status --short && git diff --stat"}))
+results["tools: read-only git allowed"] = not err and "calc.py" in out
+start = subprocess.run("git rev-parse HEAD", shell=True, cwd=repo, capture_output=True, text=True).stdout.strip()
+subprocess.run("sh -c 'git -c user.email=a@b -c user.name=t commit -qam sneaky'", shell=True, cwd=repo, check=True)
+clean_repo_for_patch(sb, start)
+results["tools: sneaky commit undone before the diff"] = "return a + b" in repo_diff(sb)
+subprocess.run("git checkout -q -- calc.py", shell=True, cwd=repo)
 
 # -- gate --------------------------------------------------------------------------------------
 repo, proc, url = make_repo("gate", 18811); procs.append(proc); time.sleep(1.5)

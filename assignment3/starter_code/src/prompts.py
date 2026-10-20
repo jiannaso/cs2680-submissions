@@ -171,3 +171,11 @@ CANDIDATE_NOTE = """
 
 Your checkout is {workdir} (a copy of {main}). Work only there: read, edit and run tests in \
 {workdir}, never in {main}."""
+
+TIME_WARNING = (
+    "About {minutes} minute(s) of working time are left. Stop exploring: make sure your fix is in place "
+    "in the repository, check it once, then call finish.")
+
+CUT_OFF_NUDGE = (
+    "Your reply was cut off because it was too long and contained no complete tool call. Reply with a "
+    "single, shorter tool call (split a big edit into several str_replace calls).")
