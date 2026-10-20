@@ -143,6 +143,10 @@ class ToolBox:
         return re.sub(r"(?<![\w./-])" + re.escape(self.alias_root) + r"(?=/|[^\w.-]|$)",
                       lambda _: self.sb.workdir, command)
 
+    def run_raw(self, name: str, args: dict):
+        """run() with the arguments as a dict (for the harness's own edits)."""
+        return self.run(name, json.dumps(args))
+
     def run(self, name: str, raw_args: str):
         try:
             args = json.loads(raw_args or "{}")
@@ -508,9 +512,16 @@ def spec_names(interface, *texts, limit: int = 12):
 def recon(sb, task: dict) -> str:
     """A short map of where the specification's names live in the repository, the test files next to
     them and how to run tests: the searches every candidate would otherwise spend its first turns on."""
+    return recon_full(sb, task)[0]
+
+
+def recon_full(sb, task: dict):
+    """recon()'s text, plus what it found as data: {"names", "sources" (ranked non-test files to
+    read), "missing" (paths the interface names that do not exist yet), "tests"}."""
     names, paths = spec_names(task.get("interface"), task.get("requirements"), task.get("problem_statement"))
+    info = {"names": names, "sources": [], "missing": [], "tests": []}
     if not names and not paths:
-        return ""
+        return "", info
     script = []
     for p in paths:
         script.append(f"echo '@@path {p}'; git ls-files --error-unmatch -- {shlex.quote(p)} >/dev/null 2>&1 "
@@ -525,7 +536,7 @@ def recon(sb, task: dict) -> str:
     try:
         r = sb.exec("; ".join(script), timeout_s=120)
     except Exception:
-        return ""
+        return "", info
     sections, cur = {}, None
     for line in r.get("output", "").splitlines():
         if line.startswith("@@"):
@@ -572,6 +583,12 @@ def recon(sb, task: dict) -> str:
             pass
     ranked = [f for f in sorted(files, key=lambda f: (-spread[f], -files[f])) if test_re.search(f)]
     tests = list(dict.fromkeys(near + ranked))[:6]
+    existing = [p for p in paths if (sections.get(f"path {p}") or ["?"])[0] == "exists"]
+    info["missing"] = [p for p in paths if p not in existing]
+    by_spread = [f for f in sorted(files, key=lambda f: (-spread[f], -files[f])) if not test_re.search(f)
+                 and not re.search(r"(\.pb\.go|\.gen\.go|_generated\.\w+|\.min\.js)$|(^|/)examples?/", f)]
+    info["sources"] = list(dict.fromkeys(existing + specific_src + by_spread))[:8]
+    info["tests"] = tests
     lang = sections.get("lang", [])
     hints = []
     if "go.mod" in lang:
@@ -588,4 +605,4 @@ def recon(sb, task: dict) -> str:
         text += "\nExisting test files that mention them:\n" + "\n".join(f"- {t}" for t in tests)
     if hints:
         text += "\nRunning tests: " + "; ".join(hints)
-    return truncate(text, 4000)
+    return truncate(text, 4000), info

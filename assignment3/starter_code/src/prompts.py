@@ -182,3 +182,49 @@ CUT_OFF_NUDGE = (
     "single, shorter tool call (split a big edit into several str_replace calls).")
 
 BUDGET_NOTE = "\n[budget: turn {turn}/{turns}, about {minutes} min left]"
+
+ONESHOT_SYSTEM = """\
+You are an expert software engineer. You fix an issue in a real repository in one pass: you get the \
+issue, its specification (requirements and interface) and the relevant code, and you answer with \
+the complete change as SEARCH/REPLACE blocks. Hidden tests check exactly what the specification \
+says: every name, signature, default, return value, error type and message. Implement all of it.
+
+Format each edit as:
+
+path/to/file.ext
+<<<<<<< SEARCH
+exact lines copied from the file shown to you
+=======
+the new lines
+>>>>>>> REPLACE
+
+Rules:
+- SEARCH must match the current file exactly, character for character, including indentation; \
+include enough lines to be unique, and keep each block small (a few lines around the change).
+- To create a new file, leave SEARCH empty; the REPLACE part is the whole file.
+- Several blocks per file are fine; they are applied in order.
+- Do not edit or add test files. Do not reformat unrelated code.
+- If the specification changes a signature, update every caller shown to you as well.
+Think briefly about what the hidden tests will check, then give all the blocks. Nothing else after \
+the last block."""
+
+ONESHOT_REQUEST = """\
+{task}
+
+{repo_map}
+
+# Relevant code
+{files}"""
+
+ONESHOT_REPAIR = """\
+Your edits were applied, with these problems:
+
+{problems}
+
+The repository now contains the blocks that did apply. Answer with SEARCH/REPLACE blocks against \
+the CURRENT files that fix these problems (and finish anything left undone). Nothing else after \
+the last block."""
+
+ONESHOT_HANDOFF = """\
+The harness applied your SEARCH/REPLACE blocks to this checkout ({workdir}) and checked the build. \
+You can now use the tools to inspect, test and change the code."""

@@ -16,6 +16,9 @@ cands     two candidates in parallel: the copy is a git worktree with ignored no
           by candidate 1, and grading (as each candidate finishes) stops at the first passing patch
 dedup     two candidates with the same patch: it is graded once
 early     candidate 0 passes quickly: candidate 1 is stopped instead of running to its turn limit
+oneshot   SEARCH/REPLACE parsing (fences, "File:" lines, new files); a block that does not match gets a
+          repair round with the closest region; end to end, a passing one-shot is graded first and
+          stops the agent candidates
 api       at most MAX_CONCURRENT_CALLS model calls in flight; 429s are waited out without using retries
 tools     str_replace shows the closest region on a miss, strips view_file line numbers, shows the
           edited region; state-changing git is refused; a commit made anyway is undone before the diff
@@ -34,6 +37,7 @@ config.RETRY_MIN_RUN_LEFT_S = 0
 config.PLAYBOOK_ENABLED = False
 config.NUM_WORKERS = 1
 config.CANDIDATES = 1                              # the cands/dedup scenarios turn it on
+config.ONESHOT_ENABLED = False                     # the oneshot scenario turns it on
 config.BUDGET_NOTE = True                          # off by default; the nudge scenario checks it
 config.API_BACKOFF_S = 0.01
 from src import agentic_loop
@@ -285,6 +289,56 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, early_model)
 results["early: one grading, passes"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
 results["early: candidate 1 stopped well before its turn limit"] = slow["calls"] < config.MAX_TURNS // 2
+
+# -- oneshot ----------------------------------------------------------------------------------------
+from src import oneshot as osm
+ans = """I'll fix it.
+
+calc.py
+```python
+<<<<<<< SEARCH
+def add(a, b):
+    return a - b
+=======
+def add(a, b):
+    return a + b
+>>>>>>> REPLACE
+```
+
+File: pkg/new_mod.py
+<<<<<<< SEARCH
+=======
+X = 1
+>>>>>>> REPLACE
+"""
+bl = osm.parse_blocks(ans)
+results["oneshot: blocks parsed"] = [b[0] for b in bl] == ["calc.py", "pkg/new_mod.py"] and bl[0][1].endswith("return a - b\n") and bl[1][1] == ""
+
+config.ONESHOT_ENABLED = True
+config.CANDIDATE_ROOT = f"{work}/w/oneshot"
+repo, url = cand_repo("oneshot", 18818)
+osinfo = {"agent_calls": 0, "os_calls": 0, "repair_seen": False}
+def oneshot_model(messages):
+    sysmsg = messages[0]["content"]
+    if sysmsg.startswith("You review a patch"):
+        return reply(content="LGTM")
+    if sysmsg.startswith("You are an expert software engineer. You fix an issue in a real repository in one pass"):
+        osinfo["os_calls"] += 1
+        assert "def add(a, b):" in messages[1]["content"], "the one-shot must see calc.py"
+        if osinfo["os_calls"] == 1:                 # wrong SEARCH text first
+            return reply(content="calc.py\n<<<<<<< SEARCH\ndef add(x, y):\n    return x - y\n=======\ndef add(a, b):\n    return a + b\n>>>>>>> REPLACE\n")
+        osinfo["repair_seen"] = "closest match" in messages[-1]["content"]
+        return reply(content="calc.py\n<<<<<<< SEARCH\n    return a - b\n=======\n    return a + b\n>>>>>>> REPLACE\n")
+    osinfo["agent_calls"] += 1                      # the agent candidates just keep reading
+    time.sleep(0.2)
+    return reply(tc(1, "bash", {"command": "cat calc.py"}))
+d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "add_numbers must add",
+               "interface": "- Path: `calc.py`\n- Name: add_numbers", "sandbox_url": url, "workdir": repo},
+              lambda p: "a + b" in p, oneshot_model)
+results["oneshot: repair round saw the closest region"] = osinfo["os_calls"] == 2 and osinfo["repair_seen"]
+results["oneshot: graded once and passed"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
+results["oneshot: agent candidates stopped early"] = osinfo["agent_calls"] < config.MAX_TURNS
+config.ONESHOT_ENABLED = False
 
 # -- retry policy -------------------------------------------------------------------------------
 W = agentic_loop._worth_retry
