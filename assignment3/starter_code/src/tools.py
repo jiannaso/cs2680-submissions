@@ -589,3 +589,79 @@ def recon(sb, task: dict) -> str:
     if hints:
         text += "\nRunning tests: " + "; ".join(hints)
     return truncate(text, 4000)
+
+
+# -- interface completeness: every name the interface declares must exist where it says ------------
+
+def interface_entries(interface: str) -> list:
+    """[(path or None, name, type)] for each "Name:" the interface declares, with the "Path:" before it."""
+    entries, path, pending = [], None, None
+    for line in (interface or "").splitlines():
+        m = re.match(r"\s*[-*]?\s*(Path|File|Name|Type)\s*:\s*(.*)$", line)
+        if not m:
+            continue
+        key, value = m.group(1), m.group(2).strip().strip("`").strip()
+        if key in ("Path", "File"):
+            path = value.split()[0].strip("`") if value else None
+        elif key == "Name":
+            if pending:
+                entries.append(pending)
+            name = value.strip("`(),").strip() if value else ""   # "Connection error dialog" is no name
+            pending = (path, name, "") if re.fullmatch(r"[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*)*", name) else None
+        elif key == "Type" and pending:
+            entries.append((pending[0], pending[1], value.lower()))
+            pending = None
+    if pending:
+        entries.append(pending)
+    return entries
+
+
+def interface_gaps(sb, interface: str) -> str:
+    """Names the interface declares that the repository does not contain in the declared file (the hidden
+    tests import them from there; a missing one usually means the tests cannot even build or import).
+    Returns the problems as text for the model, or "" when everything is in place."""
+    entries = interface_entries(interface)
+    if not entries:
+        return ""
+    script = []
+    for i, (path, name, _) in enumerate(entries):
+        word = shlex.quote(name.split(".")[-1])
+        if path:
+            q = shlex.quote(path)
+            script.append(f"echo '@@{i}'; if [ -f {q} ]; then grep -q -w -F -e {word} {q} && echo here || echo absent; "
+                          f"else echo nofile; fi")
+        else:
+            script.append(f"echo '@@{i}'; git grep --untracked -q -w -F -e {word} -- . && echo here || echo absent")
+        script.append(f"git grep --untracked -l -w -F -e {word} -- . 2>/dev/null | grep -v -E "
+                      f"{shlex.quote(TEST_PATH_GREP)} | head -3")
+    try:
+        r = sb.exec("; ".join(script), timeout_s=120)
+    except Exception:
+        return ""
+    found, cur = {}, None
+    for line in r.get("output", "").splitlines():
+        if line.startswith("@@"):
+            cur = int(line[2:])
+            found[cur] = []
+        elif cur is not None and line.strip():
+            found[cur].append(line.strip())
+    problems = []
+    for i, (path, name, kind) in enumerate(entries):
+        lines = found.get(i, [])
+        if not lines or lines[0] == "here":
+            continue
+        elsewhere = [l for l in lines[1:] if l != path]
+        what = f"`{name}`" + (f" ({kind})" if kind else "")
+        if lines[0] == "nofile":
+            msg = f"- {what}: the interface puts it in {path}, which does not exist"
+        elif path:
+            msg = f"- {what}: not found in {path}, where the interface puts it"
+        else:
+            msg = f"- {what}: not found anywhere in the repository"
+        if elsewhere:
+            msg += f" (the name appears in {', '.join(elsewhere)})"
+        problems.append(msg)
+    if not problems:
+        return ""
+    return ("Interface check (the hidden tests use these names from these files; when one is missing, "
+            "the tests usually cannot even build or import):\n" + "\n".join(problems))

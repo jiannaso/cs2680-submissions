@@ -33,7 +33,8 @@ import traceback
 
 from . import config, prompts
 from .sandbox import Sandbox
-from .tools import TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch, make_candidate_dir, recon, repo_diff
+from .tools import (TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch, interface_gaps, make_candidate_dir,
+                    recon, repo_diff)
 
 
 def _debug(msg: str):
@@ -451,12 +452,21 @@ class Agent:
             return None
 
     def _build_gate(self, st: TaskState, model_id: str, reason: str) -> str:
-        """Compile/lint the changed files; on problems, give the model a few turns to fix them."""
+        """Compile/lint the changed files and check that every name the interface declares exists where
+        it says; on problems, give the model a few turns to fix them."""
         if not config.BUILD_GATE_ENABLED or reason == "api error" or reason.startswith("stopped"):
             return reason
         for _ in range(config.BUILD_GATE_ROUNDS):
             clean_repo_for_patch(st.sb, st.start_sha)
             errors = check_build(st.sb)
+            if config.INTERFACE_CHECK:
+                try:
+                    changed = st.sb.exec("git status --porcelain | head -1", timeout_s=30).get("output", "").strip()
+                except Exception:
+                    changed = ""
+                if changed:                             # an empty patch has nothing to check yet
+                    gaps = interface_gaps(st.sb, st.task.get("interface"))
+                    errors = "\n\n".join(e for e in (errors, gaps) if e)
             if not errors:
                 return reason
             _debug(f"task {st.k}: build gate found problems:\n{errors[:1500]}")

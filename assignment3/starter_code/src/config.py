@@ -58,6 +58,7 @@ BUILD_GATE_ENABLED = True       # compile/lint the changed files before every ev
 BUILD_GATE_ROUNDS = 2           # times the model gets the errors back to fix them
 BUILD_GATE_TURNS = 8            # model calls per fixing round
 BUILD_GATE_WALL_S = 5 * 60      # agent-side time per fixing round
+INTERFACE_CHECK = True          # the gate also checks every interface "Name:" exists in its "Path:"
 BUILD_GATE_TIMEOUT_S = 300      # one check (e.g. go test -run '^$' on the changed packages)
 
 # -- exploring without editing ----------------------------------------------------------------------

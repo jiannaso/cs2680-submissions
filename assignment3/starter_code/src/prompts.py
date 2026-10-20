@@ -126,9 +126,10 @@ Before grading, an automatic check of the files you changed found problems:
 
 {errors}
 
-The hidden tests cannot pass while the code does not compile or uses undefined names. Fix these \
-problems (keep the rest of your change), rerun the check yourself, and call finish again. If an \
-error clearly existed before your change and is unrelated to it, ignore it and call finish."""
+The hidden tests cannot pass while the code does not compile, uses undefined names, or lacks a name \
+the interface declares in the file it names. Fix these problems (keep the rest of your change), \
+rerun the check yourself, and call finish again. If an error clearly existed before your change and \
+is unrelated to it, ignore it and call finish."""
 
 NO_EDIT_NUDGE = """\
 You have used {used} turns and the repository still has no changes. Stop exploring now: you know \

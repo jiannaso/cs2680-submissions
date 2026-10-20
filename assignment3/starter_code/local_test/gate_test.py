@@ -16,6 +16,7 @@ cands     two candidates in parallel: the copy is a git worktree with ignored no
           by candidate 1, and grading (as each candidate finishes) stops at the first passing patch
 dedup     two candidates with the same patch: it is graded once
 early     candidate 0 passes quickly: candidate 1 is stopped instead of running to its turn limit
+iface     interface parsing; a patch missing a name the interface declares is sent back before grading
 api       at most MAX_CONCURRENT_CALLS model calls in flight; 429s are waited out without using retries
 tools     str_replace shows the closest region on a miss, strips view_file line numbers, shows the
           edited region; state-changing git is refused; a commit made anyway is undone before the diff
@@ -38,7 +39,7 @@ config.BUDGET_NOTE = True                          # off by default; the nudge s
 config.API_BACKOFF_S = 0.01
 from src import agentic_loop
 from src.sandbox import Sandbox
-from src.tools import ToolBox, check_build, clean_repo_for_patch, recon, repo_diff
+from src.tools import ToolBox, check_build, clean_repo_for_patch, interface_entries, recon, repo_diff
 
 work = os.path.realpath(tempfile.mkdtemp())
 CALC = "import os\n\ndef helper(x):\n    return x\n\ndef add(a, b):\n    return a - b\n\ndef legacy():\n    return OLD_GLOBAL\n"
@@ -285,6 +286,30 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, early_model)
 results["early: one grading, passes"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
 results["early: candidate 1 stopped well before its turn limit"] = slow["calls"] < config.MAX_TURNS // 2
+
+# -- iface ----------------------------------------------------------------------------------------
+ents = interface_entries("- Path: `a/b.py`\n- Name: Foo.bar\n- Type: method\n\n- Path: c.ts\n\n- Name: `baz`\n\n- Type: function\n- Name: Connection error dialog")
+results["iface: entries parsed"] = ents == [("a/b.py", "Foo.bar", "method"), ("c.ts", "baz", "function")]
+results["iface: no interface, no entries"] = interface_entries("No new interfaces are introduced.") == []
+repo, proc, url = make_repo("iface", 18819); procs.append(proc); time.sleep(1.5)
+ifc = {"gate_msg": ""}
+def iface_model(messages):
+    sysmsg = messages[0]["content"]
+    if sysmsg.startswith("You review a patch"):
+        return reply(content="LGTM")
+    last = last_user(messages)
+    if "Interface check" in last and not ifc["gate_msg"]:
+        ifc["gate_msg"] = last
+        return reply(tc(2, "str_replace", {"path": "calc.py", "old_str": "def legacy():", "new_str": "def add_numbers(a, b):\n    return a + b\n\ndef legacy():"}),
+                     tc(3, "finish", {"summary": "added add_numbers"}))
+    if any(m["role"] == "tool" for m in messages):
+        return reply(tc(9, "finish", {"summary": "done"}))
+    return reply(tc(1, "str_replace", {"path": "calc.py", "old_str": "return a - b", "new_str": "return a + b"}))
+d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "", "sandbox_url": url, "workdir": repo,
+               "interface": "- Path: `calc.py`\n- Name: add_numbers\n- Type: function"},
+              lambda p: "def add_numbers" in p, iface_model)
+results["iface: missing name sent back to the model"] = "add_numbers" in ifc["gate_msg"] and "not found in calc.py" in ifc["gate_msg"]
+results["iface: only the complete patch graded"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
 
 # -- retry policy -------------------------------------------------------------------------------
 W = agentic_loop._worth_retry
