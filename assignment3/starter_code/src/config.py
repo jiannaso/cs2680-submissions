@@ -82,11 +82,3 @@ CANDIDATES_MIN_RUN_LEFT_S = 30 * 60   # near the end of the run, one candidate o
 # -- deterministic work done by the harness instead of the model ------------------------------------
 RECON_ENABLED = True            # grep the spec's names, find nearby tests, add the map to the first message
 BUDGET_NOTE = False              # "[turn 12/60, ~14 min left]" on the newest tool result every turn
-
-# -- one-shot candidate: harness-gathered context, one strong-model call, SEARCH/REPLACE edits ---------
-ONESHOT_ENABLED = False          # tried on CloudLab: patches failed every test; agent candidates were more reliable
-ONESHOT_MODEL_TIER = "EXPERT"   # one call (~20k tokens in, ~4k out: ~$0.08) plus at most one repair
-ONESHOT_REPAIRS = 1             # repair calls when a block does not apply or the build fails
-ONESHOT_MAX_FILES = 5           # source files from the reconnaissance put in the prompt
-ONESHOT_WHOLE_FILE_CHARS = 25_000   # bigger files are cut to the parts around the specification's names
-ONESHOT_CONTEXT_CHARS = 70_000  # all the code in the prompt together

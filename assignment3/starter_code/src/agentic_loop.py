@@ -31,10 +31,9 @@ import threading
 import time
 import traceback
 
-from . import config, oneshot, prompts
+from . import config, prompts
 from .sandbox import Sandbox
-from .tools import (TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch, make_candidate_dir, recon_full,
-                    repo_diff)
+from .tools import TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch, make_candidate_dir, recon, repo_diff
 
 
 def _debug(msg: str):
@@ -158,8 +157,6 @@ class TaskState:
         self.reason = "not run"                         # why the latest loop ended
         self.graded_patch, self.prev_ev = None, None    # this candidate's last graded patch and result
         self.stop = None                                # threading.Event: another candidate has passed
-        self.kind = "agent"                             # "agent" (tool loop) or "oneshot"
-        self.recon_info = {}                            # the reconnaissance as data (for the one-shot)
         try:                                            # HEAD at the start, restored before every diff
             r = self.sb.exec("git rev-parse HEAD", timeout_s=30)
             self.start_sha = r.get("output", "").strip() if not r.get("exit_code") else None
@@ -201,7 +198,6 @@ class Agent:
         self.compact_model_id = os.environ[f"CS2680_MODEL_{config.COMPACT_MODEL_TIER}"]
         self.playbook_model_id = os.environ[f"CS2680_MODEL_{config.PLAYBOOK_MODEL_TIER}"]
         self.review_model_id = os.environ[f"CS2680_MODEL_{config.REVIEW_MODEL_TIER}"]
-        self.oneshot_model_id = os.environ[f"CS2680_MODEL_{config.ONESHOT_MODEL_TIER}"]
         self.playbook = ""
         self._playbook_lock = threading.Lock()
         self._pending_reports = []                      # reports queued while another update ran
@@ -280,20 +276,14 @@ class Agent:
         from dispatcher import DispatcherError
         k = task["task"]
         logger = _LockedLogger(self.dispatcher.logger(k))
-        repo_map, info = "", {}
-        if (config.RECON_ENABLED or config.ONESHOT_ENABLED) and task.get("sandbox_url"):
+        repo_map = ""
+        if config.RECON_ENABLED and task.get("sandbox_url"):
             try:                                        # once per task, shared by every candidate
-                repo_map, info = recon_full(Sandbox(task["sandbox_url"], task["workdir"]), task)
+                repo_map = recon(Sandbox(task["sandbox_url"], task["workdir"]), task)
             except Exception as e:
                 _debug(f"task {k}: reconnaissance failed: {e}")
-        cands = [TaskState(task, logger, self.playbook, repo_map=repo_map if config.RECON_ENABLED else "")]
+        cands = [TaskState(task, logger, self.playbook, repo_map=repo_map)]
         cands += self._extra_candidates(task, logger, cands[0])
-        if config.ONESHOT_ENABLED and info.get("sources") and len(cands) > 1:
-            workdir = make_candidate_dir(cands[0].sb, "oneshot", config.CANDIDATE_ROOT)
-            if workdir:
-                os_st = TaskState(task, logger, self.playbook, workdir=workdir, name="oneshot", repo_map=repo_map)
-                os_st.kind, os_st.recon_info = "oneshot", info
-                cands.append(os_st)
 
         # attempt 1: every candidate works on its own copy at the same time
         stop, finished = threading.Event(), queue.Queue()
@@ -302,10 +292,7 @@ class Agent:
 
         def first(st):
             try:
-                if st.kind == "oneshot":
-                    self._one_shot_attempt(st)
-                else:
-                    self._first_attempt(st)
+                self._first_attempt(st)
             finally:
                 finished.put(st)
         threads = [threading.Thread(target=first, args=(st,), daemon=True) for st in cands]
@@ -418,55 +405,6 @@ class Agent:
             extra.append(TaskState(task, logger, self.playbook, workdir=workdir, name=f"c{i}",
                                    repo_map=main.repo_map))
         return extra
-
-    def _one_shot_attempt(self, st: TaskState):
-        """Gathered code + one strong-model call -> SEARCH/REPLACE blocks -> applied and build-checked,
-        with at most ONESHOT_REPAIRS repair calls. Leaves a conversation the agent loop can continue
-        from if this candidate's patch is the one that gets retried."""
-        reason = "oneshot: no patch"
-        try:
-            context = oneshot.gather_context(st.sb, st.recon_info)
-            request = [{"role": "system", "content": prompts.ONESHOT_SYSTEM},
-                       {"role": "user", "content": prompts.ONESHOT_REQUEST.format(
-                           task=st.task_prompt.replace("Start by exploring the repository.", "").rstrip(),
-                           repo_map=st.repo_map, files=context)}]
-            answers = []
-            for round_ in range(1 + config.ONESHOT_REPAIRS):
-                if st.stop is not None and st.stop.is_set():
-                    reason = "stopped: another candidate passed"
-                    break
-                response = self._call_with_retries(st, self.oneshot_model_id, messages=request, tools=False)
-                st.iterations += 1
-                text = (response.choices[0].message.content or "") if response and response.choices else ""
-                answers.append(text)
-                blocks = oneshot.parse_blocks(text)
-                st.logger.tool_call(st.iterations, "apply_blocks", f"{len(blocks)} SEARCH/REPLACE blocks")
-                applied, errors = oneshot.apply_blocks(st.tools, blocks)
-                clean_repo_for_patch(st.sb, st.start_sha)
-                build = check_build(st.sb) if applied else ""
-                summary = f"{applied}/{len(blocks)} blocks applied" + (f"; {len(errors)} failed" if errors else "") \
-                    + ("; build problems" if build else "")
-                st.logger.tool_result(st.iterations, "apply_blocks", summary, bool(errors or build))
-                st.actions.append(f"ONESHOT round {round_ + 1}: {summary}")
-                _debug(f"task {st.k} oneshot round {round_ + 1}: {summary}")
-                problems = errors + ([build] if build else [])
-                if not blocks:
-                    problems = ["No SEARCH/REPLACE blocks were found in your answer: use the exact format."]
-                if not problems:
-                    break
-                request += [{"role": "assistant", "content": text},
-                            {"role": "user", "content": prompts.ONESHOT_REPAIR.format(
-                                problems=_clip("\n\n".join(problems), 12_000))}]
-            if not reason.startswith("stopped") and repo_diff(st.sb).strip():
-                reason = "finish"
-            # the agent loop can take over from here on a retry
-            st.messages.append({"role": "assistant", "content": _clip("\n\n".join(answers), 20_000)})
-            st.messages.append({"role": "user", "content": prompts.ONESHOT_HANDOFF.format(workdir=st.sb.workdir)})
-        except Exception as e:                          # a broken one-shot must not end the task
-            reason = f"error: {type(e).__name__}"
-            _debug(f"task {st.k} oneshot: {type(e).__name__}: {e}\n{traceback.format_exc()}")
-        st.reason = reason
-        st.attempts.append([reason, None])
 
     def _first_attempt(self, st: TaskState):
         try:
