@@ -63,6 +63,17 @@ def _solved(ev) -> bool:
     return bool(ev) and ev.get("tests_total", 0) > 0 and ev.get("tests_failed") == 0
 
 
+def _worth_retry(ev) -> bool:
+    """Retries convert near misses (a test or two away) and patches whose tests did not run (often an
+    import or build error); a patch failing many tests rarely turns around, so the task ends there."""
+    if not ev:
+        return False
+    total, failed = ev.get("tests_total") or 0, ev.get("tests_failed") or 0
+    if total == 0:
+        return True
+    return failed <= config.NEAR_MISS_MAX_FAILED or failed <= config.NEAR_MISS_MAX_FRACTION * total
+
+
 def _assistant_dict(msg) -> dict:
     """The model's reply as a plain message dict to send back in later requests."""
     d = {"role": "assistant", "content": msg.content or ""}
@@ -334,8 +345,11 @@ class Agent:
         attempt = 1
         while (best and not _solved(best[2]) and attempt < config.MAX_ATTEMPTS
                and config.RUN_LIMIT_S - self._run_elapsed() >= config.RETRY_MIN_RUN_LEFT_S):
-            attempt += 1
             ev = st.prev_ev
+            if not _worth_retry(ev):
+                _debug(f"task {k}: {ev.get('tests_failed')}/{ev.get('tests_total')} failing is not a near miss; no retry")
+                break
+            attempt += 1
             extra = (" The tests did not run or could not be collected: check for syntax or "
                      "import errors." if not ev.get("tests_total") else "")
             st.messages.append({"role": "user", "content": prompts.RETRY_PROMPT.format(

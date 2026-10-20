@@ -34,6 +34,7 @@ config.RETRY_MIN_RUN_LEFT_S = 0
 config.PLAYBOOK_ENABLED = False
 config.NUM_WORKERS = 1
 config.CANDIDATES = 1                              # the cands/dedup scenarios turn it on
+config.BUDGET_NOTE = True                          # off by default; the nudge scenario checks it
 config.API_BACKOFF_S = 0.01
 from src import agentic_loop
 from src.sandbox import Sandbox
@@ -284,6 +285,13 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, early_model)
 results["early: one grading, passes"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
 results["early: candidate 1 stopped well before its turn limit"] = slow["calls"] < config.MAX_TURNS // 2
+
+# -- retry policy -------------------------------------------------------------------------------
+W = agentic_loop._worth_retry
+results["retry: near misses and unrun tests only"] = (
+    W({"tests_failed": 1, "tests_total": 2}) and W({"tests_failed": 3, "tests_total": 61})
+    and W({"tests_failed": 0, "tests_total": 0}) and not W({"tests_failed": 6, "tests_total": 8})
+    and not W({"tests_failed": 61, "tests_total": 61}) and not W(None))
 
 # -- api -----------------------------------------------------------------------------------------
 import httpx, openai

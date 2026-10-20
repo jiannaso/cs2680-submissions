@@ -15,10 +15,12 @@ NEXT_TASK_RETRY_S = 5           # wait between next_task() retries when 5 tasks 
 # -- per task ---------------------------------------------------------------------------------
 MODEL_TIER = "STANDARD"         # CS2680_MODEL_<tier> used for the first attempt
 RETRY_MODEL_TIER = "STANDARD"   # model for attempts after a failed evaluation
-MAX_TURNS = 60                  # model calls in the first attempt
-RETRY_TURNS = 20                # model calls in each later attempt
-MAX_ATTEMPTS = 2                # attempts of the best candidate: the first plus one retry
-TASK_WALL_S = 25 * 60           # agent-side work per candidate's first attempt (a retry gets half)
+MAX_TURNS = 70                  # model calls in the first attempt
+RETRY_TURNS = 25                # model calls in each later attempt
+MAX_ATTEMPTS = 3                # attempts of the best candidate; retries only for near misses (below)
+NEAR_MISS_MAX_FAILED = 2        # a retry when at most this many hidden tests fail ...
+NEAR_MISS_MAX_FRACTION = 0.10   # ... or at most this share of them (or the tests did not run)
+TASK_WALL_S = 30 * 60           # agent-side work per candidate's first attempt (a retry gets half)
 RETRY_MIN_RUN_LEFT_S = 50 * 60  # only retry when at least this much run time is left
 
 # -- model calls ------------------------------------------------------------------------------
@@ -48,7 +50,7 @@ PLAYBOOK_ENABLED = True
 PLAYBOOK_MODEL_TIER = "EXPERT"  # model that rewrites the playbook after each task
 PLAYBOOK_MAX_CHARS = 2500       # longest playbook put into later tasks' system prompt
 PLAYBOOK_DIGEST_CHARS = 10_000  # report on one task sent to the expert
-PLAYBOOK_LOCK_WAIT_S = 60       # if another task is updating it, queue this report and move on
+PLAYBOOK_LOCK_WAIT_S = 3        # if another task is updating it, queue this report and move on
 PLAYBOOK_MIN_RUN_LEFT_S = 15 * 60   # stop updating near the end of the run
 
 # -- build/lint gate before grading ---------------------------------------------------------------
@@ -79,4 +81,4 @@ CANDIDATES_MIN_RUN_LEFT_S = 30 * 60   # near the end of the run, one candidate o
 
 # -- deterministic work done by the harness instead of the model ------------------------------------
 RECON_ENABLED = True            # grep the spec's names, find nearby tests, add the map to the first message
-BUDGET_NOTE = True              # "[turn 12/60, ~14 min left]" on the newest tool result every turn
+BUDGET_NOTE = False              # "[turn 12/60, ~14 min left]" on the newest tool result every turn
