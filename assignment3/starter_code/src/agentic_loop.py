@@ -15,6 +15,8 @@ Design of this first version:
   and actions; tasks opened later get it in their system prompt;
 - before every evaluate(), a build/lint gate compiles the changed files (Go packages, Python
   syntax and undefined names) and gives the model a few turns to fix what it finds;
+- before every evaluate(), the expert model also reviews the diff against the specification;
+  real gaps it reports go back to the model for a few turns (then the build gate runs again);
 - a model that explores for NO_EDIT_NUDGE_AT turns without changing anything is told to edit;
 - a retry that ends with the same patch as the graded one is not graded again;
 - every model call and tool call goes to the task's trace (dispatcher.logger(k)).
@@ -122,6 +124,7 @@ class TaskState:
         self.attempts = []                              # (loop end reason, evaluation) per attempt
         self.nudged = set()                             # NO_EDIT_NUDGE_AT thresholds already used
         self.usage = {}                                 # model id -> [input, cached input, output] tokens
+        self.reviews = 0                                # expert reviews done so far
         system = prompts.SYSTEM_PROMPT.format(workdir=task["workdir"])
         if playbook:
             system += prompts.PLAYBOOK_NOTE.format(playbook=playbook)
@@ -146,6 +149,7 @@ class Agent:
         self.retry_model_id = os.environ[f"CS2680_MODEL_{config.RETRY_MODEL_TIER}"]
         self.compact_model_id = os.environ[f"CS2680_MODEL_{config.COMPACT_MODEL_TIER}"]
         self.playbook_model_id = os.environ[f"CS2680_MODEL_{config.PLAYBOOK_MODEL_TIER}"]
+        self.review_model_id = os.environ[f"CS2680_MODEL_{config.REVIEW_MODEL_TIER}"]
         self.playbook = ""
         self._playbook_lock = threading.Lock()
         self._pending_reports = []                      # reports queued while another update ran
@@ -235,6 +239,7 @@ class Agent:
                 deadline = min(time.time() + config.TASK_WALL_S // 2, self._soft_deadline())
             reason = self._agent_loop(st, model, turns, deadline)
             reason = self._build_gate(st, model, reason)
+            reason = self._review(st, model, reason, prev_ev)
             st.attempts.append([reason, None])
 
             cleanup = clean_repo_for_patch(st.sb)
@@ -335,6 +340,38 @@ class Agent:
             if reason == "api error":
                 return reason
         return reason
+
+    def _review(self, st: TaskState, model_id: str, reason: str, graded_ev) -> str:
+        """Have the expert model check the diff against the specification; if it reports gaps, give
+        the model a few turns to act on them and rerun the build gate."""
+        if (not config.REVIEW_ENABLED or reason == "api error" or st.reviews >= config.REVIEW_MAX_PER_TASK
+                or time.time() > self._soft_deadline() - 5 * 60):
+            return reason
+        clean_repo_for_patch(st.sb)
+        try:
+            diff = st.sb.exec("git add -N . >/dev/null 2>&1; git diff", timeout_s=60).get("output", "")
+        except Exception:
+            return reason
+        if not diff.strip():
+            return reason
+        st.reviews += 1
+        graded = ("" if not graded_ev else
+                  f"\nNote: the previous version of this patch was graded: {graded_ev.get('tests_failed')} of "
+                  f"{graded_ev.get('tests_total')} hidden tests failed.\n")
+        request = [{"role": "system", "content": prompts.REVIEW_SYSTEM},
+                   {"role": "user", "content": prompts.REVIEW_REQUEST.format(
+                       task=st.task_prompt.replace("Start by exploring the repository.", "").rstrip(), graded=graded, diff=_clip(diff, config.REVIEW_DIFF_CHARS))}]
+        response = self._call_with_retries(st, self.review_model_id, messages=request, tools=False)
+        text = (response.choices[0].message.content or "").strip() if response and response.choices else ""
+        if not text or text.upper().startswith("LGTM"):
+            _debug(f"task {st.k}: review: {'LGTM' if text else 'no answer'}")
+            return reason
+        _debug(f"task {st.k}: review found gaps:\n{text[:1500]}")
+        st.actions.append(f"REVIEW: {_clip(text, 300)}".replace("\n", " "))
+        st.messages.append({"role": "user", "content": prompts.REVIEW_FEEDBACK.format(review=text)})
+        deadline = min(time.time() + config.REVIEW_WALL_S, self._soft_deadline())
+        reason = self._agent_loop(st, model_id, config.REVIEW_TURNS, deadline, nudge=False)
+        return self._build_gate(st, model_id, reason)
 
     def _no_edit_nudge(self, st: TaskState, turn: int, max_turns: int):
         """At each NO_EDIT_NUDGE_AT turn, tell a model that has changed nothing yet to start editing."""

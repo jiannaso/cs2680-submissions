@@ -60,3 +60,11 @@ NO_EDIT_NUDGE_AT = (30, 50)     # model turns at which a repository with no chan
 
 # -- cost report in run_logs/agent.log (estimate; $ per 1M tokens: input, cached input, output) --
 PRICES = {"expert": (2.00, 0.10, 10.00), "standard": (0.08, 0.004, 0.28), "starter": (0.01, 0.0005, 0.04)}
+
+# -- expert review of the patch against the specification, before grading -------------------------
+REVIEW_ENABLED = True
+REVIEW_MODEL_TIER = "EXPERT"    # one call per review: about 15k input tokens, ~$0.03-0.05
+REVIEW_MAX_PER_TASK = 2         # reviews per task (at most one per attempt)
+REVIEW_TURNS = 15               # model calls to act on a review
+REVIEW_WALL_S = 10 * 60         # agent-side time to act on a review
+REVIEW_DIFF_CHARS = 40_000      # longest diff sent to the reviewer (head + tail kept)

@@ -29,6 +29,9 @@ Rules:
 - Do not try to install packages (pip, npm, apt): there is no network. Work with what is installed.
 - Before calling finish, reread the requirements list and check each item against your change.
 - Do not change tests, CI configuration, or dependency lock files unless the task requires it.
+- When the interface changes a signature, follow the interface even if existing tests still call \
+the old signature and stop compiling: the hidden tests replace those test files. Never keep an old \
+signature just to make the existing tests build.
 - Be efficient: you have a limited number of turns. Do not re-read files you have already seen.
 
 Environment notes:
@@ -130,3 +133,36 @@ NO_EDIT_NUDGE = """\
 You have used {used} turns and the repository still has no changes. Stop exploring now: you know \
 enough to make a first version of the fix. Edit the source files with str_replace now, then verify \
 and call finish. You have at most {left} turns left."""
+
+REVIEW_SYSTEM = """\
+You review a patch written by a coding agent before it is graded by hidden tests. The hidden tests \
+check exactly what the issue, requirements and interface below specify: names, signatures, \
+parameters and defaults, return values and types, error types and messages, and the edge cases \
+listed. Compare the patch with that specification, item by item.
+
+Report only concrete gaps you can point to: a specified item the patch does not implement, \
+implements with a different name, signature, value or message, or implements only for some of the \
+cases listed; and edits that obviously break existing behaviour. Do not suggest style changes, \
+refactors, extra tests or anything the specification does not ask for. You see only the diff, not \
+the whole repository: when something might be implemented outside the diff, do not report it.
+
+If you find no such gap, answer exactly LGTM. Otherwise answer with a numbered list, at most 6 \
+items, most important first; each item names the specification item, what the patch does instead, \
+and the fix in one or two sentences."""
+
+REVIEW_REQUEST = """\
+{task}
+{graded}
+# The patch
+```diff
+{diff}
+```"""
+
+REVIEW_FEEDBACK = """\
+A reviewer compared your patch with the issue, requirements and interface and reports these \
+possible gaps:
+
+{review}
+
+The reviewer saw only the diff. For each point, check the code: fix the ones that are real, ignore \
+the ones that are wrong, and keep the rest of your change. Verify, then call finish again."""

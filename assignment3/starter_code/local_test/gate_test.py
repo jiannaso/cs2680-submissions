@@ -10,6 +10,7 @@ gate      the model's first patch uses an undefined name; the gate hands it the 
           fixes it, and only the fixed patch is graded
 nudge     the model explores for many turns; at NO_EDIT_NUDGE_AT it is told to edit and does
 same      the retry ends with the patch that already failed: it is not graded a second time
+review    the expert reviewer reports a gap; the model fixes it before the first grading
 Go packages are not covered here (no go toolchain needed): try check_build on a Go task image.
 """
 import json, os, subprocess, sys, tempfile, threading, time, types
@@ -80,8 +81,8 @@ def tc(i, name, args):
                                  function=types.SimpleNamespace(name=name, arguments=json.dumps(args)))
 
 
-def reply(*calls):
-    msg = types.SimpleNamespace(content="", tool_calls=list(calls) or None)
+def reply(*calls, content=""):
+    msg = types.SimpleNamespace(content=content, tool_calls=list(calls) or None)
     return types.SimpleNamespace(choices=[types.SimpleNamespace(message=msg)],
                                  usage=types.SimpleNamespace(prompt_tokens=1, completion_tokens=1, total_tokens=2))
 
@@ -159,6 +160,25 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
 results["same: graded once"] = len(d.evals) == 1
 results["same: last evaluation kept"] = d.final and d.final[1] == d.evals[0][0]
 results["same: no patch left to grade at done()"] = not os.path.exists(d.patch_path(0))
+
+# -- review ------------------------------------------------------------------------------------
+repo, proc, url = make_repo("review", 18814); procs.append(proc); time.sleep(1.5)
+rev = {"asked": 0, "model": None}
+def review_model(messages):
+    if messages[0]["content"].startswith("You review a patch"):
+        rev["asked"] += 1
+        assert "a * b" in messages[1]["content"], "the reviewer must see the diff"
+        return reply(content="1. Requirement 'add returns a+b': the patch multiplies. Use a + b.")
+    if "A reviewer compared" in last_user(messages):
+        return reply(tc(2, "str_replace", {"path": "calc.py", "old_str": "return a * b", "new_str": "return a + b"}),
+                     tc(3, "finish", {"summary": "fixed per review"}))
+    if any(m["role"] == "tool" for m in messages):
+        return reply(tc(9, "finish", {"summary": "done"}))
+    return reply(tc(1, "str_replace", {"path": "calc.py", "old_str": "return a - b", "new_str": "return a * b"}))
+d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "add returns a+b", "interface": "",
+               "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, review_model)
+results["review: asked once"] = rev["asked"] == 1
+results["review: first grading already has the fix"] = len(d.evals) == 1 and d.evals[0][0]["tests_failed"] == 0
 
 for p in procs: p.terminate()
 for name, ok in results.items():

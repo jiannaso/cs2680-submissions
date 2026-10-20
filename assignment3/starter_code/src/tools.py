@@ -322,10 +322,10 @@ def check_build(sb) -> str:
     go_dirs = sorted({"./" + (f.rsplit("/", 1)[0] if "/" in f else ".")
                       for f in files if f.endswith(".go")})
     if go_dirs:
-        # compiles each changed package and its tests without running any test (also runs go vet's
-        # checks that `go test` itself fails on)
-        cmd = (f"go test -count=1 -run '^$' {' '.join(shlex.quote(d) for d in go_dirs)} > /tmp/.a3_go.txt 2>&1; "
-               f"rc=$?; grep -v '^ok \\|no test files' /tmp/.a3_go.txt | tail -60; exit $rc")
+        # compiles each changed package, but not its _test.go files: when the specification changes
+        # a signature, the existing tests still call the old one and the hidden tests replace them
+        cmd = (f"go build {' '.join(shlex.quote(d) for d in go_dirs)} > /tmp/.a3_go.txt 2>&1; "
+               f"rc=$?; tail -60 /tmp/.a3_go.txt; exit $rc")
         try:
             r = sb.exec(cmd, timeout_s=config.BUILD_GATE_TIMEOUT_S)
             out = r.get("output", "").strip()
