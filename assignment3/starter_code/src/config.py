@@ -68,3 +68,8 @@ REVIEW_MAX_PER_TASK = 2         # reviews per task (at most one per attempt)
 REVIEW_TURNS = 15               # model calls to act on a review
 REVIEW_WALL_S = 10 * 60         # agent-side time to act on a review
 REVIEW_DIFF_CHARS = 40_000      # longest diff sent to the reviewer (head + tail kept)
+
+# -- parallel candidates ------------------------------------------------------------------------------
+CANDIDATES = 2                  # independent first attempts per task, each in its own copy of the repo
+CANDIDATE_ROOT = "/work"        # where the copies (git worktrees) go; the sandbox allows writes there
+CANDIDATES_MIN_RUN_LEFT_S = 30 * 60   # near the end of the run, one candidate only

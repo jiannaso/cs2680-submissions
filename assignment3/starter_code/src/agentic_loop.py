@@ -5,8 +5,10 @@
 Design of this first version:
 - NUM_WORKERS threads, each opening a task with next_task() and solving it, so up to 5 tasks
   (and their gradings) run at once;
-- per task, a tool-calling loop (bash, view_file, str_replace, create_file, finish) on the
-  task's Sandbox, then extract_patch() + evaluate();
+- per task, CANDIDATES independent tool-calling loops (bash, view_file, str_replace, create_file,
+  finish) run in parallel, each in its own copy of the repository (the task checkout plus git
+  worktrees under /work); their distinct patches are graded one by one until one passes, and
+  retries continue from the best candidate;
 - if hidden tests still fail and time allows, continue_task() and one more attempt with the
   grading result as feedback; if the retry scores worse, the better patch is graded again;
 - once the conversation passes COMPACT_AT_CHARS, the older turns are summarized by a model and
@@ -30,7 +32,7 @@ import traceback
 
 from . import config, prompts
 from .sandbox import Sandbox
-from .tools import TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch
+from .tools import TOOL_SPECS, ToolBox, check_build, clean_repo_for_patch, make_candidate_dir, repo_diff
 
 
 def _debug(msg: str):
@@ -110,13 +112,37 @@ def _trim_context(messages: list, keep_recent: int):
             messages[i]["content"] = "[old output removed to save context; rerun the tool if needed]"
 
 
+class _LockedLogger:
+    """One task's trace, shared by its candidates' threads: one event written at a time."""
+
+    def __init__(self, logger):
+        self._logger = logger
+        self._lock = threading.Lock()
+
+    def __getattr__(self, name):
+        attr = getattr(self._logger, name)
+        if not callable(attr):
+            return attr
+
+        def locked(*args, **kwargs):
+            with self._lock:
+                return attr(*args, **kwargs)
+        return locked
+
+
 class TaskState:
-    def __init__(self, task: dict, dispatcher, playbook: str = ""):
+    """One candidate's work on a task: its copy of the repository, conversation and counters."""
+
+    def __init__(self, task: dict, logger, playbook: str = "", workdir: str = None, name: str = "c0"):
         self.k = task["task"]
         self.task = task
-        self.logger = dispatcher.logger(self.k)
-        self.sb = Sandbox(task["sandbox_url"], task["workdir"])
-        self.tools = ToolBox(self.sb)
+        self.name = name
+        self.logger = logger
+        workdir = workdir or task["workdir"]
+        self.sb = Sandbox(task["sandbox_url"], workdir)
+        self.tools = ToolBox(self.sb, alias_root=task["workdir"])
+        self.reason = "not run"                         # why the latest loop ended
+        self.graded_patch, self.prev_ev = None, None    # this candidate's last graded patch and result
         self.iterations = 0
         self.started = time.time()
         self.summary = ""                               # latest compaction summary
@@ -125,7 +151,9 @@ class TaskState:
         self.nudged = set()                             # NO_EDIT_NUDGE_AT thresholds already used
         self.usage = {}                                 # model id -> [input, cached input, output] tokens
         self.reviews = 0                                # expert reviews done so far
-        system = prompts.SYSTEM_PROMPT.format(workdir=task["workdir"])
+        system = prompts.SYSTEM_PROMPT.format(workdir=workdir)
+        if workdir != task["workdir"]:
+            system += prompts.CANDIDATE_NOTE.format(workdir=workdir, main=task["workdir"])
         if playbook:
             system += prompts.PLAYBOOK_NOTE.format(playbook=playbook)
         self.task_prompt = prompts.TASK_PROMPT.format(
@@ -223,87 +251,143 @@ class Agent:
 
     def solve(self, task: dict):
         from dispatcher import DispatcherError
-        st = TaskState(task, self.dispatcher, self.playbook)
-        k = st.k
-        best_ev, best_patch, last_ev = None, None, None
-        graded_patch, prev_ev = None, None             # the last graded patch and its evaluation
-        reason = "done"
+        k = task["task"]
+        logger = _LockedLogger(self.dispatcher.logger(k))
+        cands = [TaskState(task, logger, self.playbook)]
+        cands += self._extra_candidates(task, logger, cands[0])
 
-        attempt = 1
-        while True:
-            if attempt == 1:
-                turns, model = config.MAX_TURNS, self.model_id
-                deadline = min(st.started + config.TASK_WALL_S, self._soft_deadline())
-            else:
-                turns, model = config.RETRY_TURNS, self.retry_model_id
-                deadline = min(time.time() + config.TASK_WALL_S // 2, self._soft_deadline())
-            reason = self._agent_loop(st, model, turns, deadline)
-            reason = self._build_gate(st, model, reason)
-            reason = self._review(st, model, reason, prev_ev)
-            st.attempts.append([reason, None])
+        # attempt 1: every candidate works on its own copy at the same time
+        threads = [threading.Thread(target=self._first_attempt, args=(st,), daemon=True) for st in cands[1:]]
+        for t in threads:
+            t.start()
+        self._first_attempt(cands[0])
+        for t in threads:
+            t.join()
 
-            cleanup = clean_repo_for_patch(st.sb)
-            _debug(f"task {k} attempt {attempt}: loop ended ({reason}); changed files:\n{cleanup}")
-            size = self.dispatcher.extract_patch(k)
-            if not size:
-                _debug(f"task {k}: empty patch")
-                if best_patch is None:
-                    reason = f"{reason}; empty patch"
-                break
-            patch = self._read_patch(k)
-            if graded_patch is not None and patch == graded_patch:
-                # grading it again would only repeat the last result: drop the copy (the last
-                # evaluation stays the task's result) and stop
-                _debug(f"task {k}: attempt {attempt} left the patch unchanged; not grading it again")
-                st.attempts[-1][0] = f"{reason}; patch unchanged"
-                self.dispatcher.continue_task(k)
-                last_ev = prev_ev
-                break
+        graded = False                                  # a graded patch sits in the task's folder
+        best = None                                     # (candidate, patch, evaluation)
+        last_ev = None
+
+        def grade(st, patch):
+            nonlocal graded, best, last_ev
+            if graded:
+                self.dispatcher.continue_task(k)        # deletes the graded patch before the next one
+                graded = False
+            self.dispatcher.submit_patch(k, patch)
             try:
-                last_ev = self.dispatcher.evaluate(k)
+                ev = self.dispatcher.evaluate(k)
             except DispatcherError as e:
                 _debug(f"task {k}: evaluate refused: {e}")
+                return None
+            graded, last_ev = True, ev
+            st.attempts[-1][1] = ev
+            st.graded_patch, st.prev_ev = patch, ev
+            if best is None or _score(ev) > _score(best[2]):
+                best = (st, patch, ev)
+            return ev
+
+        # grade the distinct patches, candidates that called finish first, until one passes
+        for st in cands:
+            st.patch_text = repo_diff(st.sb)
+        order = sorted(cands, key=lambda c: (not c.reason.startswith("finish"), cands.index(c)))
+        seen = set()
+        for st in order:
+            if not st.patch_text.strip() or st.patch_text in seen:
+                continue
+            seen.add(st.patch_text)
+            _debug(f"task {k}: grading candidate {st.name} ({st.reason})")
+            ev = grade(st, st.patch_text)
+            if ev is not None and _solved(ev):
                 break
-            st.attempts[-1][1] = last_ev
-            graded_patch, prev_ev = patch, last_ev
-            if best_ev is None or _score(last_ev) > _score(best_ev):
-                best_ev, best_patch = last_ev, patch
-            if _solved(last_ev):
-                break
-            if attempt >= config.MAX_ATTEMPTS:
-                break
-            if config.RUN_LIMIT_S - self._run_elapsed() < config.RETRY_MIN_RUN_LEFT_S:
-                break
-            extra = (" The tests did not run or could not be collected: check for syntax or "
-                     "import errors." if not last_ev.get("tests_total") else "")
-            st.messages.append({"role": "user", "content": prompts.RETRY_PROMPT.format(
-                failed=last_ev.get("tests_failed"), total=last_ev.get("tests_total"), extra=extra)})
-            self.dispatcher.continue_task(k)            # deletes the graded patch: nothing counts until the next evaluate
-            last_ev = None
+
+        st = best[0] if best else cands[0]
+        reason = st.reason if best else f"{st.reason}; empty patch"
+        attempt = 1
+        while (best and not _solved(best[2]) and attempt < config.MAX_ATTEMPTS
+               and config.RUN_LIMIT_S - self._run_elapsed() >= config.RETRY_MIN_RUN_LEFT_S):
             attempt += 1
+            ev = st.prev_ev
+            extra = (" The tests did not run or could not be collected: check for syntax or "
+                     "import errors." if not ev.get("tests_total") else "")
+            st.messages.append({"role": "user", "content": prompts.RETRY_PROMPT.format(
+                failed=ev.get("tests_failed"), total=ev.get("tests_total"), extra=extra)})
+            deadline = min(time.time() + config.TASK_WALL_S // 2, self._soft_deadline())
+            reason = self._agent_loop(st, self.retry_model_id, config.RETRY_TURNS, deadline)
+            reason = self._build_gate(st, self.retry_model_id, reason)
+            reason = self._review(st, self.retry_model_id, reason, ev)
+            st.attempts.append([reason, None])
+            cleanup = clean_repo_for_patch(st.sb)
+            _debug(f"task {k} candidate {st.name} attempt {attempt}: loop ended ({reason}); changed files:\n{cleanup}")
+            patch = repo_diff(st.sb)
+            if not patch.strip():
+                _debug(f"task {k}: empty patch")
+                break
+            if patch == st.graded_patch:
+                # grading it again would only repeat the last result
+                _debug(f"task {k}: attempt {attempt} left the patch unchanged; not grading it again")
+                st.attempts[-1][0] = f"{reason}; patch unchanged"
+                break
+            if grade(st, patch) is None:
+                break
 
-        # The task's LAST evaluation counts: if a retry made things worse (or left no patch),
-        # grade the best patch again.
-        if (best_patch and (last_ev is None or _score(last_ev) < _score(best_ev))
+        # The task's LAST evaluation counts: if it is not the best one, grade the best patch again.
+        if (best and last_ev is not None and _score(last_ev) < _score(best[2])
                 and config.RUN_LIMIT_S - self._run_elapsed() > 40 * 60):
-            _debug(f"task {k}: retry scored worse; regrading the best patch")
-            try:
-                if last_ev is not None:
-                    self.dispatcher.continue_task(k)
-                self.dispatcher.submit_patch(k, best_patch)
-                last_ev = self.dispatcher.evaluate(k)
-                st.attempts.append(["regrade of the best patch", last_ev])
-            except DispatcherError as e:
-                _debug(f"task {k}: regrade failed: {e}")
+            _debug(f"task {k}: last grading scored worse; regrading the best patch")
+            best[0].attempts.append(["regrade of the best patch", None])
+            grade(best[0], best[1])
         if config.PLAYBOOK_ENABLED:
-            self._update_playbook(st, last_ev, best_patch)  # before done(): the trace closes there
-        self._report_cost(st, last_ev)
-        self.dispatcher.done(k, reason, st.iterations)
+            self._update_playbook(st, last_ev, best[1] if best else None)  # before done(): the trace closes there
+        self._report_cost(cands, last_ev)
+        self.dispatcher.done(k, reason, sum(c.iterations for c in cands))
 
-    def _report_cost(self, st: TaskState, ev):
+    def _extra_candidates(self, task: dict, logger, main: TaskState) -> list:
+        """Copies of the repository for candidates 1.. (none when the checkout is not clean at the
+        start: a copy at HEAD would then differ from what the graders apply the patch to)."""
+        if config.CANDIDATES <= 1 or time.time() > self._soft_deadline() - config.CANDIDATES_MIN_RUN_LEFT_S:
+            return []
+        try:
+            dirty = main.sb.exec("git status --porcelain | head -3", timeout_s=60).get("output", "").strip()
+        except Exception:
+            return []
+        if dirty:
+            _debug(f"task {main.k}: checkout not clean at the start; one candidate only")
+            return []
+        extra = []
+        for i in range(1, config.CANDIDATES):
+            workdir = make_candidate_dir(main.sb, f"cand{i}", config.CANDIDATE_ROOT)
+            if not workdir:
+                _debug(f"task {main.k}: could not make a copy for candidate {i}")
+                break
+            extra.append(TaskState(task, logger, self.playbook, workdir=workdir, name=f"c{i}"))
+        return extra
+
+    def _first_attempt(self, st: TaskState):
+        try:
+            deadline = min(st.started + config.TASK_WALL_S, self._soft_deadline())
+            reason = self._agent_loop(st, self.model_id, config.MAX_TURNS, deadline)
+            reason = self._build_gate(st, self.model_id, reason)
+            st.reason = self._review(st, self.model_id, reason, None)
+        except Exception as e:                          # one broken candidate must not end the task
+            st.reason = f"error: {type(e).__name__}"
+            _debug(f"task {st.k} candidate {st.name}: {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        st.attempts.append([st.reason, None])
+        try:
+            cleanup = clean_repo_for_patch(st.sb)
+        except Exception as e:
+            cleanup = f"cleanup failed: {e}"
+        _debug(f"task {st.k} candidate {st.name} attempt 1: loop ended ({st.reason}); changed files:\n{cleanup}")
+
+    def _report_cost(self, cands: list, ev):
+        usage = {}
+        for c in cands:
+            for model_id, u in c.usage.items():
+                usage.setdefault(model_id, [0, 0, 0])
+                for i in range(3):
+                    usage[model_id][i] += u[i]
         cost = 0.0
         parts = []
-        for model_id, (inp, cached, out) in st.usage.items():
+        for model_id, (inp, cached, out) in usage.items():
             price = config.PRICES.get(model_id, config.PRICES["expert"])
             cost += ((inp - cached) * price[0] + cached * price[1] + out * price[2]) / 1e6
             parts.append(f"{model_id} {inp:,} in ({cached:,} cached) {out:,} out")
@@ -311,7 +395,8 @@ class Agent:
             self.cost += cost
             total = self.cost
         result = "-" if not ev else f"{ev.get('tests_failed')}/{ev.get('tests_total')} failing"
-        _debug(f"task {st.k}: {result}, {st.iterations} turns, {(time.time() - st.started) / 60:.1f} min, "
+        _debug(f"task {cands[0].k}: {result}, {len(cands)} candidate(s), {sum(c.iterations for c in cands)} turns, "
+               f"{(time.time() - cands[0].started) / 60:.1f} min, "
                f"~${cost:.3f} ({'; '.join(parts)}); run so far ~${total:.2f}")
 
     def _read_patch(self, k: int):

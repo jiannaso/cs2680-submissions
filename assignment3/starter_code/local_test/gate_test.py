@@ -11,6 +11,10 @@ gate      the model's first patch uses an undefined name; the gate hands it the 
 nudge     the model explores for many turns; at NO_EDIT_NUDGE_AT it is told to edit and does
 same      the retry ends with the patch that already failed: it is not graded a second time
 review    the expert reviewer reports a gap; the model fixes it before the first grading
+cands     two candidates in parallel: the copy is a git worktree with ignored node_modules linked in,
+          paths under the main checkout are redirected to the copy, the main checkout is untouched
+          by candidate 1, and grading stops at the first passing patch
+dedup     two candidates with the same patch: it is graded once
 Go packages are not covered here (no go toolchain needed): try check_build on a Go task image.
 """
 import json, os, subprocess, sys, tempfile, threading, time, types
@@ -25,6 +29,7 @@ import src.config as config
 config.RETRY_MIN_RUN_LEFT_S = 0
 config.PLAYBOOK_ENABLED = False
 config.NUM_WORKERS = 1
+config.CANDIDATES = 1                              # the cands/dedup scenarios turn it on
 config.API_BACKOFF_S = 0.01
 from src import agentic_loop
 from src.sandbox import Sandbox
@@ -159,7 +164,6 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, same_model)
 results["same: graded once"] = len(d.evals) == 1
 results["same: last evaluation kept"] = d.final and d.final[1] == d.evals[0][0]
-results["same: no patch left to grade at done()"] = not os.path.exists(d.patch_path(0))
 
 # -- review ------------------------------------------------------------------------------------
 repo, proc, url = make_repo("review", 18814); procs.append(proc); time.sleep(1.5)
@@ -179,6 +183,58 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, review_model)
 results["review: asked once"] = rev["asked"] == 1
 results["review: first grading already has the fix"] = len(d.evals) == 1 and d.evals[0][0]["tests_failed"] == 0
+
+# -- cands -------------------------------------------------------------------------------------
+def cand_repo(name, port):
+    repo, proc, url = make_repo(name, port)
+    open(os.path.join(repo, ".gitignore"), "w").write("node_modules/\n")
+    os.makedirs(os.path.join(repo, "node_modules", "lib")); open(os.path.join(repo, "node_modules", "lib", "x.js"), "w").write("1")
+    subprocess.run(f"cd {repo} && git add .gitignore && git -c user.email=a@b -c user.name=t commit -qm ignore", shell=True, check=True)
+    procs.append(proc); time.sleep(1.5)
+    return repo, url
+
+config.CANDIDATES = 2
+config.CANDIDATES_MIN_RUN_LEFT_S = 0
+config.CANDIDATE_ROOT = f"{work}/w/cands"
+repo, url = cand_repo("cands", 18815)
+seen_c = {"c1_main_edit": None, "c1_ls": ""}
+def cands_model(messages):
+    sysmsg = messages[0]["content"]
+    if sysmsg.startswith("You review a patch"):
+        return reply(content="LGTM")
+    is_c1 = "Your checkout is" in sysmsg
+    tools_done = [m for m in messages if m["role"] == "tool"]
+    if not tools_done:
+        if is_c1:   # absolute path into the MAIN checkout: must land in the copy
+            return reply(tc(1, "str_replace", {"path": f"{repo}/calc.py", "old_str": "return a - b", "new_str": "return a + b"}),
+                         tc(2, "bash", {"command": f"ls {repo}/node_modules/lib && cat {repo}/calc.py | grep return"}))
+        time.sleep(0.5)
+        return reply(tc(1, "str_replace", {"path": "calc.py", "old_str": "return a - b", "new_str": "return a * b"}))
+    if is_c1 and seen_c["c1_main_edit"] is None:
+        seen_c["c1_ls"] = tools_done[-1]["content"]
+        seen_c["c1_main_edit"] = open(os.path.join(repo, "calc.py")).read()
+    return reply(tc(9, "finish", {"summary": "done"}))
+d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "", "interface": "",
+               "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, cands_model)
+cand_dir = f"{config.CANDIDATE_ROOT}/cand1"
+results["cands: copy made, node_modules linked"] = os.path.islink(os.path.join(cand_dir, "node_modules"))
+results["cands: candidate 1 path redirected (main untouched by it)"] = (
+    seen_c["c1_main_edit"] is not None and "a + b" not in seen_c["c1_main_edit"] and "x.js" in seen_c["c1_ls"])
+results["cands: both patches graded, final passes"] = (len(d.evals) == 2 and d.final[1]["tests_failed"] == 0)
+results["cands: graded patches only touch calc.py"] = all(
+    [l for l in p.splitlines() if l.startswith("diff --git")] == ["diff --git a/calc.py b/calc.py"] for _, p in d.evals)
+
+config.CANDIDATE_ROOT = f"{work}/w/dedup"
+repo, url = cand_repo("dedup", 18816)
+def dedup_model(messages):
+    if messages[0]["content"].startswith("You review a patch"):
+        return reply(content="LGTM")
+    if not any(m["role"] == "tool" for m in messages):
+        return reply(tc(1, "str_replace", {"path": "calc.py", "old_str": "return a - b", "new_str": "return a + b"}))
+    return reply(tc(9, "finish", {"summary": "done"}))
+d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "", "interface": "",
+               "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, dedup_model)
+results["dedup: same patch graded once"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
 
 for p in procs: p.terminate()
 for name, ok in results.items():

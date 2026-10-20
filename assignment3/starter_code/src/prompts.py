@@ -166,3 +166,8 @@ possible gaps:
 
 The reviewer saw only the diff. For each point, check the code: fix the ones that are real, ignore \
 the ones that are wrong, and keep the rest of your change. Verify, then call finish again."""
+
+CANDIDATE_NOTE = """
+
+Your checkout is {workdir} (a copy of {main}). Work only there: read, edit and run tests in \
+{workdir}, never in {main}."""

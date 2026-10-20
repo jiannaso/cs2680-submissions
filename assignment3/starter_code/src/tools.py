@@ -2,6 +2,7 @@
 
 import base64
 import json
+import re
 import shlex
 
 from . import config
@@ -114,8 +115,21 @@ def truncate(text: str, limit: int = None) -> str:
 class ToolBox:
     """Runs one tool call on one task's sandbox and returns (result_text, is_error)."""
 
-    def __init__(self, sandbox):
+    def __init__(self, sandbox, alias_root: str = None):
         self.sb = sandbox
+        # a candidate working in a copy of the repository: paths under the main checkout
+        # (alias_root, e.g. /app) are redirected to the copy, so it never edits another candidate's files
+        self.alias_root = alias_root if alias_root and alias_root != sandbox.workdir else None
+
+    def _remap_path(self, path: str) -> str:
+        root = self.alias_root
+        if path == root or path.startswith(root + "/"):
+            return self.sb.workdir + path[len(root):]
+        return path
+
+    def _remap_command(self, command: str) -> str:
+        return re.sub(r"(?<![\w./-])" + re.escape(self.alias_root) + r"(?=/|[^\w.-]|$)",
+                      lambda _: self.sb.workdir, command)
 
     def run(self, name: str, raw_args: str):
         try:
@@ -124,6 +138,11 @@ class ToolBox:
                 raise ValueError("arguments must be a JSON object")
         except (json.JSONDecodeError, ValueError) as e:
             return f"Error: could not parse the arguments as JSON ({e}).", True
+        if self.alias_root:
+            if isinstance(args.get("path"), str):
+                args["path"] = self._remap_path(args["path"])
+            if isinstance(args.get("command"), str):
+                args["command"] = self._remap_command(args["command"])
         handler = getattr(self, f"_tool_{name}", None)
         if handler is None:
             return f"Error: unknown tool {name!r}.", True
@@ -337,3 +356,42 @@ def check_build(sb) -> str:
         except Exception:
             pass
     return "\n\n".join(problems)
+
+
+# -- parallel candidates: extra copies of the repository under /work --------------------------------
+
+def make_candidate_dir(sb, name: str, root: str = "/work"):
+    """A git worktree of the task repository at <root>/<name>, at HEAD, with the repository's
+    ignored top-level entries (node_modules, build outputs, ...) linked in so tests still run.
+    Returns its path, or None when it cannot be made."""
+    dest = f"{root.rstrip('/')}/{name}"
+    q = shlex.quote(dest)
+    script = (
+        f"rm -rf {q}; git worktree prune >/dev/null 2>&1; "
+        f"git worktree add --detach {q} HEAD >/dev/null 2>&1 || exit 3; "
+        "exclude=\"$(git rev-parse --git-common-dir)/info/exclude\"; mkdir -p \"$(dirname \"$exclude\")\"; "
+        "git ls-files --others --ignored --exclude-standard --directory | sed 's#/$##' | grep -v / | "
+        "while IFS= read -r p; do "
+        f"  [ -e {q}/\"$p\" ] || ln -s \"$PWD/$p\" {q}/\"$p\"; "
+        "  grep -qxF \"/$p\" \"$exclude\" 2>/dev/null || echo \"/$p\" >> \"$exclude\"; "
+        "done; "
+        f"cd {q} && git status --porcelain | head -5; echo DONE"
+    )
+    try:
+        r = sb.exec(script, timeout_s=300)
+    except Exception:
+        return None
+    out = r.get("output", "")
+    lines = [l for l in out.splitlines() if l.strip()]
+    if r.get("exit_code") or not lines or lines[-1] != "DONE" or len(lines) > 1:
+        return None                                     # failed, or the copy is not clean
+    return dest
+
+
+def repo_diff(sb) -> str:
+    """The patch of the repository at sb.workdir, as extract_patch makes it."""
+    try:
+        r = sb.exec("git add -N . >/dev/null 2>&1; git diff 2>/dev/null", timeout_s=120)
+    except Exception:
+        return ""
+    return r.get("output", "") if not r.get("exit_code") else ""
