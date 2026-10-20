@@ -13,8 +13,9 @@ same      the retry ends with the patch that already failed: it is not graded a 
 review    the expert reviewer reports a gap; the model fixes it before the first grading
 cands     two candidates in parallel: the copy is a git worktree with ignored node_modules linked in,
           paths under the main checkout are redirected to the copy, the main checkout is untouched
-          by candidate 1, and grading stops at the first passing patch
+          by candidate 1, and grading (as each candidate finishes) stops at the first passing patch
 dedup     two candidates with the same patch: it is graded once
+early     candidate 0 passes quickly: candidate 1 is stopped instead of running to its turn limit
 Go packages are not covered here (no go toolchain needed): try check_build on a Go task image.
 """
 import json, os, subprocess, sys, tempfile, threading, time, types
@@ -220,7 +221,7 @@ cand_dir = f"{config.CANDIDATE_ROOT}/cand1"
 results["cands: copy made, node_modules linked"] = os.path.islink(os.path.join(cand_dir, "node_modules"))
 results["cands: candidate 1 path redirected (main untouched by it)"] = (
     seen_c["c1_main_edit"] is not None and "a + b" not in seen_c["c1_main_edit"] and "x.js" in seen_c["c1_ls"])
-results["cands: both patches graded, final passes"] = (len(d.evals) == 2 and d.final[1]["tests_failed"] == 0)
+results["cands: final passes (graded as candidates finish)"] = (1 <= len(d.evals) <= 2 and d.final[1]["tests_failed"] == 0)
 results["cands: graded patches only touch calc.py"] = all(
     [l for l in p.splitlines() if l.startswith("diff --git")] == ["diff --git a/calc.py b/calc.py"] for _, p in d.evals)
 
@@ -235,6 +236,26 @@ def dedup_model(messages):
 d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "", "interface": "",
                "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, dedup_model)
 results["dedup: same patch graded once"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
+
+config.CANDIDATE_ROOT = f"{work}/w/early"
+repo, url = cand_repo("early", 18817)
+slow = {"calls": 0}
+def early_model(messages):
+    sysmsg = messages[0]["content"]
+    if sysmsg.startswith("You review a patch"):
+        return reply(content="LGTM")
+    if "Your checkout is" in sysmsg:                # candidate 1 just keeps reading
+        slow["calls"] += 1
+        time.sleep(0.2)
+        return reply(tc(1, "bash", {"command": "cat calc.py"}))
+    if not any(m["role"] == "tool" for m in messages):
+        return reply(tc(1, "str_replace", {"path": "calc.py", "old_str": "return a - b", "new_str": "return a + b"}))
+    return reply(tc(9, "finish", {"summary": "done"}))
+t0 = time.time()
+d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": "", "interface": "",
+               "sandbox_url": url, "workdir": repo}, lambda p: "a + b" in p, early_model)
+results["early: one grading, passes"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
+results["early: candidate 1 stopped well before its turn limit"] = slow["calls"] < config.MAX_TURNS // 2
 
 for p in procs: p.terminate()
 for name, ok in results.items():

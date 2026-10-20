@@ -7,8 +7,8 @@ Design of this first version:
   (and their gradings) run at once;
 - per task, CANDIDATES independent tool-calling loops (bash, view_file, str_replace, create_file,
   finish) run in parallel, each in its own copy of the repository (the task checkout plus git
-  worktrees under /work); their distinct patches are graded one by one until one passes, and
-  retries continue from the best candidate;
+  worktrees under /work); each distinct patch is graded as soon as its candidate finishes, the
+  first passing one stops the others, and retries continue from the best candidate;
 - if hidden tests still fail and time allows, continue_task() and one more attempt with the
   grading result as feedback; if the retry scores worse, the better patch is graded again;
 - once the conversation passes COMPACT_AT_CHARS, the older turns are summarized by a model and
@@ -25,6 +25,7 @@ Design of this first version:
 """
 
 import os
+import queue
 import sys
 import threading
 import time
@@ -143,6 +144,7 @@ class TaskState:
         self.tools = ToolBox(self.sb, alias_root=task["workdir"])
         self.reason = "not run"                         # why the latest loop ended
         self.graded_patch, self.prev_ev = None, None    # this candidate's last graded patch and result
+        self.stop = None                                # threading.Event: another candidate has passed
         self.iterations = 0
         self.started = time.time()
         self.summary = ""                               # latest compaction summary
@@ -257,12 +259,18 @@ class Agent:
         cands += self._extra_candidates(task, logger, cands[0])
 
         # attempt 1: every candidate works on its own copy at the same time
-        threads = [threading.Thread(target=self._first_attempt, args=(st,), daemon=True) for st in cands[1:]]
+        stop, finished = threading.Event(), queue.Queue()
+        for st in cands:
+            st.stop = stop
+
+        def first(st):
+            try:
+                self._first_attempt(st)
+            finally:
+                finished.put(st)
+        threads = [threading.Thread(target=first, args=(st,), daemon=True) for st in cands]
         for t in threads:
             t.start()
-        self._first_attempt(cands[0])
-        for t in threads:
-            t.join()
 
         graded = False                                  # a graded patch sits in the task's folder
         best = None                                     # (candidate, patch, evaluation)
@@ -286,19 +294,24 @@ class Agent:
                 best = (st, patch, ev)
             return ev
 
-        # grade the distinct patches, candidates that called finish first, until one passes
-        for st in cands:
-            st.patch_text = repo_diff(st.sb)
-        order = sorted(cands, key=lambda c: (not c.reason.startswith("finish"), cands.index(c)))
+        # grade each distinct patch as soon as its candidate is done; the first that passes stops the rest
         seen = set()
-        for st in order:
-            if not st.patch_text.strip() or st.patch_text in seen:
+        for _ in cands:
+            st = finished.get()
+            if stop.is_set():
                 continue
-            seen.add(st.patch_text)
+            patch = repo_diff(st.sb)
+            if not patch.strip() or patch in seen:
+                continue
+            seen.add(patch)
             _debug(f"task {k}: grading candidate {st.name} ({st.reason})")
-            ev = grade(st, st.patch_text)
+            ev = grade(st, patch)
             if ev is not None and _solved(ev):
-                break
+                stop.set()
+        for t in threads:
+            t.join()
+        for st in cands:
+            st.stop = None                              # retries of the best candidate must not stop
 
         st = best[0] if best else cands[0]
         reason = st.reason if best else f"{st.reason}; empty patch"
@@ -408,7 +421,7 @@ class Agent:
 
     def _build_gate(self, st: TaskState, model_id: str, reason: str) -> str:
         """Compile/lint the changed files; on problems, give the model a few turns to fix them."""
-        if not config.BUILD_GATE_ENABLED or reason == "api error":
+        if not config.BUILD_GATE_ENABLED or reason == "api error" or reason.startswith("stopped"):
             return reason
         for _ in range(config.BUILD_GATE_ROUNDS):
             clean_repo_for_patch(st.sb)
@@ -429,7 +442,8 @@ class Agent:
     def _review(self, st: TaskState, model_id: str, reason: str, graded_ev) -> str:
         """Have the expert model check the diff against the specification; if it reports gaps, give
         the model a few turns to act on them and rerun the build gate."""
-        if (not config.REVIEW_ENABLED or reason == "api error" or st.reviews >= config.REVIEW_MAX_PER_TASK
+        if (not config.REVIEW_ENABLED or reason == "api error" or reason.startswith("stopped")
+                or st.reviews >= config.REVIEW_MAX_PER_TASK
                 or time.time() > self._soft_deadline() - 5 * 60):
             return reason
         clean_repo_for_patch(st.sb)
@@ -478,6 +492,8 @@ class Agent:
         """Run the model with tools until it calls finish, runs out of turns or time. Returns why it stopped."""
         idle = 0
         for turn in range(max_turns):
+            if st.stop is not None and st.stop.is_set():
+                return "stopped: another candidate passed"
             if time.time() > deadline:
                 return "time limit"
             left = max_turns - turn

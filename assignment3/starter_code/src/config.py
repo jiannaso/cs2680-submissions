@@ -15,10 +15,10 @@ NEXT_TASK_RETRY_S = 5           # wait between next_task() retries when 5 tasks 
 # -- per task ---------------------------------------------------------------------------------
 MODEL_TIER = "STANDARD"         # CS2680_MODEL_<tier> used for the first attempt
 RETRY_MODEL_TIER = "STANDARD"   # model for attempts after a failed evaluation
-MAX_TURNS = 80                  # model calls in the first attempt
-RETRY_TURNS = 25                # model calls in each later attempt
-MAX_ATTEMPTS = 3                # evaluations per task (gradings took 7-50 s in run 2; up to 35 min allowed)
-TASK_WALL_S = 40 * 60           # agent-side work per task, not counting grading
+MAX_TURNS = 60                  # model calls in the first attempt
+RETRY_TURNS = 20                # model calls in each later attempt
+MAX_ATTEMPTS = 2                # attempts of the best candidate: the first plus one retry
+TASK_WALL_S = 25 * 60           # agent-side work per candidate's first attempt (a retry gets half)
 RETRY_MIN_RUN_LEFT_S = 50 * 60  # only retry when at least this much run time is left
 
 # -- model calls ------------------------------------------------------------------------------
@@ -51,12 +51,12 @@ PLAYBOOK_MIN_RUN_LEFT_S = 15 * 60   # stop updating near the end of the run
 # -- build/lint gate before grading ---------------------------------------------------------------
 BUILD_GATE_ENABLED = True       # compile/lint the changed files before every evaluate()
 BUILD_GATE_ROUNDS = 2           # times the model gets the errors back to fix them
-BUILD_GATE_TURNS = 12           # model calls per fixing round
-BUILD_GATE_WALL_S = 8 * 60      # agent-side time per fixing round
+BUILD_GATE_TURNS = 8            # model calls per fixing round
+BUILD_GATE_WALL_S = 5 * 60      # agent-side time per fixing round
 BUILD_GATE_TIMEOUT_S = 300      # one check (e.g. go test -run '^$' on the changed packages)
 
 # -- exploring without editing ----------------------------------------------------------------------
-NO_EDIT_NUDGE_AT = (30, 50)     # model turns at which a repository with no changes gets a nudge
+NO_EDIT_NUDGE_AT = (20, 40)     # model turns at which a repository with no changes gets a nudge
 
 # -- cost report in run_logs/agent.log (estimate; $ per 1M tokens: input, cached input, output) --
 PRICES = {"expert": (2.00, 0.10, 10.00), "standard": (0.08, 0.004, 0.28), "starter": (0.01, 0.0005, 0.04)}
@@ -64,9 +64,9 @@ PRICES = {"expert": (2.00, 0.10, 10.00), "standard": (0.08, 0.004, 0.28), "start
 # -- expert review of the patch against the specification, before grading -------------------------
 REVIEW_ENABLED = True
 REVIEW_MODEL_TIER = "EXPERT"    # one call per review: about 15k input tokens, ~$0.03-0.05
-REVIEW_MAX_PER_TASK = 2         # reviews per task (at most one per attempt)
-REVIEW_TURNS = 15               # model calls to act on a review
-REVIEW_WALL_S = 10 * 60         # agent-side time to act on a review
+REVIEW_MAX_PER_TASK = 1         # reviews per candidate (its first attempt)
+REVIEW_TURNS = 10               # model calls to act on a review
+REVIEW_WALL_S = 6 * 60          # agent-side time to act on a review
 REVIEW_DIFF_CHARS = 40_000      # longest diff sent to the reviewer (head + tail kept)
 
 # -- parallel candidates ------------------------------------------------------------------------------
