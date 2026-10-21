@@ -22,10 +22,10 @@ Points to make:
 **On screen, in this order:**
 
 1. [agentic_loop.py:276](starter_code/src/agentic_loop.py:276) — `solve`: one task end to end
-2. [agentic_loop.py:388](starter_code/src/agentic_loop.py:388) and [tools.py:434](starter_code/src/tools.py:434) — second candidate in its own git worktree under `/work`
+2. [agentic_loop.py:392](starter_code/src/agentic_loop.py:392) and [tools.py:434](starter_code/src/tools.py:434) — second candidate in its own git worktree under `/work`
 3. [tools.py:142](starter_code/src/tools.py:142) — paths under `/app` redirected so candidates never touch each other's files
-4. [agentic_loop.py:299](starter_code/src/agentic_loop.py:299) — both candidates run in parallel threads
-5. [agentic_loop.py:325](starter_code/src/agentic_loop.py:325)–[338](starter_code/src/agentic_loop.py:338) — each patch graded as soon as its candidate finishes; the first pass stops the other
+4. [agentic_loop.py:303](starter_code/src/agentic_loop.py:303) — both candidates run in parallel threads
+5. [agentic_loop.py:329](starter_code/src/agentic_loop.py:329)–[342](starter_code/src/agentic_loop.py:342) — each patch graded as soon as its candidate finishes; the first pass stops the other
 6. [agentic_loop.py:67](starter_code/src/agentic_loop.py:67) — retry only near misses (≤2 or ≤10 % failing, or tests did not run)
 
 Points to make:
@@ -39,7 +39,7 @@ Points to make:
 **On screen:**
 
 1. [tools.py:508](starter_code/src/tools.py:508) — reconnaissance: harness greps the spec's names and finds nearby tests before the first model call
-2. [agentic_loop.py:454](starter_code/src/agentic_loop.py:454) → [tools.py:391](starter_code/src/tools.py:391) — build gate: compile changed Go packages, check Python for syntax errors and new undefined names
+2. [agentic_loop.py:458](starter_code/src/agentic_loop.py:458) → [tools.py:391](starter_code/src/tools.py:391) — build gate: compile changed Go packages, check Python for syntax errors and new undefined names
 3. [tools.py:619](starter_code/src/tools.py:619) — interface check: every `Name:` in the spec must exist in its `Path:`
 4. [tools.py:225](starter_code/src/tools.py:225) and [tools.py:275](starter_code/src/tools.py:275) — edit tool from A2: closest match on a miss
 5. [tools.py:15](starter_code/src/tools.py:15) — git guard: no commits/stash/reset that would empty the patch
@@ -55,7 +55,7 @@ Points to make:
 
 **On screen:**
 
-1. [agentic_loop.py:209](starter_code/src/agentic_loop.py:209) and [agentic_loop.py:691](starter_code/src/agentic_loop.py:691) — API cap and 429 handling
+1. [agentic_loop.py:209](starter_code/src/agentic_loop.py:209) and [agentic_loop.py:695](starter_code/src/agentic_loop.py:695) — API cap and 429 handling
 2. [tools.py:415](starter_code/src/tools.py:415) — the comment about not compiling `_test.go` files
 3. [config.py](starter_code/src/config.py) — `MAX_TURNS`, `TASK_WALL_S`, `NEAR_MISS_MAX_FAILED`, `MAX_CONCURRENT_CALLS`
 
