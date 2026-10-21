@@ -30,6 +30,7 @@ os.environ.update(CS2680_BASE_URL="http://unused", CS2680_API_KEY="x",
 from dispatcher import DispatcherError
 from evaluation_scripts.trace_logger import TraceLogger
 import src.config as config
+config.SKIP_TASKS = frozenset()                    # the scenarios use task numbers 1-3
 config.RETRY_MIN_RUN_LEFT_S = 0
 config.PLAYBOOK_MIN_RUN_LEFT_S = 0
 if SCEN == "compact":

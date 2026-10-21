@@ -276,6 +276,10 @@ class Agent:
     def solve(self, task: dict):
         from dispatcher import DispatcherError
         k = task["task"]
+        if k + 1 in config.SKIP_TASKS:                  # leaderboard numbers tasks from 1
+            _debug(f"task {k}: on the skip list; closed without work")
+            self.dispatcher.done(k, "skipped", 0)
+            return
         logger = _LockedLogger(self.dispatcher.logger(k))
         repo_map = ""
         if config.RECON_ENABLED and task.get("sandbox_url"):

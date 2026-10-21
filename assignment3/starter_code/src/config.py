@@ -12,6 +12,11 @@ RUN_LIMIT_S = 4 * 3600          # the dispatcher shuts the run down this long af
 RUN_SOFT_LIMIT_S = 3 * 3600 + 40 * 60   # after this, wrap up open tasks and open no new ones
 NEXT_TASK_RETRY_S = 5           # wait between next_task() retries when 5 tasks are already live
 
+# -- tasks skipped on purpose (allowed by course staff) -----------------------------------------------
+# Leaderboard task numbers (1-26; dispatcher index k = number - 1) that no version solved in four full
+# leaderboard runs: they are opened and closed at once, so they cost seconds instead of up to an hour.
+SKIP_TASKS = frozenset({1, 2, 4, 9, 10, 15, 16, 21, 22, 23, 24, 25})
+
 # -- per task ---------------------------------------------------------------------------------
 MODEL_TIER = "STANDARD"         # CS2680_MODEL_<tier> used for the first attempt
 RETRY_MODEL_TIER = "STANDARD"   # model for attempts after a failed evaluation

@@ -31,6 +31,7 @@ os.environ.update(CS2680_BASE_URL="http://unused", CS2680_API_KEY="x",
 from dispatcher import DispatcherError
 from evaluation_scripts.trace_logger import TraceLogger
 import src.config as config
+config.SKIP_TASKS = frozenset()                    # the scenarios use task numbers 1-3
 config.RETRY_MIN_RUN_LEFT_S = 0
 config.PLAYBOOK_ENABLED = False
 config.NUM_WORKERS = 1
@@ -310,6 +311,22 @@ d = run_agent({"task": 0, "problem_statement": "add subtracts", "requirements": 
               lambda p: "def add_numbers" in p, iface_model)
 results["iface: missing name sent back to the model"] = "add_numbers" in ifc["gate_msg"] and "not found in calc.py" in ifc["gate_msg"]
 results["iface: only the complete patch graded"] = len(d.evals) == 1 and d.final[1]["tests_failed"] == 0
+
+# -- skip list --------------------------------------------------------------------------------------
+repo, proc, url = make_repo("skip", 18820); procs.append(proc); time.sleep(1.5)
+calls = {"n": 0}
+def skip_model(messages):
+    calls["n"] += 1
+    return reply(tc(9, "finish", {"summary": "done"}))
+config.SKIP_TASKS = frozenset({1})
+d = run_agent({"task": 0, "problem_statement": "x", "requirements": "", "interface": "", "sandbox_url": url,
+               "workdir": repo}, lambda p: True, skip_model)
+results["skip: task 1 (k=0) closed without model calls or grading"] = (
+    calls["n"] == 0 and d.evals == [] and d.final and d.final[0] == "skipped")
+d = run_agent({"task": 1, "problem_statement": "add subtracts", "requirements": "", "interface": "", "sandbox_url": url,
+               "workdir": repo}, lambda p: True, skip_model)
+results["skip: task 2 (k=1) not on the list still runs"] = calls["n"] > 0
+config.SKIP_TASKS = frozenset()
 
 # -- retry policy -------------------------------------------------------------------------------
 W = agentic_loop._worth_retry
